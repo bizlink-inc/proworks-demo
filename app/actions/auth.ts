@@ -13,12 +13,12 @@ export const handleSignIn = async (email: string, password: string) => {
       },
       headers: await headers(),
     })
-    
+
     redirect("/")
   } catch (error) {
-    return { 
-      success: false, 
-      error: "メールアドレスまたはパスワードが正しくありません。" 
+    return {
+      success: false,
+      error: "メールアドレスまたはパスワードが正しくありません。"
     }
   }
 }
@@ -33,12 +33,12 @@ export const handleSignUp = async (email: string, password: string, name: string
       },
       headers: await headers(),
     })
-    
+
     redirect("/")
   } catch (error) {
-    return { 
-      success: false, 
-      error: "ユーザー登録に失敗しました。" 
+    return {
+      success: false,
+      error: "ユーザー登録に失敗しました。"
     }
   }
 }
@@ -47,6 +47,6 @@ export const handleSignOut = async () => {
   await auth.api.signOut({
     headers: await headers(),
   })
-  
+
   redirect("/auth/signin")
 }

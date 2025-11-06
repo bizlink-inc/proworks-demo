@@ -47,7 +47,7 @@ export default function SignInPage() {
         title: "ログイン成功",
         description: "ダッシュボードにリダイレクトしています...",
       })
-      
+
       router.push("/")
       router.refresh()
     } catch (error) {

@@ -28,7 +28,7 @@ export default function SignUpPage() {
     e.preventDefault()
 
     const name = `${formData.lastName} ${formData.firstName}`
-    
+
     try {
       const response = await fetch("/api/auth/sign-up/email", {
         method: "POST",
@@ -55,7 +55,7 @@ export default function SignUpPage() {
         title: "登録完了",
         description: "アカウントが作成されました。ログインしてください。",
       })
-      
+
       router.push("/auth/signin")
     } catch (error) {
       toast({

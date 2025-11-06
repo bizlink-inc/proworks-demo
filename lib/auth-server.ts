@@ -11,11 +11,11 @@ export const getSession = async () => {
 
 export const requireAuth = async () => {
   const session = await getSession();
-  
+
   if (!session) {
     throw new Error("Unauthorized");
   }
-  
+
   return session;
 };
 
