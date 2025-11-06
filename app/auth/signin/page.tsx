@@ -9,7 +9,6 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { useToast } from "@/hooks/use-toast"
-import { handleSignIn } from "@/app/actions/auth"
 
 export default function SignInPage() {
   const [email, setEmail] = useState("")
@@ -23,25 +22,40 @@ export default function SignInPage() {
     setLoading(true)
 
     try {
-      const result = await handleSignIn(email, password)
+      const response = await fetch("/api/auth/sign-in/email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email,
+          password,
+        }),
+      })
 
-      if (!result.success) {
+      if (!response.ok) {
+        const error = await response.json()
         toast({
           title: "ログイン失敗",
-          description: result.error || "メールアドレスまたはパスワードが正しくありません。",
+          description: error.message || "メールアドレスまたはパスワードが正しくありません。",
           variant: "destructive",
         })
-      } else {
-        router.push("/")
-        router.refresh()
+        setLoading(false)
+        return
       }
+
+      // ログイン成功
+      toast({
+        title: "ログイン成功",
+        description: "ダッシュボードにリダイレクトしています...",
+      })
+      
+      router.push("/")
+      router.refresh()
     } catch (error) {
       toast({
         title: "エラー",
         description: "ログインに失敗しました。",
         variant: "destructive",
       })
-    } finally {
       setLoading(false)
     }
   }

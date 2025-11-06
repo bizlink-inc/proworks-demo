@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
   let filtered = jobs.filter((job) => {
     const matchQuery = query
       ? job.title.toLowerCase().includes(query.toLowerCase()) ||
-        job.skills.some((s) => s.toLowerCase().includes(query.toLowerCase()))
+      job.skills.some((s) => s.toLowerCase().includes(query.toLowerCase()))
       : true
     const matchLoc = loc === "All" ? true : job.location === loc
     return matchQuery && matchLoc

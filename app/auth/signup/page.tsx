@@ -27,13 +27,43 @@ export default function SignUpPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    // モックなので、メール送信をシミュレート
-    setStep("email-sent")
+    const name = `${formData.lastName} ${formData.firstName}`
+    
+    try {
+      const response = await fetch("/api/auth/sign-up/email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: formData.email,
+          password: formData.password,
+          name,
+        }),
+      })
 
-    toast({
-      title: "確認メールを送信しました",
-      description: `${formData.email} に確認メールを送信しました。メール内のリンクをクリックして登録を完了してください。`,
-    })
+      if (!response.ok) {
+        const error = await response.json()
+        toast({
+          title: "登録エラー",
+          description: error.message || "ユーザー登録に失敗しました。",
+          variant: "destructive",
+        })
+        return
+      }
+
+      // 登録成功 - ログインページにリダイレクト
+      toast({
+        title: "登録完了",
+        description: "アカウントが作成されました。ログインしてください。",
+      })
+      
+      router.push("/auth/signin")
+    } catch (error) {
+      toast({
+        title: "エラー",
+        description: "ユーザー登録に失敗しました。",
+        variant: "destructive",
+      })
+    }
   }
 
   if (step === "email-sent") {

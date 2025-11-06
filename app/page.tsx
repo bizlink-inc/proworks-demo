@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation"
-import { getSession } from "@/lib/auth"
+import { getSession } from "@/lib/auth-server"
 import { DashboardClient } from "@/components/dashboard-client"
 
 export default async function DashboardPage() {
@@ -9,5 +9,5 @@ export default async function DashboardPage() {
     redirect("/auth/signin")
   }
 
-  return <DashboardClient user={session} />
+  return <DashboardClient user={session.user} />
 }

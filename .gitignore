@@ -49,3 +49,9 @@ pids
 *.pid
 *.seed
 *.pid.lock
+
+# database
+*.db
+*.db-journal
+*.db-shm
+*.db-wal
