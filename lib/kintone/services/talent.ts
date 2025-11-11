@@ -20,11 +20,11 @@ const convertTalentRecord = (record: TalentRecord): Talent => {
     resumeFiles: record.職務経歴データ.value,
     portfolioUrl: record.ポートフォリオリンク.value,
     availableFrom: record.稼働可能時期.value,
-    desiredRate: record.希望単価（月額）.value,
+    desiredRate: record.希望単価_月額.value,
     desiredWorkDays: record.希望勤務日数.value,
     desiredCommute: record.希望出社頻度.value,
     desiredWorkStyle: record.希望勤務スタイル.value,
-    desiredWork: record.希望案件・作業内容.value,
+    desiredWork: record.希望案件_作業内容.value,
     ngCompanies: record.NG企業.value,
     otherRequests: record.その他要望.value,
     lastLoginAt: record.最終ログイン日時.value,
@@ -110,11 +110,11 @@ export const updateTalent = async (
   if (data.experience !== undefined) record.主な実績_PR_職務経歴 = { value: data.experience };
   if (data.portfolioUrl !== undefined) record.ポートフォリオリンク = { value: data.portfolioUrl };
   if (data.availableFrom !== undefined) record.稼働可能時期 = { value: data.availableFrom };
-  if (data.desiredRate !== undefined) record.希望単価（月額） = { value: data.desiredRate };
+  if (data.desiredRate !== undefined) record.希望単価_月額 = { value: data.desiredRate };
   if (data.desiredWorkDays !== undefined) record.希望勤務日数 = { value: data.desiredWorkDays };
   if (data.desiredCommute !== undefined) record.希望出社頻度 = { value: data.desiredCommute };
   if (data.desiredWorkStyle !== undefined) record.希望勤務スタイル = { value: data.desiredWorkStyle };
-  if (data.desiredWork !== undefined) record.希望案件・作業内容 = { value: data.desiredWork };
+  if (data.desiredWork !== undefined) record.希望案件_作業内容 = { value: data.desiredWork };
   if (data.ngCompanies !== undefined) record.NG企業 = { value: data.ngCompanies };
   if (data.otherRequests !== undefined) record.その他要望 = { value: data.otherRequests };
 

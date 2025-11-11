@@ -16,11 +16,11 @@ export type TalentRecord = {
   職務経歴データ: { value: Array<{ fileKey: string; name: string; size: string }> };
   ポートフォリオリンク: { value: string };
   稼働可能時期: { value: string };
-  希望単価（月額）: { value: string };
+  希望単価_月額: { value: string };
   希望勤務日数: { value: string };
   希望出社頻度: { value: string };
   希望勤務スタイル: { value: string[] }; // チェックボックス
-  希望案件・作業内容: { value: string };
+  希望案件_作業内容: { value: string };
   NG企業: { value: string };
   その他要望: { value: string };
   最終ログイン日時: { value: string };
