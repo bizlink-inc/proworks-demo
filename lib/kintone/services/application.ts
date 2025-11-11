@@ -5,22 +5,24 @@ import type { ApplicationRecord, Application } from "../types";
 const convertApplicationRecord = (record: ApplicationRecord): Application => {
   return {
     id: record.$id.value,
-    jobTitle: record.案件名.value,
-    talentName: record.人材名.value,
+    authUserId: record.auth_user_id.value,
+    jobId: record.案件ID.value,
+    jobTitle: record.案件名.value, // ルックアップで取得
     status: record.対応状況.value,
+    memo: record.文字列__複数行_.value,
     appliedAt: record.作成日時.value,
   };
 };
 
-// 人材名で応募履歴を取得
-export const getApplicationsByTalentName = async (talentName: string): Promise<Application[]> => {
+// auth_user_idで応募履歴を取得
+export const getApplicationsByAuthUserId = async (authUserId: string): Promise<Application[]> => {
   const client = createApplicationClient();
   const appId = getAppIds().application;
 
   try {
     const response = await client.record.getRecords({
       app: appId,
-      query: `人材名 = "${talentName}"`,
+      query: `auth_user_id = "${authUserId}"`,
     });
 
     return response.records.map((record) => convertApplicationRecord(record as ApplicationRecord));
@@ -32,8 +34,8 @@ export const getApplicationsByTalentName = async (talentName: string): Promise<A
 
 // 応募を作成
 export const createApplication = async (data: {
-  jobTitle: string;
-  talentName: string;
+  authUserId: string;
+  jobId: string;
 }): Promise<string> => {
   const client = createApplicationClient();
   const appId = getAppIds().application;
@@ -42,8 +44,8 @@ export const createApplication = async (data: {
     const response = await client.record.addRecord({
       app: appId,
       record: {
-        案件名: { value: data.jobTitle },
-        人材名: { value: data.talentName },
+        auth_user_id: { value: data.authUserId },
+        案件ID: { value: data.jobId },
         対応状況: { value: "回答待ち" },
       },
     });
@@ -57,8 +59,8 @@ export const createApplication = async (data: {
 
 // 重複チェック
 export const checkDuplicateApplication = async (
-  talentName: string,
-  jobTitle: string
+  authUserId: string,
+  jobId: string
 ): Promise<boolean> => {
   const client = createApplicationClient();
   const appId = getAppIds().application;
@@ -66,7 +68,7 @@ export const checkDuplicateApplication = async (
   try {
     const response = await client.record.getRecords({
       app: appId,
-      query: `人材名 = "${talentName}" and 案件名 = "${jobTitle}"`,
+      query: `auth_user_id = "${authUserId}" and 案件ID = "${jobId}"`,
     });
 
     return response.records.length > 0;

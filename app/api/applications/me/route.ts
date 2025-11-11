@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth-server";
-import { getTalentByAuthUserId } from "@/lib/kintone/services/talent";
-import { getApplicationsByTalentName } from "@/lib/kintone/services/application";
-import { getJobByTitle } from "@/lib/kintone/services/job";
+import { getApplicationsByAuthUserId } from "@/lib/kintone/services/application";
+import { getJobById } from "@/lib/kintone/services/job";
 
 export const GET = async () => {
   try {
@@ -12,20 +11,13 @@ export const GET = async () => {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // kintoneから人材情報を取得
-    const talent = await getTalentByAuthUserId(session.user.id);
-
-    if (!talent) {
-      return NextResponse.json({ error: "Talent not found" }, { status: 404 });
-    }
-
-    // kintoneから応募履歴を取得
-    const applications = await getApplicationsByTalentName(talent.fullName);
+    // kintoneから応募履歴を取得（auth_user_idで検索）
+    const applications = await getApplicationsByAuthUserId(session.user.id);
 
     // 各応募に対して案件情報を取得
     const applicationsWithJobs = await Promise.all(
       applications.map(async (app) => {
-        const job = await getJobByTitle(app.jobTitle);
+        const job = await getJobById(app.jobId);
         return {
           ...app,
           job: job || null,

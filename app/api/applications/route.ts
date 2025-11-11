@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth-server";
-import { getTalentByAuthUserId } from "@/lib/kintone/services/talent";
 import { getJobById } from "@/lib/kintone/services/job";
 import { createApplication, checkDuplicateApplication } from "@/lib/kintone/services/application";
 
@@ -15,13 +14,6 @@ export const POST = async (request: NextRequest) => {
     const body = await request.json();
     const { jobId } = body;
 
-    // kintoneから人材情報を取得
-    const talent = await getTalentByAuthUserId(session.user.id);
-
-    if (!talent) {
-      return NextResponse.json({ error: "Talent not found" }, { status: 404 });
-    }
-
     // kintoneから案件情報を取得
     const job = await getJobById(jobId);
 
@@ -29,8 +21,8 @@ export const POST = async (request: NextRequest) => {
       return NextResponse.json({ error: "Job not found" }, { status: 404 });
     }
 
-    // 重複チェック（人材名と案件名で）
-    const isDuplicate = await checkDuplicateApplication(talent.fullName, job.title);
+    // 重複チェック（auth_user_idと案件IDで）
+    const isDuplicate = await checkDuplicateApplication(session.user.id, jobId);
 
     if (isDuplicate) {
       return NextResponse.json({ error: "Already applied" }, { status: 409 });
@@ -38,8 +30,8 @@ export const POST = async (request: NextRequest) => {
 
     // kintoneに応募を作成
     const applicationId = await createApplication({
-      jobTitle: job.title,
-      talentName: talent.fullName,
+      authUserId: session.user.id,
+      jobId,
     });
 
     return NextResponse.json(
