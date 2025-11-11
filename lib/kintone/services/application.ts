@@ -46,9 +46,11 @@ export const createApplication = async (data: {
       record: {
         auth_user_id: { value: data.authUserId },
         案件ID: { value: data.jobId },
-        対応状況: { value: "回答待ち" },
+        対応状況: { value: "応募済み" },
       },
     });
+
+    console.log(`✅ 応募レコード作成成功: auth_user_id=${data.authUserId}, 案件ID=${data.jobId}, 対応状況=応募済み (レコードID: ${response.id})`);
 
     return response.id;
   } catch (error) {
