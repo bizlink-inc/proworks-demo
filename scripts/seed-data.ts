@@ -70,7 +70,6 @@ Web系エンジニアとして5年の実務経験があります。
 ・技術選定やアーキテクチャ設計にも関わりたい`,
     NG企業: "特になし",
     その他要望: "リモート中心で、フレックスタイム制の案件を希望します。",
-    最終ログイン日時: new Date().toISOString(),
   },
 
   // 案件DB (5件)
@@ -368,7 +367,6 @@ export const createSeedData = async () => {
         希望案件_作業内容: { value: seedData.talent.希望案件_作業内容 },
         NG企業: { value: seedData.talent.NG企業 },
         その他要望: { value: seedData.talent.その他要望 },
-        最終ログイン日時: { value: seedData.talent.最終ログイン日時 },
       },
     });
 

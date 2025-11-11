@@ -23,7 +23,6 @@ export type TalentRecord = {
   希望案件_作業内容: { value: string };
   NG企業: { value: string };
   その他要望: { value: string };
-  最終ログイン日時: { value: string };
 };
 
 // 案件DBの型定義
@@ -80,7 +79,6 @@ export type Talent = {
   desiredWork: string;
   ngCompanies: string;
   otherRequests: string;
-  lastLoginAt: string;
 };
 
 export type Job = {

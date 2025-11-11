@@ -17,7 +17,8 @@ const convertTalentRecord = (record: TalentRecord): Talent => {
     phone: record.電話番号.value,
     skills: record.言語_ツール.value,
     experience: record.主な実績_PR_職務経歴.value,
-    resumeFiles: record.職務経歴データ.value,
+    // resumeFiles: record.職務経歴データ.value, // TODO: ファイルアップロード実装予定
+    resumeFiles: [], // 一時的に空配列
     portfolioUrl: record.ポートフォリオリンク.value,
     availableFrom: record.稼働可能時期.value,
     desiredRate: record.希望単価_月額.value,
@@ -27,7 +28,6 @@ const convertTalentRecord = (record: TalentRecord): Talent => {
     desiredWork: record.希望案件_作業内容.value,
     ngCompanies: record.NG企業.value,
     otherRequests: record.その他要望.value,
-    lastLoginAt: record.最終ログイン日時.value,
   };
 };
 
@@ -76,7 +76,6 @@ export const createTalent = async (data: {
         メールアドレス: { value: data.email },
         電話番号: { value: data.phone },
         生年月日: { value: data.birthDate },
-        最終ログイン日時: { value: new Date().toISOString() },
       },
     });
 
@@ -127,9 +126,6 @@ export const updateTalent = async (
   if (data.desiredWork !== undefined) record.希望案件_作業内容 = { value: data.desiredWork };
   if (data.ngCompanies !== undefined) record.NG企業 = { value: data.ngCompanies };
   if (data.otherRequests !== undefined) record.その他要望 = { value: data.otherRequests };
-
-  // 最終ログイン日時を更新
-  record.最終ログイン日時 = { value: new Date().toISOString() };
 
   try {
     await client.record.updateRecord({

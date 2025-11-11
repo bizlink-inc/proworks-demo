@@ -28,9 +28,18 @@ export function MyPageClient({ user: sessionUser }: MyPageClientProps) {
   }, [])
 
   const fetchUser = async () => {
-    const res = await fetch("/api/me")
-    const data = await res.json()
-    setUser(data)
+    try {
+      const res = await fetch("/api/me")
+      if (!res.ok) {
+        console.error("Failed to fetch user:", res.status, res.statusText)
+        return
+      }
+      const data = await res.json()
+      console.log("Fetched user data:", data)
+      setUser(data)
+    } catch (error) {
+      console.error("Error fetching user:", error)
+    }
   }
 
   const menuItems: { id: MenuItem; label: string }[] = [

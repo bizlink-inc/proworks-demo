@@ -21,7 +21,6 @@ export const WorkHistoryForm = ({ user, onUpdate }: WorkHistoryFormProps) => {
     portfolioUrl: user.portfolioUrl || "",
   });
   const [loading, setLoading] = useState(false);
-  const [file, setFile] = useState<File | null>(null);
   const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -72,12 +71,6 @@ export const WorkHistoryForm = ({ user, onUpdate }: WorkHistoryFormProps) => {
     }
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      setFile(e.target.files[0]);
-    }
-  };
-
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <div>
@@ -111,20 +104,15 @@ export const WorkHistoryForm = ({ user, onUpdate }: WorkHistoryFormProps) => {
 
       <div>
         <Label htmlFor="resume">経歴書アップロード</Label>
-        <Input
-          id="resume"
-          type="file"
-          accept=".pdf,.doc,.docx"
-          onChange={handleFileChange}
-        />
-        <p className="text-xs text-gray-500 mt-1">
-          PDF、Word形式のファイルをアップロードできます
-        </p>
-        {user.resumeFiles && user.resumeFiles.length > 0 && (
-          <div className="mt-2 text-sm text-gray-600">
-            現在のファイル: {user.resumeFiles[0].name}
-          </div>
-        )}
+        <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center bg-gray-50">
+          <p className="text-sm text-gray-500">
+            📄 ファイルアップロード機能は実装予定です
+          </p>
+          <p className="text-xs text-gray-400 mt-2">
+            PDF、Word形式のファイルをアップロードできるようになります
+          </p>
+        </div>
+        {/* TODO: ファイルアップロード機能を実装 */}
       </div>
 
       <div>

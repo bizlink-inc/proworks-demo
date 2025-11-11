@@ -5,21 +5,32 @@ import { getTalentByAuthUserId, updateTalent } from "@/lib/kintone/services/tale
 export const GET = async () => {
   try {
     const session = await getSession();
+    console.log("Session:", session);
 
     if (!session?.user?.id) {
+      console.log("Unauthorized: No session or user id");
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    console.log("Fetching talent for auth_user_id:", session.user.id);
+
     // kintoneから人材情報を取得
     const talent = await getTalentByAuthUserId(session.user.id);
+    console.log("Talent data:", talent);
 
     if (!talent) {
+      console.log("Talent not found for user:", session.user.id);
       return NextResponse.json({ error: "Talent not found" }, { status: 404 });
     }
 
     return NextResponse.json(talent);
   } catch (error) {
     console.error("人材情報の取得に失敗:", error);
+    console.error("Error details:", JSON.stringify(error, null, 2));
+    if (error instanceof Error) {
+      console.error("Error message:", error.message);
+      console.error("Error stack:", error.stack);
+    }
     return NextResponse.json(
       { error: "人材情報の取得に失敗しました" },
       { status: 500 }
