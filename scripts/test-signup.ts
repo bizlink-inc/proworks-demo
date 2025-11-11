@@ -73,6 +73,8 @@ const testSignup = async (email?: string) => {
     if (!kintoneResponse.ok) {
       const error = await kintoneResponse.json();
       console.error("❌ kintone登録失敗:", error);
+      console.error("\n📋 詳細なエラー情報:");
+      console.error(JSON.stringify(error, null, 2));
       console.log("\n⚠️  Better Authには登録されましたが、kintoneへの登録に失敗しました。");
       console.log("   手動で削除してください:");
       console.log(`   npm run delete-user ${testData.email}\n`);

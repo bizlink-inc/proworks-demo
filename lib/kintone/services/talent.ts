@@ -83,6 +83,16 @@ export const createTalent = async (data: {
     return response.id;
   } catch (error) {
     console.error("タレント情報の作成に失敗:", error);
+    console.error("エラー詳細:", JSON.stringify(error, null, 2));
+    console.error("送信データ:", {
+      appId,
+      authUserId: data.authUserId,
+      lastName: data.lastName,
+      firstName: data.firstName,
+      email: data.email,
+      phone: data.phone,
+      birthDate: data.birthDate,
+    });
     throw error;
   }
 };

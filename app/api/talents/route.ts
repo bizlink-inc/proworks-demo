@@ -27,8 +27,23 @@ export const POST = async (request: NextRequest) => {
     return NextResponse.json({ id: recordId }, { status: 201 });
   } catch (error) {
     console.error("人材情報の作成に失敗:", error);
+    console.error("エラー詳細:", JSON.stringify(error, null, 2));
+    
+    // エラーオブジェクトの詳細情報を取得
+    const errorMessage = error instanceof Error ? error.message : "不明なエラー";
+    const errorStack = error instanceof Error ? error.stack : undefined;
+    
+    console.error("エラーメッセージ:", errorMessage);
+    if (errorStack) {
+      console.error("スタックトレース:", errorStack);
+    }
+    
     return NextResponse.json(
-      { error: "人材情報の作成に失敗しました" },
+      { 
+        error: "人材情報の作成に失敗しました",
+        message: errorMessage,
+        details: error
+      },
       { status: 500 }
     );
   }
