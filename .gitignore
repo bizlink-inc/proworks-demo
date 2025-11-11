@@ -55,3 +55,6 @@ pids
 *.db-journal
 *.db-shm
 *.db-wal
+
+# test cookies
+cookies.txt
