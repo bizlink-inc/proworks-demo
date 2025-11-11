@@ -27,6 +27,11 @@ export const auth = betterAuth({
       maxAge: 5 * 60, // 5分
     },
   },
+  // 開発環境でネットワークアドレスからのアクセスを許可
+  trustedOrigins: [
+    "http://localhost:3000",
+    "http://192.168.100.5:3000",
+  ],
 });
 
 export type Session = typeof auth.$Infer.Session;
