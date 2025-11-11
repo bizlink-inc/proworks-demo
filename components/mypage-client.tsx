@@ -7,7 +7,7 @@ import { ApplicationsTable } from "@/components/applications-table"
 import { WorkHistoryForm } from "@/components/work-history-form"
 import { PreferencesForm } from "@/components/preferences-form"
 import { Button } from "@/components/ui/button"
-import type { User } from "@/lib/mockdb"
+import type { Talent } from "@/lib/kintone/types"
 
 type MenuItem = "profile" | "work-history" | "preferences" | "applications" | "password" | "email"
 
@@ -21,7 +21,7 @@ interface MyPageClientProps {
 
 export function MyPageClient({ user: sessionUser }: MyPageClientProps) {
   const [activeMenu, setActiveMenu] = useState<MenuItem>("profile")
-  const [user, setUser] = useState<Omit<User, "password"> | null>(null)
+  const [user, setUser] = useState<Talent | null>(null)
 
   useEffect(() => {
     fetchUser()
@@ -76,17 +76,17 @@ export function MyPageClient({ user: sessionUser }: MyPageClientProps) {
                 </div>
               )}
 
-              {activeMenu === "work-history" && (
+              {activeMenu === "work-history" && user && (
                 <div>
                   <h2 className="text-xl font-semibold mb-6">職歴・資格</h2>
-                  <WorkHistoryForm />
+                  <WorkHistoryForm user={user} onUpdate={setUser} />
                 </div>
               )}
 
-              {activeMenu === "preferences" && (
+              {activeMenu === "preferences" && user && (
                 <div>
                   <h2 className="text-xl font-semibold mb-6">希望条件</h2>
-                  <PreferencesForm />
+                  <PreferencesForm user={user} onUpdate={setUser} />
                 </div>
               )}
 

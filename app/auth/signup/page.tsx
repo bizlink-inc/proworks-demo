@@ -20,8 +20,8 @@ export default function SignUpPage() {
     password: "",
     lastName: "",
     firstName: "",
-    lastNameKana: "",
-    firstNameKana: "",
+    phone: "",
+    birthDate: "",
   })
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -30,6 +30,7 @@ export default function SignUpPage() {
     const name = `${formData.lastName} ${formData.firstName}`
 
     try {
+      // Better Authでユーザー登録
       const response = await fetch("/api/auth/sign-up/email", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -48,6 +49,26 @@ export default function SignUpPage() {
           variant: "destructive",
         })
         return
+      }
+
+      const authData = await response.json()
+
+      // kintoneに人材情報を登録
+      const kintoneResponse = await fetch("/api/talents", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          authUserId: authData.user.id,
+          lastName: formData.lastName,
+          firstName: formData.firstName,
+          email: formData.email,
+          phone: formData.phone,
+          birthDate: formData.birthDate,
+        }),
+      })
+
+      if (!kintoneResponse.ok) {
+        console.error("kintoneへの登録に失敗しました")
       }
 
       // 登録成功 - ログインページにリダイレクト
@@ -128,27 +149,6 @@ export default function SignUpPage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="lastNameKana">セイ</Label>
-                <Input
-                  id="lastNameKana"
-                  required
-                  value={formData.lastNameKana}
-                  onChange={(e) => setFormData({ ...formData, lastNameKana: e.target.value })}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="firstNameKana">メイ</Label>
-                <Input
-                  id="firstNameKana"
-                  required
-                  value={formData.firstNameKana}
-                  onChange={(e) => setFormData({ ...formData, firstNameKana: e.target.value })}
-                />
-              </div>
-            </div>
-
             <div className="space-y-2">
               <Label htmlFor="email">メールアドレス</Label>
               <Input
@@ -166,8 +166,33 @@ export default function SignUpPage() {
                 id="password"
                 type="password"
                 required
+                minLength={6}
                 value={formData.password}
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+              />
+              <p className="text-xs text-gray-500">6文字以上で入力してください</p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="phone">電話番号</Label>
+              <Input
+                id="phone"
+                type="tel"
+                required
+                placeholder="090-1234-5678"
+                value={formData.phone}
+                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="birthDate">生年月日</Label>
+              <Input
+                id="birthDate"
+                type="date"
+                required
+                value={formData.birthDate}
+                onChange={(e) => setFormData({ ...formData, birthDate: e.target.value })}
               />
             </div>
 

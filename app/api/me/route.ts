@@ -1,52 +1,61 @@
-import { type NextRequest, NextResponse } from "next/server"
-import { getSession } from "@/lib/auth"
-import { users } from "@/lib/mockdb"
+import { type NextRequest, NextResponse } from "next/server";
+import { getSession } from "@/lib/auth-server";
+import { getTalentByAuthUserId, updateTalent } from "@/lib/kintone/services/talent";
 
-export async function GET() {
-  const session = await getSession()
+export const GET = async () => {
+  try {
+    const session = await getSession();
 
-  if (!session?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // kintoneから人材情報を取得
+    const talent = await getTalentByAuthUserId(session.user.id);
+
+    if (!talent) {
+      return NextResponse.json({ error: "Talent not found" }, { status: 404 });
+    }
+
+    return NextResponse.json(talent);
+  } catch (error) {
+    console.error("人材情報の取得に失敗:", error);
+    return NextResponse.json(
+      { error: "人材情報の取得に失敗しました" },
+      { status: 500 }
+    );
   }
+};
 
-  const user = users.find((u) => u.id === session.id)
+export const PATCH = async (request: NextRequest) => {
+  try {
+    const session = await getSession();
 
-  if (!user) {
-    return NextResponse.json({ error: "User not found" }, { status: 404 })
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // kintoneから人材情報を取得
+    const talent = await getTalentByAuthUserId(session.user.id);
+
+    if (!talent) {
+      return NextResponse.json({ error: "Talent not found" }, { status: 404 });
+    }
+
+    const body = await request.json();
+
+    // kintoneの人材情報を更新
+    await updateTalent(talent.id, body);
+
+    // 更新後のデータを取得
+    const updatedTalent = await getTalentByAuthUserId(session.user.id);
+
+    return NextResponse.json(updatedTalent);
+  } catch (error) {
+    console.error("人材情報の更新に失敗:", error);
+    return NextResponse.json(
+      { error: "人材情報の更新に失敗しました" },
+      { status: 500 }
+    );
   }
-
-  const { password, ...userWithoutPassword } = user
-
-  return NextResponse.json(userWithoutPassword)
-}
-
-export async function PATCH(request: NextRequest) {
-  const session = await getSession()
-
-  if (!session?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-  }
-
-  const user = users.find((u) => u.id === session.id)
-
-  if (!user) {
-    return NextResponse.json({ error: "User not found" }, { status: 404 })
-  }
-
-  const body = await request.json()
-
-  // 更新
-  Object.assign(user, {
-    lastName: body.lastName || user.lastName,
-    firstName: body.firstName || user.firstName,
-    lastNameKana: body.lastNameKana || user.lastNameKana,
-    firstNameKana: body.firstNameKana || user.firstNameKana,
-    birthdate: body.birthdate || user.birthdate,
-    phone: body.phone,
-    address: body.address,
-  })
-
-  const { password, ...userWithoutPassword } = user
-
-  return NextResponse.json(userWithoutPassword)
-}
+};

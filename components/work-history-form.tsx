@@ -1,147 +1,152 @@
 "use client"
 
-import type React from "react"
+import type React from "react";
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/hooks/use-toast";
+import type { Talent } from "@/lib/kintone/types";
 
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Plus, Trash2 } from "lucide-react"
+type WorkHistoryFormProps = {
+  user: Talent;
+  onUpdate: (user: Talent) => void;
+};
 
-type WorkHistory = {
-  id: string
-  company: string
-  position: string
-  period: string
-  description: string
-}
+export const WorkHistoryForm = ({ user, onUpdate }: WorkHistoryFormProps) => {
+  const [formData, setFormData] = useState({
+    skills: user.skills || "",
+    experience: user.experience || "",
+    portfolioUrl: user.portfolioUrl || "",
+  });
+  const [loading, setLoading] = useState(false);
+  const [file, setFile] = useState<File | null>(null);
+  const { toast } = useToast();
 
-type Certification = {
-  id: string
-  name: string
-  date: string
-}
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
 
-export function WorkHistoryForm() {
-  const [workHistories, setWorkHistories] = useState<WorkHistory[]>([
-    { id: "1", company: "", position: "", period: "", description: "" },
-  ])
-  const [certifications, setCertifications] = useState<Certification[]>([{ id: "1", name: "", date: "" }])
+    try {
+      // 添付ファイルがある場合はアップロード
+      if (file) {
+        const uploadFormData = new FormData();
+        uploadFormData.append("file", file);
 
-  const addWorkHistory = () => {
-    setWorkHistories([
-      ...workHistories,
-      { id: Date.now().toString(), company: "", position: "", period: "", description: "" },
-    ])
-  }
+        const uploadRes = await fetch("/api/talents/upload", {
+          method: "POST",
+          body: uploadFormData,
+        });
 
-  const removeWorkHistory = (id: string) => {
-    setWorkHistories(workHistories.filter((w) => w.id !== id))
-  }
+        if (!uploadRes.ok) {
+          throw new Error("ファイルのアップロードに失敗しました");
+        }
+      }
 
-  const addCertification = () => {
-    setCertifications([...certifications, { id: Date.now().toString(), name: "", date: "" }])
-  }
+      // プロフィール情報を更新
+      const res = await fetch("/api/me", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
 
-  const removeCertification = (id: string) => {
-    setCertifications(certifications.filter((c) => c.id !== id))
-  }
+      if (res.ok) {
+        const updated = await res.json();
+        onUpdate(updated);
+        toast({
+          title: "保存しました",
+          description: "職歴・スキル情報を更新しました。",
+        });
+      } else {
+        throw new Error("Failed to update");
+      }
+    } catch (error) {
+      toast({
+        title: "エラー",
+        description: "保存に失敗しました。",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    console.log("[v0] 職歴・資格保存:", { workHistories, certifications })
-  }
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setFile(e.target.files[0]);
+    }
+  };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-8">
-      {/* 職歴セクション */}
+    <form onSubmit={handleSubmit} className="space-y-6">
       <div>
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold">職歴</h3>
-          <Button type="button" variant="outline" size="sm" onClick={addWorkHistory}>
-            <Plus className="w-4 h-4 mr-2" />
-            追加
-          </Button>
-        </div>
-
-        <div className="space-y-6">
-          {workHistories.map((work, index) => (
-            <div key={work.id} className="border rounded-lg p-4 space-y-4">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-gray-600">職歴 {index + 1}</span>
-                {workHistories.length > 1 && (
-                  <Button type="button" variant="ghost" size="sm" onClick={() => removeWorkHistory(work.id)}>
-                    <Trash2 className="w-4 h-4 text-red-500" />
-                  </Button>
-                )}
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>会社名</Label>
-                  <Input placeholder="株式会社〇〇" />
-                </div>
-                <div className="space-y-2">
-                  <Label>役職</Label>
-                  <Input placeholder="シニアエンジニア" />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label>期間</Label>
-                <Input placeholder="2020年4月 - 2023年3月" />
-              </div>
-
-              <div className="space-y-2">
-                <Label>業務内容</Label>
-                <Textarea placeholder="担当した業務内容を記載してください" rows={3} />
-              </div>
-            </div>
-          ))}
-        </div>
+        <Label htmlFor="skills">言語・ツールの経験</Label>
+        <Textarea
+          id="skills"
+          placeholder="JavaScript, TypeScript, React, Next.js, Python, AWS など"
+          rows={4}
+          value={formData.skills}
+          onChange={(e) =>
+            setFormData({ ...formData, skills: e.target.value })
+          }
+        />
+        <p className="text-xs text-gray-500 mt-1">
+          使用経験のある言語やツールを記載してください
+        </p>
       </div>
 
-      {/* 資格セクション */}
       <div>
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold">資格</h3>
-          <Button type="button" variant="outline" size="sm" onClick={addCertification}>
-            <Plus className="w-4 h-4 mr-2" />
-            追加
-          </Button>
-        </div>
-
-        <div className="space-y-4">
-          {certifications.map((cert, index) => (
-            <div key={cert.id} className="border rounded-lg p-4">
-              <div className="flex items-center justify-between mb-4">
-                <span className="text-sm font-medium text-gray-600">資格 {index + 1}</span>
-                {certifications.length > 1 && (
-                  <Button type="button" variant="ghost" size="sm" onClick={() => removeCertification(cert.id)}>
-                    <Trash2 className="w-4 h-4 text-red-500" />
-                  </Button>
-                )}
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>資格名</Label>
-                  <Input placeholder="基本情報技術者試験" />
-                </div>
-                <div className="space-y-2">
-                  <Label>取得日</Label>
-                  <Input type="date" />
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
+        <Label htmlFor="experience">主な実績・PR・職務経歴</Label>
+        <Textarea
+          id="experience"
+          placeholder="これまでの実績や職務経歴を記載してください"
+          rows={8}
+          value={formData.experience}
+          onChange={(e) =>
+            setFormData({ ...formData, experience: e.target.value })
+          }
+        />
       </div>
 
-      <Button type="submit" className="w-full">
-        保存する
+      <div>
+        <Label htmlFor="resume">経歴書アップロード</Label>
+        <Input
+          id="resume"
+          type="file"
+          accept=".pdf,.doc,.docx"
+          onChange={handleFileChange}
+        />
+        <p className="text-xs text-gray-500 mt-1">
+          PDF、Word形式のファイルをアップロードできます
+        </p>
+        {user.resumeFiles && user.resumeFiles.length > 0 && (
+          <div className="mt-2 text-sm text-gray-600">
+            現在のファイル: {user.resumeFiles[0].name}
+          </div>
+        )}
+      </div>
+
+      <div>
+        <Label htmlFor="portfolioUrl">ポートフォリオ・GitHubのURL</Label>
+        <Input
+          id="portfolioUrl"
+          type="url"
+          placeholder="https://github.com/username"
+          value={formData.portfolioUrl}
+          onChange={(e) =>
+            setFormData({ ...formData, portfolioUrl: e.target.value })
+          }
+        />
+      </div>
+
+      <Button
+        type="submit"
+        disabled={loading}
+        className="bg-blue-600 hover:bg-blue-700"
+      >
+        {loading ? "保存中..." : "保存"}
       </Button>
     </form>
-  )
-}
+  );
+};
