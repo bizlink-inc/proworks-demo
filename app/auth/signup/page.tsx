@@ -81,34 +81,13 @@ export default function SignUpPage() {
         console.error("kintoneへの登録に失敗しました")
       }
 
-      // 登録成功後、自動的にログイン
-      const signInResponse = await fetch("/api/auth/sign-in/email", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: formData.email,
-          password: formData.password,
-        }),
-      })
-
-      if (!signInResponse.ok) {
-        // ログイン失敗時はログインページへ
-        toast({
-          title: "登録完了",
-          description: "アカウントが作成されました。ログインしてください。",
-        })
-        router.push("/auth/signin")
-        return
-      }
-
-      // 登録・ログイン成功 - トップページにリダイレクト
+      // 登録成功 - ログインページにリダイレクト
       toast({
         title: "登録完了",
-        description: "アカウントが作成されました。",
+        description: "アカウントが作成されました。ログインしてください。",
       })
 
-      router.push("/")
-      router.refresh()
+      router.push("/auth/signin")
     } catch (error) {
       toast({
         title: "エラー",
