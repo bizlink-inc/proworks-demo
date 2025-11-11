@@ -9,7 +9,7 @@ import { ApplySuccessModal } from "@/components/apply-success-modal"
 import { Button } from "@/components/ui/button"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
-import type { Job } from "@/lib/mockdb"
+import type { Job } from "@/lib/kintone/types"
 
 interface DashboardClientProps {
   user: {

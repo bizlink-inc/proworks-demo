@@ -1,40 +1,60 @@
-import { type NextRequest, NextResponse } from "next/server"
-import { getSession } from "@/lib/auth-server"
-import { applications } from "@/lib/mockdb"
+import { NextRequest, NextResponse } from "next/server";
+import { getSession } from "@/lib/auth-server";
+import { getTalentByAuthUserId } from "@/lib/kintone/services/talent";
+import { getJobById } from "@/lib/kintone/services/job";
+import { createApplication, checkDuplicateApplication } from "@/lib/kintone/services/application";
 
 export const POST = async (request: NextRequest) => {
-  console.log("[v0] 応募API呼び出し")
+  try {
+    const session = await getSession();
 
-  const session = await getSession()
-  console.log("[v0] セッション情報:", session)
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
-  if (!session?.user?.id) {
-    console.log("[v0] 認証エラー: セッションなし")
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    const body = await request.json();
+    const { jobId } = body;
+
+    // kintoneから人材情報を取得
+    const talent = await getTalentByAuthUserId(session.user.id);
+
+    if (!talent) {
+      return NextResponse.json({ error: "Talent not found" }, { status: 404 });
+    }
+
+    // kintoneから案件情報を取得
+    const job = await getJobById(jobId);
+
+    if (!job) {
+      return NextResponse.json({ error: "Job not found" }, { status: 404 });
+    }
+
+    // 重複チェック（人材名と案件名で）
+    const isDuplicate = await checkDuplicateApplication(talent.fullName, job.title);
+
+    if (isDuplicate) {
+      return NextResponse.json({ error: "Already applied" }, { status: 409 });
+    }
+
+    // kintoneに応募を作成
+    const applicationId = await createApplication({
+      jobTitle: job.title,
+      talentName: talent.fullName,
+    });
+
+    return NextResponse.json(
+      {
+        id: applicationId,
+        jobTitle: job.title,
+        appliedAt: new Date().toISOString(),
+      },
+      { status: 201 }
+    );
+  } catch (error) {
+    console.error("応募の作成に失敗:", error);
+    return NextResponse.json(
+      { error: "応募の作成に失敗しました" },
+      { status: 500 }
+    );
   }
-
-  const body = await request.json()
-  const { jobId } = body
-  console.log("[v0] 応募リクエスト:", { jobId, userId: session.user.id })
-
-  // 重複チェック
-  const exists = applications.find((app) => app.jobId === jobId && app.userId === session.user.id)
-
-  if (exists) {
-    console.log("[v0] 重複応募検出")
-    return NextResponse.json({ error: "Already applied" }, { status: 409 })
-  }
-
-  const newApp = {
-    id: `app${applications.length + 1}`,
-    jobId,
-    userId: session.user.id,
-    status: "回答待ち" as const,
-    appliedAt: new Date().toISOString(),
-  }
-
-  applications.push(newApp)
-  console.log("[v0] 応募登録成功:", newApp)
-
-  return NextResponse.json(newApp, { status: 201 })
-}
+};

@@ -1,33 +1,20 @@
-import { type NextRequest, NextResponse } from "next/server"
-import { jobs } from "@/lib/mockdb"
+import { NextResponse } from "next/server";
+import { getAllJobs } from "@/lib/kintone/services/job";
 
-export async function GET(request: NextRequest) {
-  const searchParams = request.nextUrl.searchParams
-  const query = searchParams.get("query") || ""
-  const loc = searchParams.get("loc") || "All"
-  const sort = searchParams.get("sort") || "new"
-  const page = Number.parseInt(searchParams.get("page") || "1")
-  const size = Number.parseInt(searchParams.get("size") || "6")
+export const GET = async () => {
+  try {
+    // kintoneからすべての案件を取得
+    const jobs = await getAllJobs();
 
-  let filtered = jobs.filter((job) => {
-    const matchQuery = query
-      ? job.title.toLowerCase().includes(query.toLowerCase()) ||
-      job.skills.some((s) => s.toLowerCase().includes(query.toLowerCase()))
-      : true
-    const matchLoc = loc === "All" ? true : job.location === loc
-    return matchQuery && matchLoc
-  })
-
-  // ソート
-  if (sort === "new") {
-    filtered = filtered.sort((a, b) => (a.isNew === b.isNew ? 0 : a.isNew ? -1 : 1))
-  } else if (sort === "price") {
-    filtered = filtered.sort((a, b) => b.unitPrice.max - a.unitPrice.max)
+    return NextResponse.json({
+      items: jobs,
+      total: jobs.length,
+    });
+  } catch (error) {
+    console.error("案件一覧の取得に失敗:", error);
+    return NextResponse.json(
+      { error: "案件一覧の取得に失敗しました" },
+      { status: 500 }
+    );
   }
-
-  const total = filtered.length
-  const start = (page - 1) * size
-  const items = filtered.slice(start, start + size)
-
-  return NextResponse.json({ items, total, page, size })
-}
+};

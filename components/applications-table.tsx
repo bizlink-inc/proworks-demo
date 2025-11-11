@@ -3,38 +3,29 @@
 import { useEffect, useState } from "react"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { format } from "date-fns"
-import type { Application, Job } from "@/lib/mockdb"
+import type { Application, Job } from "@/lib/kintone/types"
 
 type ApplicationWithJob = Application & {
-  job: Job
+  job: Job | null
 }
 
-const statusColors = {
+const statusColors: Record<string, string> = {
   回答待ち: "bg-yellow-500",
   応募終了: "bg-gray-500",
   面談調整中: "bg-blue-500",
   契約締結: "bg-green-500",
 }
 
-export function ApplicationsTable() {
+export const ApplicationsTable = () => {
   const [applications, setApplications] = useState<ApplicationWithJob[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const fetchApplications = async () => {
       try {
-        const appsRes = await fetch("/api/applications/me")
-        const apps: Application[] = await appsRes.json()
-
-        const appsWithJobs = await Promise.all(
-          apps.map(async (app) => {
-            const jobRes = await fetch(`/api/jobs/${app.jobId}`)
-            const job = await jobRes.json()
-            return { ...app, job }
-          }),
-        )
-
-        setApplications(appsWithJobs)
+        const res = await fetch("/api/applications/me")
+        const data = await res.json()
+        setApplications(data)
       } catch (error) {
         console.error("Failed to fetch applications:", error)
       } finally {
@@ -70,10 +61,10 @@ export function ApplicationsTable() {
         <TableBody>
           {applications.map((app) => (
             <TableRow key={app.id}>
-              <TableCell className="font-medium">{app.job.title}</TableCell>
+              <TableCell className="font-medium">{app.jobTitle}</TableCell>
               <TableCell>
                 <div className="flex items-center gap-2">
-                  <span className={`w-2 h-2 rounded-full ${statusColors[app.status]}`} />
+                  <span className={`w-2 h-2 rounded-full ${statusColors[app.status] || "bg-gray-500"}`} />
                   <span>{app.status}</span>
                 </div>
               </TableCell>

@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { MapPin, X } from "lucide-react"
-import type { Job } from "@/lib/mockdb"
+import type { Job } from "@/lib/kintone/types"
 
 type JobDetailModalProps = {
   jobId: string | null
@@ -67,69 +67,123 @@ export function JobDetailModal({ jobId, onClose, onApply }: JobDetailModalProps)
           <div className="py-8 text-center text-muted-foreground">読み込み中...</div>
         ) : job ? (
           <div className="space-y-6">
-            <div>
-              <h3 className="font-semibold mb-2">会社名</h3>
-              <p>{job.company.name}</p>
-            </div>
+            {/* 案件特徴 */}
+            {job.features.length > 0 && (
+              <div>
+                <h3 className="font-semibold mb-2">案件特徴</h3>
+                <div className="flex flex-wrap gap-2">
+                  {job.features.map((feature) => (
+                    <Badge key={feature} variant="outline">
+                      {feature}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
 
-            <div>
-              <h3 className="font-semibold mb-2">単価</h3>
-              <p className="text-xl font-semibold text-blue-600">
-                ¥{job.unitPrice.min.toLocaleString()} - ¥{job.unitPrice.max.toLocaleString()}/月
-              </p>
-            </div>
+            {/* 職種ポジション */}
+            {job.position.length > 0 && (
+              <div>
+                <h3 className="font-semibold mb-2">職種ポジション</h3>
+                <div className="flex flex-wrap gap-2">
+                  {job.position.map((pos) => (
+                    <Badge key={pos} variant="secondary">
+                      {pos}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
 
-            <div>
-              <h3 className="font-semibold mb-2">契約形態</h3>
-              <p>{job.contractType}</p>
-            </div>
+            {/* 作業内容 */}
+            {job.description && (
+              <div>
+                <h3 className="font-semibold mb-2">作業内容</h3>
+                <p className="text-muted-foreground whitespace-pre-wrap">{job.description}</p>
+              </div>
+            )}
 
+            {/* 環境 */}
+            {job.environment && (
+              <div>
+                <h3 className="font-semibold mb-2">環境</h3>
+                <p className="text-muted-foreground whitespace-pre-wrap">{job.environment}</p>
+              </div>
+            )}
+
+            {/* 必須スキル */}
+            {job.requiredSkills && (
+              <div>
+                <h3 className="font-semibold mb-2">必須スキル</h3>
+                <p className="text-muted-foreground whitespace-pre-wrap">{job.requiredSkills}</p>
+              </div>
+            )}
+
+            {/* 歓迎スキル */}
+            {job.preferredSkills && (
+              <div>
+                <h3 className="font-semibold mb-2">歓迎スキル</h3>
+                <p className="text-muted-foreground whitespace-pre-wrap">{job.preferredSkills}</p>
+              </div>
+            )}
+
+            {/* 勤務地 */}
             <div>
               <h3 className="font-semibold mb-2">勤務地</h3>
-              <div className="flex items-center gap-2">
-                <MapPin className="w-4 h-4" />
-                <span>{job.location}</span>
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <MapPin className="w-4 h-4" />
+                  <span>{job.location || "リモート"}</span>
+                </div>
+                {job.nearestStation && (
+                  <p className="text-sm text-muted-foreground ml-6">最寄駅: {job.nearestStation}</p>
+                )}
               </div>
             </div>
 
-            <div>
-              <h3 className="font-semibold mb-2">募集スキル</h3>
-              <div className="flex flex-wrap gap-2">
-                {job.skills.map((skill) => (
-                  <Badge key={skill} variant="secondary">
-                    {skill}
-                  </Badge>
-                ))}
+            {/* 精算基準時間 */}
+            {(job.minHours || job.maxHours) && (
+              <div>
+                <h3 className="font-semibold mb-2">精算基準時間</h3>
+                <p>
+                  {job.minHours && `下限: ${job.minHours}h`}
+                  {job.minHours && job.maxHours && " / "}
+                  {job.maxHours && `上限: ${job.maxHours}h`}
+                </p>
               </div>
-            </div>
+            )}
 
-            <div>
-              <h3 className="font-semibold mb-2">必須スキル</h3>
-              <ul className="list-disc list-inside space-y-1">
-                {job.requiredSkills.map((skill) => (
-                  <li key={skill}>{skill}</li>
-                ))}
-              </ul>
-            </div>
+            {/* 期間 */}
+            {job.period && (
+              <div>
+                <h3 className="font-semibold mb-2">期間</h3>
+                <p>{job.period}</p>
+              </div>
+            )}
 
-            <div>
-              <h3 className="font-semibold mb-2">歓迎スキル</h3>
-              <ul className="list-disc list-inside space-y-1">
-                {job.preferredSkills.map((skill) => (
-                  <li key={skill}>{skill}</li>
-                ))}
-              </ul>
-            </div>
+            {/* 金額 */}
+            {job.rate && (
+              <div>
+                <h3 className="font-semibold mb-2">金額</h3>
+                <p className="text-xl font-semibold text-blue-600">{job.rate}</p>
+              </div>
+            )}
 
-            <div>
-              <h3 className="font-semibold mb-2">稼働時間</h3>
-              <p>{job.workingHours}</p>
-            </div>
+            {/* 面談回数 */}
+            {job.interviewCount && (
+              <div>
+                <h3 className="font-semibold mb-2">面談回数</h3>
+                <p>{job.interviewCount}</p>
+              </div>
+            )}
 
-            <div>
-              <h3 className="font-semibold mb-2">プロジェクト概要</h3>
-              <p className="text-muted-foreground">{job.description}</p>
-            </div>
+            {/* 備考 */}
+            {job.notes && (
+              <div>
+                <h3 className="font-semibold mb-2">備考</h3>
+                <p className="text-muted-foreground whitespace-pre-wrap">{job.notes}</p>
+              </div>
+            )}
 
             <Button onClick={handleApply} className="w-full bg-blue-600 hover:bg-blue-700">
               この案件に応募する
