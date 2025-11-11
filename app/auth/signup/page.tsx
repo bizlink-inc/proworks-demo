@@ -43,9 +43,19 @@ export default function SignUpPage() {
 
       if (!response.ok) {
         const error = await response.json()
+        
+        // エラーメッセージを判定
+        let errorMessage = "ユーザー登録に失敗しました。"
+        
+        if (response.status === 400 || error.message?.includes("email")) {
+          errorMessage = "このメールアドレスは既に登録されています。"
+        } else if (error.message) {
+          errorMessage = error.message
+        }
+        
         toast({
           title: "登録エラー",
-          description: error.message || "ユーザー登録に失敗しました。",
+          description: errorMessage,
           variant: "destructive",
         })
         return

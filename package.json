@@ -7,7 +7,8 @@
     "dev": "npx next dev",
     "lint": "eslint .",
     "start": "npx next start",
-    "db:push": "npx drizzle-kit push"
+    "db:push": "npx drizzle-kit push",
+    "delete-user": "npx tsx scripts/delete-test-user.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
