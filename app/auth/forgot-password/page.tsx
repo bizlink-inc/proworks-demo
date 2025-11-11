@@ -9,9 +9,9 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { useToast } from "@/hooks/use-toast"
-import { Mail } from "lucide-react"
+import { Mail, ArrowLeft } from "lucide-react"
 
-export default function SignUpPage() {
+export default function ForgotPasswordPage() {
   const { toast } = useToast()
   const [step, setStep] = useState<"form" | "email-sent">("form")
   const [email, setEmail] = useState("")
@@ -22,8 +22,7 @@ export default function SignUpPage() {
     setLoading(true)
 
     try {
-      // メールアドレスのみでユーザー登録（ランダムパスワード自動生成）
-      const response = await fetch("/api/auth/signup-with-email", {
+      const response = await fetch("/api/auth/forgot-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),
@@ -31,31 +30,21 @@ export default function SignUpPage() {
 
       if (!response.ok) {
         const error = await response.json()
-        
-        let errorMessage = "ユーザー登録に失敗しました。"
-        
-        if (response.status === 400 || error.message?.includes("email")) {
-          errorMessage = "このメールアドレスは既に登録されています。"
-        } else if (error.message) {
-          errorMessage = error.message
-        }
-        
         toast({
-          title: "登録エラー",
-          description: errorMessage,
+          title: "エラー",
+          description: error.message || "パスワードリセットメールの送信に失敗しました。",
           variant: "destructive",
         })
         setLoading(false)
         return
       }
 
-      // メール送信完了画面に遷移
       setStep("email-sent")
       setLoading(false)
     } catch (error) {
       toast({
         title: "エラー",
-        description: "ユーザー登録に失敗しました。",
+        description: "パスワードリセットメールの送信に失敗しました。",
         variant: "destructive",
       })
       setLoading(false)
@@ -72,23 +61,27 @@ export default function SignUpPage() {
             </div>
             <CardTitle>メールを送信しました</CardTitle>
             <CardDescription>
-              {email} 宛に認証リンクを送信しました。
-              <br />
-              メール内のリンクをクリックして登録を完了してください。
+              {email} 宛にパスワードリセット用のリンクを送信しました。
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm text-blue-800">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm text-blue-800 mb-4">
               <p className="font-semibold mb-1">次のステップ：</p>
               <ol className="list-decimal list-inside space-y-1">
                 <li>受信トレイを確認</li>
                 <li>メール内のリンクをクリック</li>
-                <li>マイページでプロフィールを記入</li>
+                <li>新しいパスワードを設定</li>
               </ol>
             </div>
-            <p className="text-xs text-gray-500 mt-4 text-center">
+            <p className="text-xs text-gray-500 text-center mb-4">
               メールが届かない場合は、迷惑メールフォルダをご確認ください。
             </p>
+            <Link href="/auth/signin">
+              <Button variant="outline" className="w-full">
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                ログインページに戻る
+              </Button>
+            </Link>
           </CardContent>
         </Card>
       </div>
@@ -99,9 +92,9 @@ export default function SignUpPage() {
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle>新規登録</CardTitle>
+          <CardTitle>パスワードをリセット</CardTitle>
           <CardDescription>
-            メールアドレスを入力して登録を開始してください
+            登録済みのメールアドレスを入力してください
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -123,18 +116,19 @@ export default function SignUpPage() {
               className="w-full" 
               disabled={loading}
             >
-              {loading ? "送信中..." : "認証メールを送信"}
+              {loading ? "送信中..." : "リセットリンクを送信"}
             </Button>
 
-            <p className="text-sm text-center text-gray-600">
-              既にアカウントをお持ちの方は{" "}
-              <Link href="/auth/signin" className="text-blue-600 hover:underline">
-                ログイン
-              </Link>
-            </p>
+            <Link href="/auth/signin">
+              <Button variant="ghost" className="w-full">
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                ログインページに戻る
+              </Button>
+            </Link>
           </form>
         </CardContent>
       </Card>
     </div>
   )
 }
+

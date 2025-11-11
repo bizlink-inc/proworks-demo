@@ -6,6 +6,7 @@ import { ProfileForm } from "@/components/profile-form"
 import { ApplicationsTable } from "@/components/applications-table"
 import { WorkHistoryForm } from "@/components/work-history-form"
 import { PreferencesForm } from "@/components/preferences-form"
+import { PasswordChangeForm } from "@/components/password-change-form"
 import { Button } from "@/components/ui/button"
 import type { Talent } from "@/lib/kintone/types"
 
@@ -109,7 +110,7 @@ export function MyPageClient({ user: sessionUser }: MyPageClientProps) {
               {activeMenu === "password" && (
                 <div>
                   <h2 className="text-xl font-semibold mb-6">パスワード変更</h2>
-                  <p className="text-muted-foreground">パスワード変更機能は現在準備中です。</p>
+                  <PasswordChangeForm />
                 </div>
               )}
 

@@ -66,13 +66,18 @@ export const createTalent = async (data: {
   const appId = getAppIds().talent;
 
   try {
+    // 氏名の生成（空の場合はメールアドレスの@前を使用）
+    const fullName = data.lastName || data.firstName 
+      ? `${data.lastName} ${data.firstName}`.trim()
+      : data.email.split("@")[0];
+
     const response = await client.record.addRecord({
       app: appId,
       record: {
         auth_user_id: { value: data.authUserId },
         姓: { value: data.lastName },
         名: { value: data.firstName },
-        氏名: { value: `${data.lastName} ${data.firstName}` },
+        氏名: { value: fullName },
         メールアドレス: { value: data.email },
         電話番号: { value: data.phone },
         生年月日: { value: data.birthDate },

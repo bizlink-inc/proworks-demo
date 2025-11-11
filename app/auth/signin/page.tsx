@@ -82,7 +82,15 @@ export default function SignInPage() {
             </div>
 
             <div>
-              <Label htmlFor="password">パスワード</Label>
+              <div className="flex items-center justify-between mb-1">
+                <Label htmlFor="password">パスワード</Label>
+                <Link 
+                  href="/auth/forgot-password" 
+                  className="text-xs text-blue-600 hover:underline"
+                >
+                  パスワードを忘れた方
+                </Link>
+              </div>
               <Input
                 id="password"
                 type="password"
