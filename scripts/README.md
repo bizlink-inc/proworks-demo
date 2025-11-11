@@ -8,11 +8,16 @@
 
 ブラウザを自動で開いて、入力・ログインまで自動で行います。
 
+**⚠️ 注意: 事前に開発サーバーを起動しておく必要があります**
+
 ```bash
-# デフォルトユーザーでログイン (test@example.com / test1234)
+# ターミナル1: 開発サーバー起動
+npm run dev
+
+# ターミナル2: デフォルトユーザーでログイン (test@example.com / test1234)
 npm run login
 
-# カスタムユーザーでログイン
+# または、カスタムユーザーでログイン
 npm run login your@email.com yourpassword
 ```
 
