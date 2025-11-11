@@ -285,13 +285,6 @@ Web系エンジニアとして5年の実務経験があります。
   ],
 };
 
-// Better Authのパスワードハッシュ化（簡易版）
-// 実際のBetter Authはbcryptを使用しますが、ここでは簡易的に
-const hashPassword = async (password: string): Promise<string> => {
-  const crypto = await import("crypto");
-  return crypto.createHash("sha256").update(password).digest("hex");
-};
-
 // シードデータ作成
 export const createSeedData = async () => {
   console.log("\n🌱 シードデータを作成します\n");
@@ -320,33 +313,31 @@ export const createSeedData = async () => {
     if (existingUser) {
       console.log(`⚠️  ユーザー ${seedData.authUser.email} は既に存在します。スキップします。`);
       authUserId = existingUser.id;
+      sqlite.close();
     } else {
-      const hashedPassword = await hashPassword(seedData.authUser.password);
+      sqlite.close();
       
-      await db.insert(schema.user).values({
-        id: seedData.authUser.id,
-        name: seedData.authUser.name,
-        email: seedData.authUser.email,
-        emailVerified: seedData.authUser.emailVerified,
-        image: seedData.authUser.image,
-        createdAt: seedData.authUser.createdAt,
-        updatedAt: seedData.authUser.updatedAt,
+      // Better AuthのAPIを使ってユーザーを作成
+      const signUpResponse = await fetch("http://localhost:3000/api/auth/sign-up/email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: seedData.authUser.email,
+          password: seedData.authUser.password,
+          name: seedData.authUser.name,
+        }),
       });
 
-      await db.insert(schema.account).values({
-        id: `${seedData.authUser.id}_account`,
-        accountId: seedData.authUser.email,
-        providerId: "credential",
-        userId: seedData.authUser.id,
-        password: hashedPassword,
-        createdAt: seedData.authUser.createdAt,
-        updatedAt: seedData.authUser.updatedAt,
-      });
+      if (!signUpResponse.ok) {
+        const error = await signUpResponse.json();
+        throw new Error(`Better Auth登録失敗: ${JSON.stringify(error)}`);
+      }
+
+      const authData = await signUpResponse.json();
+      authUserId = authData.user.id;
 
       console.log(`✅ ユーザー作成: ${seedData.authUser.email} (ID: ${authUserId})`);
     }
-
-    sqlite.close();
 
     // 2. 人材DBにレコード作成
     console.log("\n" + "=" .repeat(80));
@@ -356,7 +347,7 @@ export const createSeedData = async () => {
     const talentRecord = await talentClient.record.addRecord({
       app: appIds.talent,
       record: {
-        auth_user_id: { value: authUserId },
+        auth_user_id: { value: authUserId }, // Better AuthのAPIから返されたIDを使用
         姓: { value: seedData.talent.姓 },
         名: { value: seedData.talent.名 },
         氏名: { value: seedData.talent.氏名 },
@@ -430,14 +421,16 @@ export const createSeedData = async () => {
     console.log("📝 Step 4: 応募履歴DBにレコードを作成");
     console.log("=" .repeat(80));
 
-    // 応募履歴の案件IDを動的に設定
+    // 応募履歴の案件IDとauth_user_idを動的に設定
     const applicationsWithJobIds = [
       {
         ...seedData.applications[0],
+        auth_user_id: authUserId, // 実際のBetter AuthのユーザーIDを使用
         案件ID: jobIds[0], // 大手ECサイトのフロントエンド刷新案件
       },
       {
         ...seedData.applications[1],
+        auth_user_id: authUserId, // 実際のBetter AuthのユーザーIDを使用
         案件ID: jobIds[2], // スタートアップ向け新規サービス開発
       },
     ];

@@ -31,7 +31,7 @@ export type JobRecord = {
   $id: { value: string };
   案件名: { value: string };
   案件特徴: { value: string[] }; // 複数選択
-  職種ポジション: { value: string[] }; // 複数選択
+  職種_ポジション: { value: string[] }; // 複数選択
   概要: { value: string };
   環境: { value: string };
   備考: { value: string };
