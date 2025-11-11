@@ -9,7 +9,10 @@
     "start": "npx next start",
     "db:push": "npx drizzle-kit push",
     "delete-user": "npx tsx scripts/delete-test-user.ts",
-    "test-signup": "npx tsx scripts/test-signup.ts"
+    "test-signup": "npx tsx scripts/test-signup.ts",
+    "get-fields": "npx tsx scripts/get-kintone-fields.ts",
+    "seed:create": "npx tsx scripts/seed-data.ts create",
+    "seed:delete": "npx tsx scripts/seed-data.ts delete"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

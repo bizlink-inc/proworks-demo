@@ -55,3 +55,6 @@ pids
 *.db-journal
 *.db-shm
 *.db-wal
+
+# kintone field data
+fields-data.json
