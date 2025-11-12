@@ -44,14 +44,14 @@ export const PATCH = async (request: NextRequest) => {
 
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+  }
 
     // kintoneから人材情報を取得
     const talent = await getTalentByAuthUserId(session.user.id);
 
     if (!talent) {
       return NextResponse.json({ error: "Talent not found" }, { status: 404 });
-    }
+  }
 
     const body = await request.json();
 
@@ -68,5 +68,5 @@ export const PATCH = async (request: NextRequest) => {
       { error: "人材情報の更新に失敗しました" },
       { status: 500 }
     );
-  }
+}
 };
