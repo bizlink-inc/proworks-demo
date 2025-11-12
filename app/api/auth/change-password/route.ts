@@ -1,27 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSession } from "@/lib/auth-server";
-import { drizzle } from "drizzle-orm/better-sqlite3";
-import Database from "better-sqlite3";
-import { eq, and } from "drizzle-orm";
-import * as schema from "@/lib/db/schema";
-import bcrypt from "bcryptjs";
-import path from "path";
-
-const dbPath = path.join(process.cwd(), "auth.db");
-const sqlite = new Database(dbPath);
-const db = drizzle(sqlite, { schema });
+import { auth } from "@/lib/auth";
+import { headers } from "next/headers";
 
 export const POST = async (request: NextRequest) => {
   try {
-    const session = await getSession();
-
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: "認証が必要です" },
-        { status: 401 }
-      );
-    }
-
     const body = await request.json();
     const { currentPassword, newPassword } = body;
 
@@ -39,51 +21,45 @@ export const POST = async (request: NextRequest) => {
       );
     }
 
-    // ユーザーのアカウント情報を取得
-    const account = await db.query.account.findFirst({
-      where: and(
-        eq(schema.account.userId, session.user.id),
-        eq(schema.account.providerId, "credential")
-      ),
+    // Better Authの標準APIを使用してパスワードを変更
+    const result = await auth.api.changePassword({
+      body: {
+        currentPassword,
+        newPassword,
+      },
+      headers: await headers(),
     });
 
-    if (!account || !account.password) {
+    if (!result) {
       return NextResponse.json(
-        { error: "アカウント情報が見つかりません" },
-        { status: 404 }
+        { error: "パスワード変更に失敗しました" },
+        { status: 500 }
       );
     }
 
-    // 現在のパスワードを検証
-    const isValidPassword = await bcrypt.compare(currentPassword, account.password);
-
-    if (!isValidPassword) {
-      return NextResponse.json(
-        { error: "現在のパスワードが正しくありません" },
-        { status: 400 }
-      );
-    }
-
-    // 新しいパスワードをハッシュ化
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
-
-    // パスワードを更新
-    await db
-      .update(schema.account)
-      .set({ password: hashedPassword })
-      .where(eq(schema.account.id, account.id));
-
-    console.log("✅ パスワード変更成功:", session.user.email);
+    console.log("✅ パスワード変更成功");
 
     return NextResponse.json(
       { message: "パスワードが変更されました" },
       { status: 200 }
     );
-  } catch (error) {
+  } catch (error: any) {
     console.error("パスワード変更エラー:", error);
+    
+    // Better Authのエラーメッセージを取得
+    const errorMessage = error?.message || "パスワード変更に失敗しました";
+    
+    // エラーメッセージを日本語に変換
+    let japaneseMessage = errorMessage;
+    if (errorMessage.includes("Invalid password") || errorMessage.includes("incorrect password")) {
+      japaneseMessage = "現在のパスワードが正しくありません";
+    } else if (errorMessage.includes("password")) {
+      japaneseMessage = "パスワード変更に失敗しました";
+    }
+
     return NextResponse.json(
-      { error: "パスワード変更に失敗しました" },
-      { status: 500 }
+      { error: japaneseMessage },
+      { status: 400 }
     );
   }
 };
