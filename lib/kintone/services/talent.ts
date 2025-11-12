@@ -1,39 +1,40 @@
 import { createTalentClient, getAppIds } from "../client";
 import type { TalentRecord, Talent } from "../types";
 import { FileInfo, getFileInfoFromKintone } from "./file";
+import { TALENT_FIELDS } from "../fieldMapping";
 
 // kintoneレコードをフロントエンド用の型に変換
 const convertTalentRecord = (record: TalentRecord): Talent => {
   return {
-    id: record.$id.value,
-    authUserId: record.auth_user_id.value,
-    lastName: record.姓.value,
-    firstName: record.名.value,
-    fullName: record.氏名.value,
-    lastNameKana: record.セイ.value,
-    firstNameKana: record.メイ.value,
-    email: record.メールアドレス.value,
-    birthDate: record.生年月日.value,
-    postalCode: record.郵便番号.value,
-    address: record.住所.value,
-    phone: record.電話番号.value,
-    skills: record.言語_ツール.value,
-    experience: record.主な実績_PR_職務経歴.value,
-    resumeFiles: record.職務経歴書データ.value?.map(file => ({
+    id: record[TALENT_FIELDS.ID].value,
+    authUserId: record[TALENT_FIELDS.AUTH_USER_ID].value,
+    lastName: record[TALENT_FIELDS.LAST_NAME].value,
+    firstName: record[TALENT_FIELDS.FIRST_NAME].value,
+    fullName: record[TALENT_FIELDS.FULL_NAME].value,
+    lastNameKana: record[TALENT_FIELDS.LAST_NAME_KANA].value,
+    firstNameKana: record[TALENT_FIELDS.FIRST_NAME_KANA].value,
+    email: record[TALENT_FIELDS.EMAIL].value,
+    birthDate: record[TALENT_FIELDS.BIRTH_DATE].value,
+    postalCode: record[TALENT_FIELDS.POSTAL_CODE].value,
+    address: record[TALENT_FIELDS.ADDRESS].value,
+    phone: record[TALENT_FIELDS.PHONE].value,
+    skills: record[TALENT_FIELDS.SKILLS].value,
+    experience: record[TALENT_FIELDS.EXPERIENCE].value,
+    resumeFiles: record[TALENT_FIELDS.RESUME_FILES].value?.map(file => ({
       fileKey: file.fileKey,
       name: file.name,
       size: parseInt(file.size, 10),
-      contentType: 'application/octet-stream', // kintoneから取得できない場合のデフォルト
+      contentType: 'application/octet-stream',
     })) || [],
-    portfolioUrl: record.ポートフォリオリンク.value,
-    availableFrom: record.稼働可能時期.value,
-    desiredRate: record.希望単価_月額.value,
-    desiredWorkDays: record.希望勤務日数.value,
-    desiredCommute: record.希望出社頻度.value,
-    desiredWorkStyle: record.希望勤務スタイル.value,
-    desiredWork: record.希望案件_作業内容.value,
-    ngCompanies: record.NG企業.value,
-    otherRequests: record.その他要望.value,
+    portfolioUrl: record[TALENT_FIELDS.PORTFOLIO_URL].value,
+    availableFrom: record[TALENT_FIELDS.AVAILABLE_FROM].value,
+    desiredRate: record[TALENT_FIELDS.DESIRED_RATE].value,
+    desiredWorkDays: record[TALENT_FIELDS.DESIRED_WORK_DAYS].value,
+    desiredCommute: record[TALENT_FIELDS.DESIRED_COMMUTE].value,
+    desiredWorkStyle: record[TALENT_FIELDS.DESIRED_WORK_STYLE].value,
+    desiredWork: record[TALENT_FIELDS.DESIRED_WORK].value,
+    ngCompanies: record[TALENT_FIELDS.NG_COMPANIES].value,
+    otherRequests: record[TALENT_FIELDS.OTHER_REQUESTS].value,
   };
 };
 
@@ -117,20 +118,20 @@ export const updateTalent = async (
 
   const record: Record<string, { value: unknown }> = {};
 
-  if (data.lastName !== undefined) record.姓 = { value: data.lastName };
-  if (data.firstName !== undefined) record.名 = { value: data.firstName };
-  if (data.fullName !== undefined) record.氏名 = { value: data.fullName };
-  if (data.lastNameKana !== undefined) record.セイ = { value: data.lastNameKana };
-  if (data.firstNameKana !== undefined) record.メイ = { value: data.firstNameKana };
-  if (data.email !== undefined) record.メールアドレス = { value: data.email };
-  if (data.birthDate !== undefined) record.生年月日 = { value: data.birthDate };
-  if (data.postalCode !== undefined) record.郵便番号 = { value: data.postalCode };
-  if (data.address !== undefined) record.住所 = { value: data.address };
-  if (data.phone !== undefined) record.電話番号 = { value: data.phone };
-  if (data.skills !== undefined) record.言語_ツール = { value: data.skills };
-  if (data.experience !== undefined) record.主な実績_PR_職務経歴 = { value: data.experience };
+  if (data.lastName !== undefined) record[TALENT_FIELDS.LAST_NAME] = { value: data.lastName };
+  if (data.firstName !== undefined) record[TALENT_FIELDS.FIRST_NAME] = { value: data.firstName };
+  if (data.fullName !== undefined) record[TALENT_FIELDS.FULL_NAME] = { value: data.fullName };
+  if (data.lastNameKana !== undefined) record[TALENT_FIELDS.LAST_NAME_KANA] = { value: data.lastNameKana };
+  if (data.firstNameKana !== undefined) record[TALENT_FIELDS.FIRST_NAME_KANA] = { value: data.firstNameKana };
+  if (data.email !== undefined) record[TALENT_FIELDS.EMAIL] = { value: data.email };
+  if (data.birthDate !== undefined) record[TALENT_FIELDS.BIRTH_DATE] = { value: data.birthDate };
+  if (data.postalCode !== undefined) record[TALENT_FIELDS.POSTAL_CODE] = { value: data.postalCode };
+  if (data.address !== undefined) record[TALENT_FIELDS.ADDRESS] = { value: data.address };
+  if (data.phone !== undefined) record[TALENT_FIELDS.PHONE] = { value: data.phone };
+  if (data.skills !== undefined) record[TALENT_FIELDS.SKILLS] = { value: data.skills };
+  if (data.experience !== undefined) record[TALENT_FIELDS.EXPERIENCE] = { value: data.experience };
   if (data.resumeFiles !== undefined) {
-    record.職務経歴書データ = {
+    record[TALENT_FIELDS.RESUME_FILES] = {
       value: data.resumeFiles.map(file => ({
         fileKey: file.fileKey,
         name: file.name,
@@ -138,15 +139,15 @@ export const updateTalent = async (
       }))
     };
   }
-  if (data.portfolioUrl !== undefined) record.ポートフォリオリンク = { value: data.portfolioUrl };
-  if (data.availableFrom !== undefined) record.稼働可能時期 = { value: data.availableFrom };
-  if (data.desiredRate !== undefined) record.希望単価_月額 = { value: data.desiredRate };
-  if (data.desiredWorkDays !== undefined) record.希望勤務日数 = { value: data.desiredWorkDays };
-  if (data.desiredCommute !== undefined) record.希望出社頻度 = { value: data.desiredCommute };
-  if (data.desiredWorkStyle !== undefined) record.希望勤務スタイル = { value: data.desiredWorkStyle };
-  if (data.desiredWork !== undefined) record.希望案件_作業内容 = { value: data.desiredWork };
-  if (data.ngCompanies !== undefined) record.NG企業 = { value: data.ngCompanies };
-  if (data.otherRequests !== undefined) record.その他要望 = { value: data.otherRequests };
+  if (data.portfolioUrl !== undefined) record[TALENT_FIELDS.PORTFOLIO_URL] = { value: data.portfolioUrl };
+  if (data.availableFrom !== undefined) record[TALENT_FIELDS.AVAILABLE_FROM] = { value: data.availableFrom };
+  if (data.desiredRate !== undefined) record[TALENT_FIELDS.DESIRED_RATE] = { value: data.desiredRate };
+  if (data.desiredWorkDays !== undefined) record[TALENT_FIELDS.DESIRED_WORK_DAYS] = { value: data.desiredWorkDays };
+  if (data.desiredCommute !== undefined) record[TALENT_FIELDS.DESIRED_COMMUTE] = { value: data.desiredCommute };
+  if (data.desiredWorkStyle !== undefined) record[TALENT_FIELDS.DESIRED_WORK_STYLE] = { value: data.desiredWorkStyle };
+  if (data.desiredWork !== undefined) record[TALENT_FIELDS.DESIRED_WORK] = { value: data.desiredWork };
+  if (data.ngCompanies !== undefined) record[TALENT_FIELDS.NG_COMPANIES] = { value: data.ngCompanies };
+  if (data.otherRequests !== undefined) record[TALENT_FIELDS.OTHER_REQUESTS] = { value: data.otherRequests };
 
   try {
     await client.record.updateRecord({

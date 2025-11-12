@@ -26,7 +26,6 @@ describe('Application Service', () => {
     案件ID: { value: 'job-789' },
     案件名: { value: 'React開発者募集' },
     対応状況: { value: '応募済み' },
-    文字列__複数行_: { value: 'メモ' },
     作成日時: { value: '2025-01-01T10:00:00Z' },
   }
 

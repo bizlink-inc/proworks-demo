@@ -12,6 +12,7 @@ config({ path: ".env.local" });
 
 import { createTalentClient, createJobClient, createApplicationClient, getAppIds } from "../lib/kintone/client";
 import { uploadFileToKintone } from "../lib/kintone/services/file";
+import { TALENT_FIELDS, JOB_FIELDS, APPLICATION_FIELDS } from "../lib/kintone/fieldMapping";
 import Database from "better-sqlite3";
 import { drizzle } from "drizzle-orm/better-sqlite3";
 import * as schema from "../lib/db/schema";
@@ -323,13 +324,11 @@ Web系エンジニアとして5年の実務経験があります。
       auth_user_id: "seed_user_001",
       案件ID: 0, // 動的に設定（大手ECサイトのフロントエンド刷新案件）
       対応状況: "面談調整中",
-      メモ: "フロントエンド経験が豊富で、希望条件とマッチしています。面談調整中。",
     },
     {
       auth_user_id: "seed_user_001",
       案件ID: 2, // 動的に設定（スタートアップ向け新規サービス開発）
       対応状況: "応募済み",
-      メモ: "スタートアップでの経験があり、技術スタックも合致。書類選考通過。",
     },
   ],
 };
@@ -417,29 +416,29 @@ export const createSeedData = async () => {
     const talentRecord = await talentClient.record.addRecord({
       app: appIds.talent,
       record: {
-        auth_user_id: { value: authUserId }, // Better AuthのAPIから返されたIDを使用
-        姓: { value: seedData.talent.姓 },
-        名: { value: seedData.talent.名 },
-        氏名: { value: seedData.talent.氏名 },
-        セイ: { value: seedData.talent.セイ },
-        メイ: { value: seedData.talent.メイ },
-        メールアドレス: { value: seedData.talent.メールアドレス },
-        電話番号: { value: seedData.talent.電話番号 },
-        生年月日: { value: seedData.talent.生年月日 },
-        郵便番号: { value: seedData.talent.郵便番号 },
-        住所: { value: seedData.talent.住所 },
-        言語_ツール: { value: seedData.talent.言語_ツール },
-        主な実績_PR_職務経歴: { value: seedData.talent.主な実績_PR_職務経歴 },
-        職務経歴書データ: { value: uploadedFiles }, // アップロードしたファイル情報を追加
-        ポートフォリオリンク: { value: seedData.talent.ポートフォリオリンク },
-        稼働可能時期: { value: seedData.talent.稼働可能時期 },
-        希望単価_月額: { value: seedData.talent.希望単価_月額 },
-        希望勤務日数: { value: seedData.talent.希望勤務日数 },
-        希望出社頻度: { value: seedData.talent.希望出社頻度 },
-        希望勤務スタイル: { value: seedData.talent.希望勤務スタイル },
-        希望案件_作業内容: { value: seedData.talent.希望案件_作業内容 },
-        NG企業: { value: seedData.talent.NG企業 },
-        その他要望: { value: seedData.talent.その他要望 },
+        [TALENT_FIELDS.AUTH_USER_ID]: { value: authUserId },
+        [TALENT_FIELDS.LAST_NAME]: { value: seedData.talent.姓 },
+        [TALENT_FIELDS.FIRST_NAME]: { value: seedData.talent.名 },
+        [TALENT_FIELDS.FULL_NAME]: { value: seedData.talent.氏名 },
+        [TALENT_FIELDS.LAST_NAME_KANA]: { value: seedData.talent.セイ },
+        [TALENT_FIELDS.FIRST_NAME_KANA]: { value: seedData.talent.メイ },
+        [TALENT_FIELDS.EMAIL]: { value: seedData.talent.メールアドレス },
+        [TALENT_FIELDS.PHONE]: { value: seedData.talent.電話番号 },
+        [TALENT_FIELDS.BIRTH_DATE]: { value: seedData.talent.生年月日 },
+        [TALENT_FIELDS.POSTAL_CODE]: { value: seedData.talent.郵便番号 },
+        [TALENT_FIELDS.ADDRESS]: { value: seedData.talent.住所 },
+        [TALENT_FIELDS.SKILLS]: { value: seedData.talent.言語_ツール },
+        [TALENT_FIELDS.EXPERIENCE]: { value: seedData.talent.主な実績_PR_職務経歴 },
+        [TALENT_FIELDS.RESUME_FILES]: { value: uploadedFiles },
+        [TALENT_FIELDS.PORTFOLIO_URL]: { value: seedData.talent.ポートフォリオリンク },
+        [TALENT_FIELDS.AVAILABLE_FROM]: { value: seedData.talent.稼働可能時期 },
+        [TALENT_FIELDS.DESIRED_RATE]: { value: seedData.talent.希望単価_月額 },
+        [TALENT_FIELDS.DESIRED_WORK_DAYS]: { value: seedData.talent.希望勤務日数 },
+        [TALENT_FIELDS.DESIRED_COMMUTE]: { value: seedData.talent.希望出社頻度 },
+        [TALENT_FIELDS.DESIRED_WORK_STYLE]: { value: seedData.talent.希望勤務スタイル },
+        [TALENT_FIELDS.DESIRED_WORK]: { value: seedData.talent.希望案件_作業内容 },
+        [TALENT_FIELDS.NG_COMPANIES]: { value: seedData.talent.NG企業 },
+        [TALENT_FIELDS.OTHER_REQUESTS]: { value: seedData.talent.その他要望 },
       },
     });
 
@@ -510,10 +509,9 @@ export const createSeedData = async () => {
       const applicationRecord = await applicationClient.record.addRecord({
         app: appIds.application,
         record: {
-          auth_user_id: { value: application.auth_user_id },
-          案件ID: { value: application.案件ID },
-          対応状況: { value: application.対応状況 },
-          文字列__複数行_: { value: application.メモ },
+          [APPLICATION_FIELDS.AUTH_USER_ID]: { value: application.auth_user_id },
+          [APPLICATION_FIELDS.JOB_ID]: { value: application.案件ID },
+          [APPLICATION_FIELDS.STATUS]: { value: application.対応状況 },
         },
       });
 

@@ -54,7 +54,6 @@ export type ApplicationRecord = {
   案件名: { value: string }; // ルックアップで取得
   対応状況: { value: string };
   作成日時: { value: string };
-  文字列__複数行_: { value: string }; // メモ
 };
 
 // フロントエンド用の型定義（valueを展開した形）
@@ -110,7 +109,6 @@ export type Application = {
   jobId: string;
   jobTitle: string; // ルックアップで取得される案件名
   status: string;
-  memo: string;
   appliedAt: string;
 };
 

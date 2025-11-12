@@ -1,16 +1,16 @@
 import { createApplicationClient, getAppIds } from "../client";
 import type { ApplicationRecord, Application } from "../types";
+import { APPLICATION_FIELDS } from "../fieldMapping";
 
 // kintoneレコードをフロントエンド用の型に変換
 const convertApplicationRecord = (record: ApplicationRecord): Application => {
   return {
-    id: record.$id.value,
-    authUserId: record.auth_user_id.value,
-    jobId: record.案件ID.value,
-    jobTitle: record.案件名.value, // ルックアップで取得
-    status: record.対応状況.value,
-    memo: record.文字列__複数行_.value,
-    appliedAt: record.作成日時.value,
+    id: record[APPLICATION_FIELDS.ID].value,
+    authUserId: record[APPLICATION_FIELDS.AUTH_USER_ID].value,
+    jobId: record[APPLICATION_FIELDS.JOB_ID].value,
+    jobTitle: record[APPLICATION_FIELDS.JOB_TITLE].value,
+    status: record[APPLICATION_FIELDS.STATUS].value,
+    appliedAt: record[APPLICATION_FIELDS.CREATED_AT].value,
   };
 };
 
@@ -44,9 +44,9 @@ export const createApplication = async (data: {
     const response = await client.record.addRecord({
       app: appId,
       record: {
-        auth_user_id: { value: data.authUserId },
-        案件ID: { value: data.jobId },
-        対応状況: { value: "応募済み" },
+        [APPLICATION_FIELDS.AUTH_USER_ID]: { value: data.authUserId },
+        [APPLICATION_FIELDS.JOB_ID]: { value: data.jobId },
+        [APPLICATION_FIELDS.STATUS]: { value: "応募済み" },
       },
     });
 
@@ -70,7 +70,7 @@ export const checkDuplicateApplication = async (
   try {
     const response = await client.record.getRecords({
       app: appId,
-      query: `auth_user_id = "${authUserId}" and 案件ID = "${jobId}"`,
+      query: `${APPLICATION_FIELDS.AUTH_USER_ID} = "${authUserId}" and ${APPLICATION_FIELDS.JOB_ID} = "${jobId}"`,
     });
 
     return response.records.length > 0;
