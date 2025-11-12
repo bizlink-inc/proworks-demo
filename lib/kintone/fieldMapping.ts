@@ -78,3 +78,16 @@ export const TALENT_FIELDS_BY_VALUE = createFieldsByValue(TALENT_FIELDS);
 export const JOB_FIELDS_BY_VALUE = createFieldsByValue(JOB_FIELDS);
 export const APPLICATION_FIELDS_BY_VALUE = createFieldsByValue(APPLICATION_FIELDS);
 
+/**
+ * ドロップダウンフィールドの選択肢
+ */
+export const DROPDOWN_OPTIONS = {
+  // 希望勤務日数の選択肢
+  DESIRED_WORK_DAYS: ['週1', '週2', '週3', '週4', '週5', '案件条件に従う'] as const,
+  
+  // 希望出社頻度の選択肢
+  DESIRED_COMMUTE: ['週1', '週2', '週3', '週4', '週5', '案件条件に従う', 'なし'] as const,
+} as const;
+
+export type DesiredWorkDays = typeof DROPDOWN_OPTIONS.DESIRED_WORK_DAYS[number];
+export type DesiredCommute = typeof DROPDOWN_OPTIONS.DESIRED_COMMUTE[number];
