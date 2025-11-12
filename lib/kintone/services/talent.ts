@@ -1,5 +1,6 @@
 import { createTalentClient, getAppIds } from "../client";
 import type { TalentRecord, Talent } from "../types";
+import { FileInfo, getFileInfoFromKintone } from "./file";
 
 // kintoneレコードをフロントエンド用の型に変換
 const convertTalentRecord = (record: TalentRecord): Talent => {
@@ -17,8 +18,12 @@ const convertTalentRecord = (record: TalentRecord): Talent => {
     phone: record.電話番号.value,
     skills: record.言語_ツール.value,
     experience: record.主な実績_PR_職務経歴.value,
-    // resumeFiles: record.職務経歴データ.value, // TODO: ファイルアップロード実装予定
-    resumeFiles: [], // 一時的に空配列
+    resumeFiles: record.職務経歴書データ.value?.map(file => ({
+      fileKey: file.fileKey,
+      name: file.name,
+      size: parseInt(file.size, 10),
+      contentType: 'application/octet-stream', // kintoneから取得できない場合のデフォルト
+    })) || [],
     portfolioUrl: record.ポートフォリオリンク.value,
     availableFrom: record.稼働可能時期.value,
     desiredRate: record.希望単価_月額.value,
@@ -122,6 +127,15 @@ export const updateTalent = async (
   if (data.phone !== undefined) record.電話番号 = { value: data.phone };
   if (data.skills !== undefined) record.言語_ツール = { value: data.skills };
   if (data.experience !== undefined) record.主な実績_PR_職務経歴 = { value: data.experience };
+  if (data.resumeFiles !== undefined) {
+    record.職務経歴書データ = {
+      value: data.resumeFiles.map(file => ({
+        fileKey: file.fileKey,
+        name: file.name,
+        size: file.size.toString(),
+      }))
+    };
+  }
   if (data.portfolioUrl !== undefined) record.ポートフォリオリンク = { value: data.portfolioUrl };
   if (data.availableFrom !== undefined) record.稼働可能時期 = { value: data.availableFrom };
   if (data.desiredRate !== undefined) record.希望単価_月額 = { value: data.desiredRate };

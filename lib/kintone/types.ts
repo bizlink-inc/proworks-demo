@@ -13,7 +13,7 @@ export type TalentRecord = {
   電話番号: { value: string };
   言語_ツール: { value: string };
   主な実績_PR_職務経歴: { value: string };
-  職務経歴データ: { value: Array<{ fileKey: string; name: string; size: string }> };
+  職務経歴書データ: { value: Array<{ fileKey: string; name: string; size: string }> };
   ポートフォリオリンク: { value: string };
   稼働可能時期: { value: string };
   希望単価_月額: { value: string };
@@ -71,7 +71,7 @@ export type Talent = {
   phone: string;
   skills: string;
   experience: string;
-  resumeFiles: Array<{ fileKey: string; name: string; size: string }>;
+  resumeFiles: Array<{ fileKey: string; name: string; size: number; contentType: string }>;
   portfolioUrl: string;
   availableFrom: string;
   desiredRate: string;

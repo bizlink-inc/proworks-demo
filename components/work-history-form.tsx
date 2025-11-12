@@ -7,6 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
+import { FileUpload } from "@/components/file-upload";
+import { FileList } from "@/components/file-list";
 import type { Talent } from "@/lib/kintone/types";
 
 type WorkHistoryFormProps = {
@@ -19,6 +21,7 @@ export const WorkHistoryForm = ({ user, onUpdate }: WorkHistoryFormProps) => {
     skills: user.skills || "",
     experience: user.experience || "",
     portfolioUrl: user.portfolioUrl || "",
+    resumeFiles: user.resumeFiles || [],
   });
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
@@ -28,26 +31,16 @@ export const WorkHistoryForm = ({ user, onUpdate }: WorkHistoryFormProps) => {
     setLoading(true);
 
     try {
-      // 添付ファイルがある場合はアップロード
-      if (file) {
-        const uploadFormData = new FormData();
-        uploadFormData.append("file", file);
-
-        const uploadRes = await fetch("/api/talents/upload", {
-          method: "POST",
-          body: uploadFormData,
-        });
-
-        if (!uploadRes.ok) {
-          throw new Error("ファイルのアップロードに失敗しました");
-        }
-      }
-
-      // プロフィール情報を更新
+      // プロフィール情報を更新（ファイル情報も含む）
       const res = await fetch("/api/me", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          skills: formData.skills,
+          experience: formData.experience,
+          portfolioUrl: formData.portfolioUrl,
+          resumeFiles: formData.resumeFiles,
+        }),
       });
 
       if (res.ok) {
@@ -58,12 +51,14 @@ export const WorkHistoryForm = ({ user, onUpdate }: WorkHistoryFormProps) => {
           description: "職歴・スキル情報を更新しました。",
         });
       } else {
-        throw new Error("Failed to update");
+        const error = await res.json();
+        throw new Error(error.message || "更新に失敗しました");
       }
-    } catch (error) {
+    } catch (error: any) {
+      console.error("職歴情報更新エラー:", error);
       toast({
         title: "エラー",
-        description: "保存に失敗しました。",
+        description: error.message || "保存に失敗しました。",
         variant: "destructive",
       });
     } finally {
@@ -104,16 +99,37 @@ export const WorkHistoryForm = ({ user, onUpdate }: WorkHistoryFormProps) => {
 
       <div>
         <Label htmlFor="resume">経歴書アップロード</Label>
-        <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center bg-gray-50">
-          <p className="text-sm text-gray-500">
-            📄 ファイルアップロード機能は実装予定です
-          </p>
-          <p className="text-xs text-gray-400 mt-2">
-            PDF、Word形式のファイルをアップロードできるようになります
-          </p>
+        <div className="space-y-4">
+          {/* ファイル一覧表示 */}
+          <FileList
+            files={formData.resumeFiles}
+            onFileDeleted={(fileKey) => {
+              const updatedFiles = formData.resumeFiles.filter(file => file.fileKey !== fileKey);
+              setFormData({ ...formData, resumeFiles: updatedFiles });
+            }}
+            disabled={loading}
+          />
+          
+          {/* ファイルアップロード */}
+          <FileUpload
+            onUploadSuccess={(file) => {
+              const newFile = {
+                fileKey: file.fileKey,
+                name: file.fileName,
+                size: file.fileSize,
+                contentType: file.contentType,
+              };
+              setFormData({ 
+                ...formData, 
+                resumeFiles: [...formData.resumeFiles, newFile] 
+              });
+            }}
+            maxFiles={10}
+            currentFileCount={formData.resumeFiles.length}
+            disabled={loading}
+          />
         </div>
-        {/* TODO: ファイルアップロード機能を実装 */}
-              </div>
+      </div>
 
       <div>
         <Label htmlFor="portfolioUrl">ポートフォリオ・GitHubのURL</Label>

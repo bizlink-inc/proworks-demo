@@ -7,9 +7,9 @@ export const POST = async (request: NextRequest) => {
   try {
     const session = await getSession();
 
-    if (!session?.user?.id) {
+  if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+  }
 
     const body = await request.json();
     const { jobId } = body;
@@ -26,19 +26,19 @@ export const POST = async (request: NextRequest) => {
 
     if (isDuplicate) {
       return NextResponse.json({ error: "Already applied" }, { status: 409 });
-    }
+  }
 
     // kintoneに応募を作成
     const applicationId = await createApplication({
       authUserId: session.user.id,
-      jobId,
+    jobId,
     });
 
     return NextResponse.json(
       {
         id: applicationId,
         jobTitle: job.title,
-        appliedAt: new Date().toISOString(),
+    appliedAt: new Date().toISOString(),
       },
       { status: 201 }
     );
@@ -48,5 +48,5 @@ export const POST = async (request: NextRequest) => {
       { error: "応募の作成に失敗しました" },
       { status: 500 }
     );
-  }
+}
 };

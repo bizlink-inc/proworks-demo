@@ -11,12 +11,61 @@ import { config } from "dotenv";
 config({ path: ".env.local" });
 
 import { createTalentClient, createJobClient, createApplicationClient, getAppIds } from "../lib/kintone/client";
+import { uploadFileToKintone } from "../lib/kintone/services/file";
 import Database from "better-sqlite3";
 import { drizzle } from "drizzle-orm/better-sqlite3";
 import * as schema from "../lib/db/schema";
 import path from "path";
+import fs from "fs";
 
 const dbPath = path.join(process.cwd(), "auth.db");
+
+// ダミーファイルをアップロードする関数
+const uploadDummyFiles = async (): Promise<Array<{ fileKey: string; name: string; size: string }>> => {
+  const dummyFilesDir = path.join(process.cwd(), "scripts", "dummy-files");
+  const uploadedFiles: Array<{ fileKey: string; name: string; size: string }> = [];
+
+  // ダミーファイルのリスト（対応形式のみ）
+  const dummyFiles = [
+    { filename: "職務経歴書_山田太郎.pdf", displayName: "職務経歴書_山田太郎.pdf", contentType: "application/pdf" },
+  ];
+
+  for (const dummyFile of dummyFiles) {
+    const filePath = path.join(dummyFilesDir, dummyFile.filename);
+    
+    if (!fs.existsSync(filePath)) {
+      console.log(`⚠️ ダミーファイルが見つかりません: ${filePath}`);
+      continue;
+    }
+
+    try {
+      // ファイルを読み込んでFileオブジェクトを作成
+      const fileBuffer = fs.readFileSync(filePath);
+      const file = new File([fileBuffer], dummyFile.displayName, {
+        type: dummyFile.contentType,
+      });
+
+      console.log(`📤 ダミーファイルアップロード中: ${dummyFile.displayName}`);
+      
+      // kintoneにアップロード
+      const uploadResult = await uploadFileToKintone(file);
+      
+      uploadedFiles.push({
+        fileKey: uploadResult.fileKey,
+        name: uploadResult.fileName,
+        size: uploadResult.fileSize.toString(),
+      });
+
+      console.log(`✅ アップロード成功: ${dummyFile.displayName} (${uploadResult.fileKey})`);
+    } catch (fileError) {
+      console.error(`❌ ファイルアップロードエラー (${dummyFile.displayName}):`, fileError);
+      // ファイルアップロードエラーが発生しても続行
+      continue;
+    }
+  }
+
+  return uploadedFiles;
+};
 
 // シードデータの定義
 export const seedData = {
@@ -345,9 +394,23 @@ export const createSeedData = async () => {
       }
     }
 
-    // 2. 人材DBにレコード作成
+    // 2. ダミーファイルをアップロード
     console.log("\n" + "=" .repeat(80));
-    console.log("👨‍💼 Step 2: 人材DBにレコードを作成");
+    console.log("📄 Step 2: ダミーファイルをアップロード");
+    console.log("=" .repeat(80));
+
+    let uploadedFiles: Array<{ fileKey: string; name: string; size: string }> = [];
+    try {
+      uploadedFiles = await uploadDummyFiles();
+      console.log(`✅ ダミーファイルアップロード完了: ${uploadedFiles.length}件`);
+    } catch (fileError) {
+      console.log(`⚠️ ダミーファイルアップロードをスキップしました (今回はファイルなしで続行)`);
+      uploadedFiles = [];
+    }
+
+    // 3. 人材DBにレコード作成（ファイル情報を含む）
+    console.log("\n" + "=" .repeat(80));
+    console.log("👨‍💼 Step 3: 人材DBにレコードを作成");
     console.log("=" .repeat(80));
 
     const talentRecord = await talentClient.record.addRecord({
@@ -365,6 +428,7 @@ export const createSeedData = async () => {
         住所: { value: seedData.talent.住所 },
         言語_ツール: { value: seedData.talent.言語_ツール },
         主な実績_PR_職務経歴: { value: seedData.talent.主な実績_PR_職務経歴 },
+        職務経歴書データ: { value: uploadedFiles }, // アップロードしたファイル情報を追加
         ポートフォリオリンク: { value: seedData.talent.ポートフォリオリンク },
         稼働可能時期: { value: seedData.talent.稼働可能時期 },
         希望単価_月額: { value: seedData.talent.希望単価_月額 },
@@ -379,9 +443,9 @@ export const createSeedData = async () => {
 
     console.log(`✅ 人材レコード作成: ${seedData.talent.氏名} (ID: ${talentRecord.id})`);
 
-    // 3. 案件DBにレコード作成
+    // 4. 案件DBにレコード作成
     console.log("\n" + "=" .repeat(80));
-    console.log("💼 Step 3: 案件DBにレコードを作成");
+    console.log("💼 Step 4: 案件DBにレコードを作成");
     console.log("=" .repeat(80));
 
     const jobIds: string[] = [];
@@ -421,9 +485,9 @@ export const createSeedData = async () => {
       console.log(`✅ 案件レコード作成: ${job.案件名} (ID: ${jobRecord.id})`);
     }
 
-    // 4. 応募履歴DBにレコード作成
+    // 5. 応募履歴DBにレコード作成
     console.log("\n" + "=" .repeat(80));
-    console.log("📝 Step 4: 応募履歴DBにレコードを作成");
+    console.log("📝 Step 5: 応募履歴DBにレコードを作成");
     console.log("=" .repeat(80));
 
     // 応募履歴の案件IDとauth_user_idを動的に設定
