@@ -7,6 +7,7 @@ import { ApplicationsTable } from "@/components/applications-table"
 import { WorkHistoryForm } from "@/components/work-history-form"
 import { PreferencesForm } from "@/components/preferences-form"
 import { PasswordChangeForm } from "@/components/password-change-form"
+import { EmailChangeForm } from "@/components/email-change-form"
 import { Button } from "@/components/ui/button"
 import type { Talent } from "@/lib/kintone/types"
 
@@ -30,14 +31,14 @@ export function MyPageClient({ user: sessionUser }: MyPageClientProps) {
 
   const fetchUser = async () => {
     try {
-      const res = await fetch("/api/me")
+    const res = await fetch("/api/me")
       if (!res.ok) {
         console.error("Failed to fetch user:", res.status, res.statusText)
         return
       }
-      const data = await res.json()
+    const data = await res.json()
       console.log("Fetched user data:", data)
-      setUser(data)
+    setUser(data)
     } catch (error) {
       console.error("Error fetching user:", error)
     }
@@ -116,8 +117,8 @@ export function MyPageClient({ user: sessionUser }: MyPageClientProps) {
 
               {activeMenu === "email" && (
                 <div>
-                  <h2 className="text-xl font-semibold mb-6">メールアドレス変更</h2>
-                  <p className="text-muted-foreground">メールアドレス変更機能は現在準備中です。</p>
+                  <h2 className="text-2xl font-bold mb-6">メールアドレス変更</h2>
+                  <EmailChangeForm />
                 </div>
               )}
             </div>
