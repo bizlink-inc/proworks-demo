@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth-server";
+import { auth } from "@/lib/auth";
 import { drizzle } from "drizzle-orm/better-sqlite3";
 import Database from "better-sqlite3";
 import { eq, and } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
-import bcrypt from "bcryptjs";
 import path from "path";
 import { randomBytes } from "crypto";
+import { headers } from "next/headers";
 
 const dbPath = path.join(process.cwd(), "auth.db");
 const sqlite = new Database(dbPath);
@@ -15,8 +16,10 @@ const db = drizzle(sqlite, { schema });
 export const POST = async (request: NextRequest) => {
   try {
     const session = await getSession();
+    console.log("🔍 メールアドレス変更リクエスト - セッション:", session?.user?.email, session?.user?.id);
 
     if (!session?.user?.id || !session?.user?.email) {
+      console.log("❌ セッションが見つかりません");
       return NextResponse.json(
         { error: "認証が必要です" },
         { status: 401 }
@@ -25,8 +28,10 @@ export const POST = async (request: NextRequest) => {
 
     const body = await request.json();
     const { currentPassword, newEmail } = body;
+    console.log("🔍 リクエストボディ:", { hasPassword: !!currentPassword, newEmail });
 
     if (!currentPassword || !newEmail) {
+      console.log("❌ 入力値が不足しています");
       return NextResponse.json(
         { error: "現在のパスワードと新しいメールアドレスが必要です" },
         { status: 400 }
@@ -62,28 +67,37 @@ export const POST = async (request: NextRequest) => {
       );
     }
 
-    // ユーザーのアカウント情報を取得してパスワード検証
-    const account = await db.query.account.findFirst({
-      where: and(
-        eq(schema.account.userId, session.user.id),
-        eq(schema.account.providerId, "credential")
-      ),
-    });
+    // Better Authでパスワードを検証するために、
+    // signInEmail エンドポイントをテストログイン的に使用
+    console.log("🔍 パスワード検証開始:", session.user.email);
+    
+    try {
+      // Better Authの内部メソッドを使わず、直接sign-inエンドポイントで検証
+      const testLoginResponse = await fetch("http://localhost:3000/api/auth/sign-in/email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: session.user.email,
+          password: currentPassword,
+        }),
+      });
 
-    if (!account || !account.password) {
+      const testLoginData = await testLoginResponse.json();
+      
+      if (!testLoginResponse.ok || !testLoginData.user) {
+        console.log("❌ パスワード検証失敗");
+        return NextResponse.json(
+          { error: "現在のパスワードが正しくありません" },
+          { status: 400 }
+        );
+      }
+      
+      console.log("✅ パスワード検証成功");
+    } catch (passwordCheckError) {
+      console.error("パスワード検証エラー:", passwordCheckError);
       return NextResponse.json(
-        { error: "アカウント情報が見つかりません" },
-        { status: 404 }
-      );
-    }
-
-    // 現在のパスワードを検証
-    const isValidPassword = await bcrypt.compare(currentPassword, account.password);
-
-    if (!isValidPassword) {
-      return NextResponse.json(
-        { error: "現在のパスワードが正しくありません" },
-        { status: 400 }
+        { error: "パスワード検証に失敗しました" },
+        { status: 500 }
       );
     }
 
