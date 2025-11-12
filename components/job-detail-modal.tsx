@@ -17,21 +17,35 @@ type JobDetailModalProps = {
 export function JobDetailModal({ jobId, onClose, onApply }: JobDetailModalProps) {
   const [job, setJob] = useState<Job | null>(null)
   const [loading, setLoading] = useState(false)
+  const [isAlreadyApplied, setIsAlreadyApplied] = useState(false)
 
   useEffect(() => {
     if (!jobId) {
       setJob(null)
+      setIsAlreadyApplied(false)
       return
     }
 
     console.log("[v0] 案件詳細取得開始:", jobId)
 
     setLoading(true)
-    fetch(`/api/jobs/${jobId}`)
-      .then((res) => res.json())
-      .then((data) => {
-        console.log("[v0] 案件詳細取得成功:", data)
-        setJob(data)
+    Promise.all([
+      // 案件詳細を取得
+      fetch(`/api/jobs/${jobId}`)
+        .then((res) => res.json()),
+      // 応募済みの案件一覧を取得
+      fetch(`/api/applications/me`)
+        .then((res) => res.json())
+    ])
+      .then(([jobData, applicationsData]) => {
+        console.log("[v0] 案件詳細取得成功:", jobData)
+        setJob(jobData)
+        
+        // 現在の案件が応募済みかどうかをチェック
+        const isApplied = applicationsData.some(
+          (app: any) => app.jobId === jobId
+        )
+        setIsAlreadyApplied(isApplied)
         setLoading(false)
       })
       .catch((error) => {
@@ -186,9 +200,15 @@ export function JobDetailModal({ jobId, onClose, onApply }: JobDetailModalProps)
             </div>
             )}
 
-            <Button onClick={handleApply} className="w-full bg-blue-600 hover:bg-blue-700">
-              この案件に応募する
-            </Button>
+            {isAlreadyApplied ? (
+              <Button disabled className="w-full bg-gray-400 cursor-not-allowed">
+                応募済み
+              </Button>
+            ) : (
+              <Button onClick={handleApply} className="w-full bg-blue-600 hover:bg-blue-700">
+                この案件に応募する
+              </Button>
+            )}
           </div>
         ) : null}
       </DialogContent>
