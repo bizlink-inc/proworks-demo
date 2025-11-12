@@ -25,7 +25,7 @@ export function DashboardClient({ user }: DashboardClientProps) {
   const [jobs, setJobs] = useState<Job[]>([])
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(1)
-  const [filters, setFilters] = useState({ query: "", loc: "All", sort: "new" })
+  const [filters, setFilters] = useState({ query: "", sort: "new" })
   const [selectedJobId, setSelectedJobId] = useState<string | null>(null)
   const [applySuccess, setApplySuccess] = useState<{
     jobTitle: string
@@ -42,15 +42,16 @@ export function DashboardClient({ user }: DashboardClientProps) {
   const fetchJobs = async () => {
     const params = new URLSearchParams({
       query: filters.query,
-      loc: filters.loc,
       sort: filters.sort,
-      page: page.toString(),
-      size: size.toString(),
     })
 
     const res = await fetch(`/api/jobs?${params}`)
     const data = await res.json()
-    setJobs(data.items)
+    
+    // ページネーション処理（クライアント側で実施）
+    const startIndex = (page - 1) * size
+    const endIndex = startIndex + size
+    setJobs(data.items.slice(startIndex, endIndex))
     setTotal(data.total)
   }
 
