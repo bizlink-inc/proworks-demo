@@ -5,7 +5,8 @@ export type TalentRecord = {
   姓: { value: string };
   名: { value: string };
   氏名: { value: string };
-  氏名_フリガナ: { value: string };
+  セイ: { value: string };
+  メイ: { value: string };
   メールアドレス: { value: string };
   生年月日: { value: string };
   郵便番号: { value: string };
@@ -63,7 +64,8 @@ export type Talent = {
   lastName: string;
   firstName: string;
   fullName: string;
-  fullNameKana: string;
+  lastNameKana: string;
+  firstNameKana: string;
   email: string;
   birthDate: string;
   postalCode: string;

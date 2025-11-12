@@ -10,20 +10,20 @@
 
 ### 実装済み: ユニットテスト
 
-- **対象**: kintoneサービス層、ユーティリティ関数
+- **対象**: kintone サービス層、ユーティリティ関数
 - **ツール**: Jest
-- **カバレッジ**: 79.68%（lib以下のコード）
+- **カバレッジ**: 79.68%（lib 以下のコード）
 
 #### テスト対象モジュール
 
-| モジュール | 対象 | テスト件数 | カバレッジ |
-|-----------|------|----------|----------|
-| `lib/kintone/services/talent.ts` | 人材情報CRUD | 10テスト | 63.54% |
-| `lib/kintone/services/job.ts` | 案件情報取得 | 6テスト | 69.69% |
-| `lib/kintone/services/application.ts` | 応募履歴管理 | 8テスト | 100% |
-| `lib/kintone/services/file.ts` | ファイル操作 | 18テスト | 93.33% |
-| `lib/utils.ts` | ユーティリティ | 5テスト | 100% |
-| **合計** | | **47テスト** | **79.68%** |
+| モジュール                            | 対象           | テスト件数    | カバレッジ |
+| ------------------------------------- | -------------- | ------------- | ---------- |
+| `lib/kintone/services/talent.ts`      | 人材情報 CRUD  | 10 テスト     | 63.54%     |
+| `lib/kintone/services/job.ts`         | 案件情報取得   | 6 テスト      | 69.69%     |
+| `lib/kintone/services/application.ts` | 応募履歴管理   | 8 テスト      | 100%       |
+| `lib/kintone/services/file.ts`        | ファイル操作   | 18 テスト     | 93.33%     |
+| `lib/utils.ts`                        | ユーティリティ | 5 テスト      | 100%       |
+| **合計**                              |                | **47 テスト** | **79.68%** |
 
 ---
 
@@ -95,39 +95,39 @@ proworks-app/
 
 ### 1. 人材情報サービス (`getTalentByAuthUserId`, `createTalent`, `updateTalent`)
 
-- ✅ auth_user_idで人材情報を正常に取得
-- ✅ 存在しないユーザーはnull返却
-- ✅ kintoneエラー時はエラースロー
+- ✅ auth_user_id で人材情報を正常に取得
+- ✅ 存在しないユーザーは null 返却
+- ✅ kintone エラー時はエラースロー
 - ✅ 職務経歴書データが空の場合は空配列返却
 - ✅ 新しい人材情報を正常に作成
 - ✅ 空フィールドの場合、メールアドレスから氏名を生成
 - ✅ 人材情報を正常に更新
 - ✅ 部分的なフィールド更新が可能
-- ✅ 更新時のkintoneエラー処理
+- ✅ 更新時の kintone エラー処理
 
 ### 2. 案件情報サービス (`getAllJobs`, `getJobById`)
 
 - ✅ すべての案件を正常に取得
-- ✅ 案件が0件の場合は空配列返却
-- ✅ IDで案件詳細を正常に取得
-- ✅ 存在しない案件IDはnullを返す
+- ✅ 案件が 0 件の場合は空配列返却
+- ✅ ID で案件詳細を正常に取得
+- ✅ 存在しない案件 ID は null を返す
 - ✅ 取得エラー時の例外処理
 
 ### 3. 応募履歴サービス (`createApplication`, `checkDuplicateApplication`, `getApplicationsByAuthUserId`)
 
 - ✅ 新しい応募を作成
 - ✅ 重複チェック機能
-- ✅ auth_user_idで応募履歴を取得
+- ✅ auth_user_id で応募履歴を取得
 - ✅ エラー時の例外処理
 
 ### 4. ファイルサービス (`uploadFileToKintone`, `downloadFileFromKintone`, `formatFileSize`, etc)
 
-- ✅ PDFファイルのアップロード
-- ✅ Wordファイル（.docx）のアップロード
+- ✅ PDF ファイルのアップロード
+- ✅ Word ファイル（.docx）のアップロード
 - ✅ 対応していないファイル形式の拒否
-- ✅ 10MBを超えるファイルの拒否
+- ✅ 10MB を超えるファイルの拒否
 - ✅ ファイルのダウンロード
-- ✅ Bufferデータの正常な変換
+- ✅ Buffer データの正常な変換
 - ✅ ファイル情報の取得
 - ✅ エラーが発生したファイルの除外処理
 - ✅ ファイルサイズのフォーマット
@@ -136,7 +136,7 @@ proworks-app/
 
 - ✅ 複数クラス名の結合
 - ✅ 条件付きクラス追加
-- ✅ Tailwind CSSクラスのマージ
+- ✅ Tailwind CSS クラスのマージ
 - ✅ 配列でのクラス指定
 - ✅ オブジェクトでの条件付きクラス指定
 
@@ -202,14 +202,14 @@ npm test
 
 ## 🛠️ よく使うコマンド
 
-| コマンド | 説明 |
-|---------|------|
-| `npm test` | すべてのテストを実行 |
-| `npm run test:watch` | ウォッチモードで実行 |
-| `npm run test:coverage` | カバレッジレポート生成 |
+| コマンド                               | 説明                     |
+| -------------------------------------- | ------------------------ |
+| `npm test`                             | すべてのテストを実行     |
+| `npm run test:watch`                   | ウォッチモードで実行     |
+| `npm run test:coverage`                | カバレッジレポート生成   |
 | `npm test -- --testPathPattern=talent` | 特定ファイルのテスト実行 |
-| `npm test -- --testNamePattern="作成"` | 特定テストケース実行 |
-| `npm test -- --bail` | 最初のエラーで停止 |
+| `npm test -- --testNamePattern="作成"` | 特定テストケース実行     |
+| `npm test -- --bail`                   | 最初のエラーで停止       |
 
 ---
 
@@ -217,17 +217,19 @@ npm test
 
 ### Phase 2: 統合テスト（Integration Tests）
 
-APIエンドポイント全体のテスト：
-- `app/api/auth/**` - 認証API
-- `app/api/me/**` - ユーザー情報API
-- `app/api/files/**` - ファイル操作API
-- `app/api/applications/**` - 応募API
+API エンドポイント全体のテスト：
 
-### Phase 3: E2Eテスト（End-to-End Tests）
+- `app/api/auth/**` - 認証 API
+- `app/api/me/**` - ユーザー情報 API
+- `app/api/files/**` - ファイル操作 API
+- `app/api/applications/**` - 応募 API
+
+### Phase 3: E2E テスト（End-to-End Tests）
 
 実ブラウザでのユーザー操作シミュレーション：
+
 - 新規登録からマイページ訪問までの全フロー
-- ファイルアップロード→ダウンロード→削除
+- ファイルアップロード → ダウンロード → 削除
 - 案件への応募まで
 
 ---
@@ -268,9 +270,9 @@ npm test -- --maxWorkers=4
 
 ## 📚 関連ドキュメント
 
-- [Jest公式ドキュメント](https://jestjs.io/)
+- [Jest 公式ドキュメント](https://jestjs.io/)
 - [Testing Library ドキュメント](https://testing-library.com/)
-- [プロジェクトREADME](./README.md)
+- [プロジェクト README](./README.md)
 
 ---
 
@@ -282,18 +284,18 @@ npm test -- --maxWorkers=4
 
 ```typescript
 beforeEach(() => {
-  jest.clearAllMocks()
-})
+  jest.clearAllMocks();
+});
 ```
 
 ### 2. わかりやすいテスト名を使う
 
 ```typescript
 // ❌ 悪い例
-it('works', () => {})
+it("works", () => {});
 
 // ✅ 良い例
-it('auth_user_idで人材情報を正常に取得できる', () => {})
+it("auth_user_idで人材情報を正常に取得できる", () => {});
 ```
 
 ### 3. モックは必ずセットアップ
@@ -304,20 +306,19 @@ beforeEach(() => {
     talent: 1,
     job: 2,
     application: 3,
-  } as any)
-})
+  } as any);
+});
 ```
 
 ### 4. エラーケースも必ずテストする
 
 ```typescript
-it('kintoneエラー時はエラーをスロー', async () => {
-  mockClient.mockRejectedValue(new Error('API Error'))
-  await expect(functionCall()).rejects.toThrow()
-})
+it("kintoneエラー時はエラーをスロー", async () => {
+  mockClient.mockRejectedValue(new Error("API Error"));
+  await expect(functionCall()).rejects.toThrow();
+});
 ```
 
 ---
 
 **このテスト環境により、変更に自信を持ってコードをリファクタリングできます！** 🎉
-

@@ -30,7 +30,8 @@ export const ProfileForm = ({ user, onUpdate }: ProfileFormProps) => {
           lastName: formData.lastName,
           firstName: formData.firstName,
           fullName: `${formData.lastName} ${formData.firstName}`,
-          fullNameKana: formData.fullNameKana,
+          lastNameKana: formData.lastNameKana,
+          firstNameKana: formData.firstNameKana,
           email: formData.email,
           birthDate: formData.birthDate,
           postalCode: formData.postalCode,
@@ -87,17 +88,30 @@ export const ProfileForm = ({ user, onUpdate }: ProfileFormProps) => {
         </div>
       </div>
 
+      <div className="grid grid-cols-2 gap-4">
         <div>
-        <Label htmlFor="fullNameKana">フリガナ</Label>
+          <Label htmlFor="lastNameKana">姓（フリガナ）</Label>
           <Input
-          id="fullNameKana"
-          placeholder="ヤマダ タロウ"
-          value={formData.fullNameKana}
-          onChange={(e) =>
-            setFormData({ ...formData, fullNameKana: e.target.value })
-          }
+            id="lastNameKana"
+            placeholder="ヤマダ"
+            value={formData.lastNameKana}
+            onChange={(e) =>
+              setFormData({ ...formData, lastNameKana: e.target.value })
+            }
           />
         </div>
+        <div>
+          <Label htmlFor="firstNameKana">名（フリガナ）</Label>
+          <Input
+            id="firstNameKana"
+            placeholder="タロウ"
+            value={formData.firstNameKana}
+            onChange={(e) =>
+              setFormData({ ...formData, firstNameKana: e.target.value })
+            }
+          />
+        </div>
+      </div>
 
         <div>
         <Label htmlFor="email">メールアドレス</Label>

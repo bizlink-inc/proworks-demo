@@ -10,7 +10,8 @@ const convertTalentRecord = (record: TalentRecord): Talent => {
     lastName: record.姓.value,
     firstName: record.名.value,
     fullName: record.氏名.value,
-    fullNameKana: record.氏名_フリガナ.value,
+    lastNameKana: record.セイ.value,
+    firstNameKana: record.メイ.value,
     email: record.メールアドレス.value,
     birthDate: record.生年月日.value,
     postalCode: record.郵便番号.value,
@@ -119,7 +120,8 @@ export const updateTalent = async (
   if (data.lastName !== undefined) record.姓 = { value: data.lastName };
   if (data.firstName !== undefined) record.名 = { value: data.firstName };
   if (data.fullName !== undefined) record.氏名 = { value: data.fullName };
-  if (data.fullNameKana !== undefined) record.氏名_フリガナ = { value: data.fullNameKana };
+  if (data.lastNameKana !== undefined) record.セイ = { value: data.lastNameKana };
+  if (data.firstNameKana !== undefined) record.メイ = { value: data.firstNameKana };
   if (data.email !== undefined) record.メールアドレス = { value: data.email };
   if (data.birthDate !== undefined) record.生年月日 = { value: data.birthDate };
   if (data.postalCode !== undefined) record.郵便番号 = { value: data.postalCode };

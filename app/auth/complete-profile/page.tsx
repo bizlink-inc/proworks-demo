@@ -17,6 +17,8 @@ export default function CompleteProfilePage() {
   const [formData, setFormData] = useState({
     lastName: "",
     firstName: "",
+    lastNameKana: "",
+    firstNameKana: "",
     phone: "",
     birthDate: "",
   })
@@ -98,6 +100,36 @@ export default function CompleteProfilePage() {
                   value={formData.firstName}
                   onChange={(e) =>
                     setFormData({ ...formData, firstName: e.target.value })
+                  }
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="lastNameKana">姓（フリガナ） <span className="text-red-500">*</span></Label>
+                <Input
+                  id="lastNameKana"
+                  type="text"
+                  placeholder="ヤマダ"
+                  value={formData.lastNameKana}
+                  onChange={(e) =>
+                    setFormData({ ...formData, lastNameKana: e.target.value })
+                  }
+                  required
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="firstNameKana">名（フリガナ） <span className="text-red-500">*</span></Label>
+                <Input
+                  id="firstNameKana"
+                  type="text"
+                  placeholder="タロウ"
+                  value={formData.firstNameKana}
+                  onChange={(e) =>
+                    setFormData({ ...formData, firstNameKana: e.target.value })
                   }
                   required
                 />
