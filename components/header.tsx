@@ -6,6 +6,7 @@ import { Bell, ChevronDown } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { handleSignOut } from "@/app/actions/auth"
+import { NotificationDropdown } from "@/components/notification-dropdown"
 
 type HeaderProps = {
   user?: {
@@ -94,9 +95,7 @@ export function Header({ user }: HeaderProps) {
                 </Link>
               </nav>
 
-              <button className="text-gray-600 hover:text-gray-900">
-                <Bell className="w-5 h-5" />
-              </button>
+              <NotificationDropdown />
 
               <span className="text-sm font-medium text-gray-700">{user.name}</span>
 

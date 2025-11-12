@@ -9,6 +9,7 @@ import { ApplySuccessModal } from "@/components/apply-success-modal"
 import { Button } from "@/components/ui/button"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
+import { useApplicationStatusMonitor } from "@/hooks/use-application-status-monitor"
 import type { Job } from "@/lib/kintone/types"
 
 interface DashboardClientProps {
@@ -21,6 +22,7 @@ interface DashboardClientProps {
 
 export function DashboardClient({ user }: DashboardClientProps) {
   const { toast } = useToast()
+  useApplicationStatusMonitor()
 
   const [jobs, setJobs] = useState<Job[]>([])
   const [total, setTotal] = useState(0)

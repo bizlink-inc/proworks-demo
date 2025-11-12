@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useSearchParams } from "next/navigation"
 import { Header } from "@/components/header"
 import { ProfileForm } from "@/components/profile-form"
 import { ApplicationsTable } from "@/components/applications-table"
@@ -9,6 +10,7 @@ import { PreferencesForm } from "@/components/preferences-form"
 import { PasswordChangeForm } from "@/components/password-change-form"
 import { EmailChangeForm } from "@/components/email-change-form"
 import { Button } from "@/components/ui/button"
+import { useApplicationStatusMonitor } from "@/hooks/use-application-status-monitor"
 import type { Talent } from "@/lib/kintone/types"
 
 type MenuItem = "profile" | "work-history" | "preferences" | "applications" | "password" | "email"
@@ -22,12 +24,24 @@ interface MyPageClientProps {
 }
 
 export function MyPageClient({ user: sessionUser }: MyPageClientProps) {
-  const [activeMenu, setActiveMenu] = useState<MenuItem>("profile")
+  useApplicationStatusMonitor()
+  
+  const searchParams = useSearchParams()
+  const tabParam = searchParams.get("tab") as MenuItem | null
+  
+  const [activeMenu, setActiveMenu] = useState<MenuItem>(tabParam || "profile")
   const [user, setUser] = useState<Talent | null>(null)
 
   useEffect(() => {
     fetchUser()
   }, [])
+
+  // クエリパラメータが変更されたら activeMenu を更新
+  useEffect(() => {
+    if (tabParam) {
+      setActiveMenu(tabParam)
+    }
+  }, [tabParam])
 
   const fetchUser = async () => {
     try {
