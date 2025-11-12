@@ -16,5 +16,5 @@ export const GET = async () => {
       { error: "案件一覧の取得に失敗しました" },
       { status: 500 }
     );
-  }
+}
 };

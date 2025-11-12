@@ -15,7 +15,7 @@ export function JobCard({ job, onViewDetail }: JobCardProps) {
   return (
     <Card className="hover:shadow-lg transition-shadow">
       <CardHeader>
-        <CardTitle className="text-lg">{job.title}</CardTitle>
+          <CardTitle className="text-lg">{job.title}</CardTitle>
         {/* 案件特徴を表示 */}
         <div className="flex flex-wrap gap-1 mt-2">
           {job.features.slice(0, 2).map((feature) => (

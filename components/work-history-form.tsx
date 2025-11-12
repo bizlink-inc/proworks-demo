@@ -87,7 +87,7 @@ export const WorkHistoryForm = ({ user, onUpdate }: WorkHistoryFormProps) => {
         <p className="text-xs text-gray-500 mt-1">
           使用経験のある言語やツールを記載してください
         </p>
-      </div>
+        </div>
 
       <div>
         <Label htmlFor="experience">主な実績・PR・職務経歴</Label>
@@ -113,7 +113,7 @@ export const WorkHistoryForm = ({ user, onUpdate }: WorkHistoryFormProps) => {
           </p>
         </div>
         {/* TODO: ファイルアップロード機能を実装 */}
-      </div>
+              </div>
 
       <div>
         <Label htmlFor="portfolioUrl">ポートフォリオ・GitHubのURL</Label>

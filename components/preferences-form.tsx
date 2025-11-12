@@ -60,7 +60,7 @@ export const PreferencesForm = ({ user, onUpdate }: PreferencesFormProps) => {
       });
     } finally {
       setLoading(false);
-    }
+  }
   };
 
   const toggleWorkStyle = (style: string) => {
@@ -76,27 +76,27 @@ export const PreferencesForm = ({ user, onUpdate }: PreferencesFormProps) => {
     <form onSubmit={handleSubmit} className="space-y-6">
       <div>
         <Label htmlFor="availableFrom">稼働可能時期</Label>
-        <Input
+            <Input
           id="availableFrom"
           type="date"
           value={formData.availableFrom}
           onChange={(e) =>
             setFormData({ ...formData, availableFrom: e.target.value })
           }
-        />
-      </div>
+            />
+          </div>
 
       <div>
         <Label htmlFor="desiredRate">希望単価（月額）</Label>
-        <Input
+            <Input
           id="desiredRate"
           placeholder="例: 60万円"
           value={formData.desiredRate}
           onChange={(e) =>
             setFormData({ ...formData, desiredRate: e.target.value })
           }
-        />
-      </div>
+            />
+          </div>
 
       <div>
         <Label htmlFor="desiredWorkDays">希望勤務日数</Label>

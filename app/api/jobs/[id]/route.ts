@@ -11,9 +11,9 @@ export const GET = async (
     // kintoneから案件詳細を取得
     const job = await getJobById(id);
 
-    if (!job) {
+  if (!job) {
       return NextResponse.json({ error: "案件が見つかりません" }, { status: 404 });
-    }
+  }
 
     return NextResponse.json(job);
   } catch (error) {
@@ -22,5 +22,5 @@ export const GET = async (
       { error: "案件詳細の取得に失敗しました" },
       { status: 500 }
     );
-  }
+}
 };

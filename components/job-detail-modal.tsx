@@ -105,34 +105,34 @@ export function JobDetailModal({ jobId, onClose, onApply }: JobDetailModalProps)
 
             {/* 環境 */}
             {job.environment && (
-              <div>
+            <div>
                 <h3 className="font-semibold mb-2">環境</h3>
                 <p className="text-muted-foreground whitespace-pre-wrap">{job.environment}</p>
-              </div>
+            </div>
             )}
 
             {/* 必須スキル */}
             {job.requiredSkills && (
-              <div>
+            <div>
                 <h3 className="font-semibold mb-2">必須スキル</h3>
                 <p className="text-muted-foreground whitespace-pre-wrap">{job.requiredSkills}</p>
-              </div>
+            </div>
             )}
 
             {/* 歓迎スキル */}
             {job.preferredSkills && (
-              <div>
+            <div>
                 <h3 className="font-semibold mb-2">歓迎スキル</h3>
                 <p className="text-muted-foreground whitespace-pre-wrap">{job.preferredSkills}</p>
-              </div>
+            </div>
             )}
 
             {/* 勤務地 */}
             <div>
               <h3 className="font-semibold mb-2">勤務地</h3>
               <div className="space-y-1">
-                <div className="flex items-center gap-2">
-                  <MapPin className="w-4 h-4" />
+              <div className="flex items-center gap-2">
+                <MapPin className="w-4 h-4" />
                   <span>{job.location || "リモート"}</span>
                 </div>
                 {job.nearestStation && (
@@ -143,7 +143,7 @@ export function JobDetailModal({ jobId, onClose, onApply }: JobDetailModalProps)
 
             {/* 精算基準時間 */}
             {(job.minHours || job.maxHours) && (
-              <div>
+            <div>
                 <h3 className="font-semibold mb-2">精算基準時間</h3>
                 <p>
                   {job.minHours && `下限: ${job.minHours}h`}
@@ -155,34 +155,34 @@ export function JobDetailModal({ jobId, onClose, onApply }: JobDetailModalProps)
 
             {/* 期間 */}
             {job.period && (
-              <div>
+            <div>
                 <h3 className="font-semibold mb-2">期間</h3>
                 <p>{job.period}</p>
-              </div>
+            </div>
             )}
 
             {/* 金額 */}
             {job.rate && (
-              <div>
+            <div>
                 <h3 className="font-semibold mb-2">金額</h3>
                 <p className="text-xl font-semibold text-blue-600">{job.rate}</p>
-              </div>
+            </div>
             )}
 
             {/* 面談回数 */}
             {job.interviewCount && (
-              <div>
+            <div>
                 <h3 className="font-semibold mb-2">面談回数</h3>
                 <p>{job.interviewCount}</p>
-              </div>
+            </div>
             )}
 
             {/* 備考 */}
             {job.notes && (
-              <div>
+            <div>
                 <h3 className="font-semibold mb-2">備考</h3>
                 <p className="text-muted-foreground whitespace-pre-wrap">{job.notes}</p>
-              </div>
+            </div>
             )}
 
             <Button onClick={handleApply} className="w-full bg-blue-600 hover:bg-blue-700">

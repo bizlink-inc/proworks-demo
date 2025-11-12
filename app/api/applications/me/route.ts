@@ -32,5 +32,5 @@ export const GET = async () => {
       { error: "応募履歴の取得に失敗しました" },
       { status: 500 }
     );
-  }
+}
 };

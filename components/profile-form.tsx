@@ -87,29 +87,29 @@ export const ProfileForm = ({ user, onUpdate }: ProfileFormProps) => {
         </div>
       </div>
 
-      <div>
+        <div>
         <Label htmlFor="fullNameKana">フリガナ</Label>
-        <Input
+          <Input
           id="fullNameKana"
           placeholder="ヤマダ タロウ"
           value={formData.fullNameKana}
           onChange={(e) =>
             setFormData({ ...formData, fullNameKana: e.target.value })
           }
-        />
-      </div>
+          />
+        </div>
 
-      <div>
+        <div>
         <Label htmlFor="email">メールアドレス</Label>
-        <Input
+          <Input
           id="email"
           type="email"
           value={formData.email}
           onChange={(e) =>
             setFormData({ ...formData, email: e.target.value })
           }
-          required
-        />
+            required
+          />
       </div>
 
       <div>

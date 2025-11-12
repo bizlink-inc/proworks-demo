@@ -316,7 +316,7 @@ export const createSeedData = async () => {
     } else {
       sqlite.close();
       
-      // Better AuthのAPIを使ってユーザーを作成
+      // Better AuthのAPIを使ってユーザーを作成（メール認証なしで）
       const signUpResponse = await fetch("http://localhost:3000/api/auth/sign-up/email", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -335,7 +335,14 @@ export const createSeedData = async () => {
       const authData = await signUpResponse.json();
       authUserId = authData.user.id;
 
-      console.log(`✅ ユーザー作成: ${seedData.authUser.email} (ID: ${authUserId})`);
+      // シードデータ用にメール認証済みの状態に更新
+      const sqlite2 = new Database(dbPath);
+      try {
+        sqlite2.prepare("UPDATE user SET emailVerified = 1 WHERE id = ?").run(authUserId);
+        console.log(`✅ ユーザー作成: ${seedData.authUser.email} (ID: ${authUserId}) - メール認証済み`);
+      } finally {
+        sqlite2.close();
+      }
     }
 
     // 2. 人材DBにレコード作成
