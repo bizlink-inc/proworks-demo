@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,7 +10,6 @@ import { useToast } from "@/hooks/use-toast";
 import { FileUpload } from "@/components/file-upload";
 import { FileList } from "@/components/file-list";
 import type { Talent } from "@/lib/kintone/types";
-import { DROPDOWN_OPTIONS } from "@/lib/kintone/fieldMapping";
 
 type WorkHistoryFormProps = {
   user: Talent;
@@ -21,8 +20,6 @@ export const WorkHistoryForm = ({ user, onUpdate }: WorkHistoryFormProps) => {
   const [formData, setFormData] = useState({
     skills: user.skills || "",
     experience: user.experience || "",
-    desiredWorkDays: user.desiredWorkDays || "",
-    desiredCommute: user.desiredCommute || "",
     portfolioUrl: user.portfolioUrl || "",
     resumeFiles: user.resumeFiles || [],
   });
@@ -41,8 +38,6 @@ export const WorkHistoryForm = ({ user, onUpdate }: WorkHistoryFormProps) => {
         body: JSON.stringify({
           skills: formData.skills,
           experience: formData.experience,
-          desiredWorkDays: formData.desiredWorkDays,
-          desiredCommute: formData.desiredCommute,
           portfolioUrl: formData.portfolioUrl,
           resumeFiles: formData.resumeFiles,
         }),
@@ -100,46 +95,6 @@ export const WorkHistoryForm = ({ user, onUpdate }: WorkHistoryFormProps) => {
             setFormData({ ...formData, experience: e.target.value })
           }
         />
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <Label htmlFor="desiredWorkDays">希望勤務日数</Label>
-          <select
-            id="desiredWorkDays"
-            value={formData.desiredWorkDays}
-            onChange={(e) =>
-              setFormData({ ...formData, desiredWorkDays: e.target.value })
-            }
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="">選択してください</option>
-            {DROPDOWN_OPTIONS.DESIRED_WORK_DAYS.map((option) => (
-              <option key={option} value={option}>
-                {option}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div>
-          <Label htmlFor="desiredCommute">希望出社頻度</Label>
-          <select
-            id="desiredCommute"
-            value={formData.desiredCommute}
-            onChange={(e) =>
-              setFormData({ ...formData, desiredCommute: e.target.value })
-            }
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="">選択してください</option>
-            {DROPDOWN_OPTIONS.DESIRED_COMMUTE.map((option) => (
-              <option key={option} value={option}>
-                {option}
-              </option>
-            ))}
-          </select>
-        </div>
       </div>
 
       <div>

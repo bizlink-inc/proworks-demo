@@ -77,7 +77,7 @@ export default function SignInPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                placeholder="example@test.com"
+                placeholder="your@email.com"
               />
             </div>
 
@@ -115,11 +115,6 @@ export default function SignInPage() {
             </p>
           </div>
 
-          <div className="mt-6 p-4 bg-blue-50 rounded-lg text-sm">
-            <p className="font-semibold mb-2">テストアカウント:</p>
-            <p>1test@test.com / 1234 (応募あり)</p>
-            <p>2test@test.com / 1234 (応募なし)</p>
-          </div>
         </CardContent>
       </Card>
     </div>

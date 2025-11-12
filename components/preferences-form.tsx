@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import type { Talent } from "@/lib/kintone/types";
+import { DROPDOWN_OPTIONS } from "@/lib/kintone/fieldMapping";
 
 type PreferencesFormProps = {
   user: Talent;
@@ -87,39 +88,57 @@ export const PreferencesForm = ({ user, onUpdate }: PreferencesFormProps) => {
           </div>
 
       <div>
-        <Label htmlFor="desiredRate">希望単価（月額）</Label>
+        <Label htmlFor="desiredRate">希望単価（月額・万円単位）</Label>
             <Input
           id="desiredRate"
-          placeholder="例: 60万円"
+          type="number"
+          placeholder="例: 60"
           value={formData.desiredRate}
           onChange={(e) =>
             setFormData({ ...formData, desiredRate: e.target.value })
           }
             />
+          <p className="text-xs text-gray-500 mt-1">万円単位で入力してください（60 = 60万円）</p>
           </div>
 
-      <div>
-        <Label htmlFor="desiredWorkDays">希望勤務日数</Label>
-        <Input
-          id="desiredWorkDays"
-          placeholder="例: 週5日"
-          value={formData.desiredWorkDays}
-          onChange={(e) =>
-            setFormData({ ...formData, desiredWorkDays: e.target.value })
-          }
-        />
-      </div>
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <Label htmlFor="desiredWorkDays">希望勤務日数</Label>
+          <select
+            id="desiredWorkDays"
+            value={formData.desiredWorkDays}
+            onChange={(e) =>
+              setFormData({ ...formData, desiredWorkDays: e.target.value })
+            }
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="">選択してください</option>
+            {DROPDOWN_OPTIONS.DESIRED_WORK_DAYS.map((option) => (
+              <option key={option} value={option}>
+                {option}
+              </option>
+            ))}
+          </select>
+        </div>
 
-      <div>
-        <Label htmlFor="desiredCommute">希望出社頻度</Label>
-        <Input
-          id="desiredCommute"
-          placeholder="例: 週1日"
-          value={formData.desiredCommute}
-          onChange={(e) =>
-            setFormData({ ...formData, desiredCommute: e.target.value })
-          }
-        />
+        <div>
+          <Label htmlFor="desiredCommute">希望出社頻度</Label>
+          <select
+            id="desiredCommute"
+            value={formData.desiredCommute}
+            onChange={(e) =>
+              setFormData({ ...formData, desiredCommute: e.target.value })
+            }
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="">選択してください</option>
+            {DROPDOWN_OPTIONS.DESIRED_COMMUTE.map((option) => (
+              <option key={option} value={option}>
+                {option}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
       <div className="space-y-4">

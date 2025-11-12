@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { MapPin } from "lucide-react"
 import type { Job } from "@/lib/kintone/types"
+import { formatCurrency } from "@/lib/utils"
 
 type JobCardProps = {
   job: Job
@@ -43,7 +44,7 @@ export function JobCard({ job, onViewDetail }: JobCardProps) {
 
         {/* 単価 */}
         <div className="text-lg font-semibold text-blue-600">
-          {job.rate || "応相談"}
+          {formatCurrency(job.rate)}
         </div>
       </CardContent>
       <CardFooter>

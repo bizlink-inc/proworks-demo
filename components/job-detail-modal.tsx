@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { MapPin, X } from "lucide-react"
 import type { Job } from "@/lib/kintone/types"
+import { formatCurrency } from "@/lib/utils"
 
 type JobDetailModalProps = {
   jobId: string | null
@@ -49,7 +50,7 @@ export function JobDetailModal({ jobId, onClose, onApply }: JobDetailModalProps)
 
   return (
     <Dialog open={!!jobId} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <div className="flex items-start justify-between">
             <DialogTitle className="text-2xl pr-8">{job?.title}</DialogTitle>
@@ -165,7 +166,7 @@ export function JobDetailModal({ jobId, onClose, onApply }: JobDetailModalProps)
             {job.rate && (
             <div>
                 <h3 className="font-semibold mb-2">金額</h3>
-                <p className="text-xl font-semibold text-blue-600">{job.rate}</p>
+                <p className="text-xl font-semibold text-blue-600">{formatCurrency(job.rate)}</p>
             </div>
             )}
 
