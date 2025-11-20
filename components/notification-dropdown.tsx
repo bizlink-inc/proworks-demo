@@ -115,8 +115,8 @@ export const NotificationDropdown = () => {
                             color: "#000000"
                           }}
                         >
-                          {notification.jobTitle}
-                        </p>
+                            {notification.jobTitle}
+                          </p>
                         
                         {/* ステータス変更 */}
                         <p 
@@ -125,13 +125,13 @@ export const NotificationDropdown = () => {
                             color: "#000000"
                           }}
                         >
-                          ステータス：
+                            ステータス：
                           <span>{notification.oldStatus}</span>
-                          {" → "}
+                            {" → "}
                           <span className="font-semibold">
-                            {notification.newStatus}
-                          </span>
-                        </p>
+                              {notification.newStatus}
+                            </span>
+                          </p>
 
                         {/* タイムスタンプ */}
                         <p 
@@ -148,7 +148,7 @@ export const NotificationDropdown = () => {
                             minute: "2-digit",
                             second: "2-digit"
                           })}
-                        </p>
+                          </p>
 
                         {/* 確認リンク */}
                         <button

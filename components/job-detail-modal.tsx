@@ -106,7 +106,7 @@ export function JobDetailModal({ jobId, onClose, onApply }: JobDetailModalProps)
         ) : job ? (
           <div>
             <div className="px-8 pt-6 pb-4">
-              {job.features.length > 0 && (
+            {job.features.length > 0 && (
                 <div className="flex flex-wrap gap-2 mb-4 justify-end">
                   {job.features.slice(0, 3).map((feature, index) => (
                     <span
@@ -133,7 +133,7 @@ export function JobDetailModal({ jobId, onClose, onApply }: JobDetailModalProps)
               >
                 {job.title}
               </h2>
-            </div>
+              </div>
 
             <div className="px-8 pb-4">
               {renderRow(
@@ -166,28 +166,28 @@ export function JobDetailModal({ jobId, onClose, onApply }: JobDetailModalProps)
                       {pos}
                     </span>
                   )),
-              )}
+            )}
 
               {renderRow(
                 "必須スキル",
                 job.requiredSkills && (
                   <span style={{ color: "#1f3151" }}>{job.requiredSkills}</span>
                 ),
-              )}
+            )}
 
               {renderRow(
                 "歓迎スキル",
                 job.preferredSkills && (
                   <span style={{ color: "#1f3151" }}>{job.preferredSkills}</span>
                 ),
-              )}
+            )}
 
               {renderRow(
                 "作業内容",
                 job.description && (
                   <p className="whitespace-pre-wrap">{job.description}</p>
                 ),
-              )}
+            )}
 
               {renderRow(
                 "環境",
@@ -205,17 +205,17 @@ export function JobDetailModal({ jobId, onClose, onApply }: JobDetailModalProps)
                 "精算基準時間",
                 (job.minHours || job.maxHours) && (
                   <span>
-                    {job.minHours && `下限: ${job.minHours}h`}
-                    {job.minHours && job.maxHours && " / "}
-                    {job.maxHours && `上限: ${job.maxHours}h`}
+                  {job.minHours && `下限: ${job.minHours}h`}
+                  {job.minHours && job.maxHours && " / "}
+                  {job.maxHours && `上限: ${job.maxHours}h`}
                   </span>
                 ),
-              )}
+            )}
 
               {renderRow(
                 "面談回数",
                 job.interviewCount && <span>{job.interviewCount}</span>,
-              )}
+            )}
 
               {renderRow(
                 "勤務地",
@@ -223,12 +223,12 @@ export function JobDetailModal({ jobId, onClose, onApply }: JobDetailModalProps)
                   <MapPin className="w-4 h-4" />
                   <span>{job.location || "リモート"}</span>
                 </span>,
-              )}
+            )}
 
               {renderRow(
                 "最寄り",
                 job.nearestStation && <span>{job.nearestStation}</span>,
-              )}
+            )}
 
               {renderRow(
                 "備考",
@@ -242,25 +242,25 @@ export function JobDetailModal({ jobId, onClose, onApply }: JobDetailModalProps)
               className="px-8 py-6 flex justify-center"
               style={{ borderTop: "1px solid #d5e5f0" }}
             >
-              {isAlreadyApplied ? (
+            {isAlreadyApplied ? (
                 <Button
                   disabled
                   variant="pw-outline"
                   className="w-full max-w-[260px]"
                   style={{ fontSize: "15px" }}
                 >
-                  応募済み
-                </Button>
-              ) : (
+                応募済み
+              </Button>
+            ) : (
                 <Button
                   variant="pw-primary"
                   onClick={handleApply}
                   className="w-full max-w-[260px]"
                   style={{ fontSize: "15px" }}
                 >
-                  この案件に応募する
-                </Button>
-              )}
+                この案件に応募する
+              </Button>
+            )}
             </div>
           </div>
         ) : null}

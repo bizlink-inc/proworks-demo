@@ -110,14 +110,15 @@ export function MyPageClient({ user: sessionUser }: MyPageClientProps) {
         activeMenu={activeMenu}
         onMenuChange={setActiveMenu}
       >
-        <div className="bg-white rounded-[var(--pw-radius-sm)] border border-[var(--pw-border-lighter)] p-6">
+        {/* コンテンツ全体の外枠は付けず、フォーム側のカードだけを表示する */}
+        <div className="p-4 md:p-6">
           {activeMenu === "profile" && (
             <div>
               <h2
-                className="font-semibold mb-6"
+                className="font-bold mb-6"
                 style={{
                   fontSize: "var(--pw-text-xl)",
-                  color: "var(--pw-text-primary)"
+                  color: "var(--pw-text-navy)"
                 }}
               >
                 プロフィール
@@ -135,10 +136,10 @@ export function MyPageClient({ user: sessionUser }: MyPageClientProps) {
           {activeMenu === "work-history" && (
             <div>
               <h2
-                className="font-semibold mb-6"
+                className="font-bold mb-6"
                 style={{
                   fontSize: "var(--pw-text-xl)",
-                  color: "var(--pw-text-primary)"
+                  color: "var(--pw-text-navy)"
                 }}
               >
                 職歴・資格
@@ -156,10 +157,10 @@ export function MyPageClient({ user: sessionUser }: MyPageClientProps) {
           {activeMenu === "preferences" && (
             <div>
               <h2
-                className="font-semibold mb-6"
+                className="font-bold mb-6"
                 style={{
                   fontSize: "var(--pw-text-xl)",
-                  color: "var(--pw-text-primary)"
+                  color: "var(--pw-text-navy)"
                 }}
               >
                 希望条件
@@ -177,10 +178,10 @@ export function MyPageClient({ user: sessionUser }: MyPageClientProps) {
           {activeMenu === "applications" && (
             <div>
               <h2
-                className="font-semibold mb-6"
+                className="font-bold mb-6"
                 style={{
                   fontSize: "var(--pw-text-xl)",
-                  color: "var(--pw-text-primary)"
+                  color: "var(--pw-text-navy)"
                 }}
               >
                 応募済み案件
@@ -194,8 +195,8 @@ export function MyPageClient({ user: sessionUser }: MyPageClientProps) {
               <h2
                 className="font-bold mb-6"
                 style={{
-                  fontSize: "var(--pw-text-2xl)",
-                  color: "var(--pw-text-primary)"
+                  fontSize: "var(--pw-text-xl)",
+                  color: "var(--pw-text-navy)"
                 }}
               >
                 パスワード変更
@@ -209,8 +210,8 @@ export function MyPageClient({ user: sessionUser }: MyPageClientProps) {
               <h2
                 className="font-bold mb-6"
                 style={{
-                  fontSize: "var(--pw-text-2xl)",
-                  color: "var(--pw-text-primary)"
+                  fontSize: "var(--pw-text-xl)",
+                  color: "var(--pw-text-navy)"
                 }}
               >
                 メールアドレス変更

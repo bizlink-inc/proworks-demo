@@ -41,8 +41,11 @@ export function Header({ user }: HeaderProps) {
         <div className="container mx-auto px-6 py-4 flex items-center justify-between">
           <Link
             href={user ? "/" : "/landing"}
-            className="text-[var(--pw-text-md)] font-bold"
-            style={{ color: "var(--pw-border-dark)" }}
+            className="font-bold"
+            style={{ 
+              color: "var(--pw-border-dark)",
+              fontSize: "var(--pw-text-xl)"
+            }}
           >
             PRO WORKS
           </Link>
@@ -66,7 +69,7 @@ export function Header({ user }: HeaderProps) {
           className="font-bold"
           style={{
             color: "var(--pw-text-navy)",
-            fontSize: "var(--pw-text-md)"
+            fontSize: "var(--pw-text-xl)"
           }}
         >
           PRO WORKS

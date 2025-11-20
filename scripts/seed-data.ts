@@ -34,7 +34,7 @@ const uploadDummyFiles = async (): Promise<Array<{ fileKey: string; name: string
 
   for (const dummyFile of dummyFiles) {
     const filePath = path.join(dummyFilesDir, dummyFile.filename);
-
+    
     if (!fs.existsSync(filePath)) {
       console.log(`⚠️ ダミーファイルが見つかりません: ${filePath}`);
       continue;
@@ -48,10 +48,10 @@ const uploadDummyFiles = async (): Promise<Array<{ fileKey: string; name: string
       });
 
       console.log(`📤 ダミーファイルアップロード中: ${dummyFile.displayName}`);
-
+      
       // kintoneにアップロード
       const uploadResult = await uploadFileToKintone(file);
-
+      
       uploadedFiles.push({
         fileKey: uploadResult.fileKey,
         name: uploadResult.fileName,
@@ -385,7 +385,7 @@ export const createSeedData = async () => {
       sqlite.close();
     } else {
       sqlite.close();
-
+      
       // Better AuthのAPIを使ってユーザーを作成（メール認証なしで）
       const signUpResponse = await fetch("http://localhost:3000/api/auth/sign-up/email", {
         method: "POST",
@@ -809,17 +809,17 @@ export const deleteSeedData = async () => {
     console.log("=".repeat(80));
 
     const sqlite = new Database(dbPath);
-
+    
     // すべてのテーブルのレコード数を確認
     const userCount = sqlite.prepare("SELECT COUNT(*) as count FROM user").get() as { count: number };
-
+    
     if (userCount.count > 0) {
       // すべてのテーブルを削除（外部キー制約の順番に注意）
       sqlite.prepare("DELETE FROM session").run();
       sqlite.prepare("DELETE FROM account").run();
       sqlite.prepare("DELETE FROM verification").run();
       sqlite.prepare("DELETE FROM user").run();
-
+      
       console.log(`✅ ユーザーを削除: ${userCount.count}件`);
     } else {
       console.log("✅ ユーザー: 削除対象なし");
