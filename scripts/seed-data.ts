@@ -513,20 +513,28 @@ export const createSeedData = async () => {
     console.log("=".repeat(80));
 
     // 応募履歴の案件IDとauth_user_idを動的に設定
+    // 各色が表示されるように3つの異なるステータスを設定
     const applicationsWithJobIds = [
       {
         auth_user_id: authUserId,
         案件ID: jobIds[0], // 大手ECサイトのフロントエンド刷新案件
         案件名: seedData.jobs[0].案件名,
         初期ステータス: "応募済み",
-        最終ステータス: "面談調整中",
+        最終ステータス: "応募済み", // 緑色
+      },
+      {
+        auth_user_id: authUserId,
+        案件ID: jobIds[1], // 金融系Webアプリケーション開発
+        案件名: seedData.jobs[1].案件名,
+        初期ステータス: "応募済み",
+        最終ステータス: "面談調整中", // オレンジ色
       },
       {
         auth_user_id: authUserId,
         案件ID: jobIds[2], // スタートアップ向け新規サービス開発
         案件名: seedData.jobs[2].案件名,
         初期ステータス: "応募済み",
-        最終ステータス: "面談調整中",
+        最終ステータス: "案件参画", // 赤色
       },
     ];
 
@@ -583,8 +591,11 @@ export const createSeedData = async () => {
     console.log(`  👤 Better Authユーザー: 1件`);
     console.log(`  👨‍💼 人材: 1件`);
     console.log(`  💼 案件: ${seedData.jobs.length}件`);
-    console.log(`  📝 応募履歴: ${seedData.applications.length}件`);
-    console.log(`  🔔 通知テスト用ステータス更新: 2件（ステータス変更を検知して通知を生成）`);
+    console.log(`  📝 応募履歴: ${applicationsWithJobIds.length}件`);
+    console.log(`  🔔 応募ステータス:`);
+    console.log(`     - 応募済み（緑）: 1件`);
+    console.log(`     - 面談調整中（オレンジ）: 1件`);
+    console.log(`     - 案件参画（赤）: 1件`);
     console.log("\n📝 ログイン情報:");
     console.log(`  メールアドレス: ${seedData.authUser.email}`);
     console.log(`  パスワード: ${seedData.authUser.password}`);

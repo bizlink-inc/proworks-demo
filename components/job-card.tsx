@@ -6,7 +6,6 @@ import type { Job } from "@/lib/kintone/types"
 type JobCardProps = {
   job: Job
   onViewDetail: (jobId: string) => void
-  applicationStatus?: string
 }
 
 // 仕様書: 案件カード > フォント・カラー
@@ -21,7 +20,39 @@ const formatRateValue = (rate?: string) => {
   return numeric || rate
 }
 
-export const JobCard = ({ job, onViewDetail, applicationStatus }: JobCardProps) => {
+// 応募ステータスの色とラベルを取得
+const getStatusStyle = (status?: string | null) => {
+  if (!status) return null
+
+  switch (status) {
+    case "案件参画":
+      return {
+        label: "案件参画",
+        bgColor: "#d22852",
+        borderColor: "#d22852",
+        textColor: "#ffffff"
+      }
+    case "面談予定":
+    case "面談調整中":
+      return {
+        label: status,
+        bgColor: "#fa8212",
+        borderColor: "#fa8212",
+        textColor: "#ffffff"
+      }
+    case "応募済み":
+      return {
+        label: "応募済み",
+        bgColor: "#3f9c78",
+        borderColor: "#3f9c78",
+        textColor: "#ffffff"
+      }
+    default:
+      return null
+  }
+}
+
+export function JobCard({ job, onViewDetail }: JobCardProps) {
   const rateValue = formatRateValue(job.rate)
   const features = job.features?.slice(0, 3) ?? []
   const positions = job.position ?? []
@@ -31,67 +62,42 @@ export const JobCard = ({ job, onViewDetail, applicationStatus }: JobCardProps) 
   const nearestValues = (job.nearestStation && job.nearestStation.trim().length > 0)
     ? [job.nearestStation.trim()]
     : []
-
-  // 応募ステータスに応じた色とテキストを取得
-  const getStatusStyle = (status?: string) => {
-    if (!status) return null
-
-    switch (status) {
-      case "案件参画":
-        return {
-          backgroundColor: "#d22852", // エラー（赤）
-          color: "#ffffff",
-          text: "案件参画"
-        }
-      case "面談予定":
-      case "面談調整中":
-        return {
-          backgroundColor: "#fa8212", // ワーニング（オレンジ）
-          color: "#ffffff",
-          text: status
-        }
-      case "応募済み":
-        return {
-          backgroundColor: "#3f9c78", // サクセス（緑）
-          color: "#ffffff",
-          text: "応募済み"
-        }
-      case "見送り":
-        return {
-          backgroundColor: "#686868", // グレー
-          color: "#ffffff",
-          text: "見送り"
-        }
-      default:
-        return null
-    }
-  }
-
-  const statusStyle = getStatusStyle(applicationStatus)
+  
+  const statusStyle = getStatusStyle(job.applicationStatus)
 
   return (
     <div
       className="bg-white rounded-[4px] transition-shadow hover:shadow-md relative"
       style={{
-        border: "1px solid #d5e5f0",
+        border: statusStyle ? `2px solid ${statusStyle.borderColor}` : "1px solid #d5e5f0",
         boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
+        overflow: "visible" // リボンが外に出るように
       }}
     >
-      {/* 応募ステータスバッジ（左上） */}
+      {/* 応募ステータスラベル（左上・リボン風） */}
       {statusStyle && (
-        <div
-          className="absolute top-0 left-0 px-3 py-1 text-xs font-semibold"
-          style={{
-            backgroundColor: statusStyle.backgroundColor,
-            color: statusStyle.color,
-            borderRadius: "4px 0 4px 0",
-            zIndex: 10
-          }}
-        >
-          {statusStyle.text}
+        <div className="absolute top-0 left-2" style={{ zIndex: 10 }}>
+          <svg width="80" height="40" style={{ display: "block" }}>
+            <path
+              d="M 0 0 L 80 0 L 80 32 Q 40 22, 0 32 Z"
+              fill={statusStyle.bgColor}
+            />
+            <text
+              x="40"
+              y="16"
+              textAnchor="middle"
+              fill={statusStyle.textColor}
+              fontSize="13"
+              fontWeight="600"
+              style={{ fontFamily: "Noto Sans JP" }}
+            >
+              {statusStyle.label}
+            </text>
+          </svg>
         </div>
       )}
-      <div className="p-4 pb-2">
+
+      <div className="p-4 pb-2" style={{ paddingTop: statusStyle ? "2.5rem" : "1rem" }}>
         <div className="flex flex-wrap gap-2 mb-3">
           {features.map((feature, index) => (
             <span
@@ -137,7 +143,7 @@ export const JobCard = ({ job, onViewDetail, applicationStatus }: JobCardProps) 
 
       <div className="px-4">
         <div style={{ borderTop: "1px solid #d5e5f0" }} />
-      </div>
+        </div>
 
       <div className="px-4 py-3 space-y-2">
         <div className="flex flex-wrap items-center gap-2">

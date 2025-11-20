@@ -101,6 +101,7 @@ export type Job = {
   period: string;
   rate: string;
   interviewCount: string;
+  applicationStatus?: string | null; // ログインユーザーの応募ステータス
 };
 
 export type Application = {

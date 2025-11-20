@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAllJobs } from "@/lib/kintone/services/job";
+import { getSession } from "@/lib/auth-server";
+import { getApplicationsByAuthUserId } from "@/lib/kintone/services/application";
 
 export const GET = async (request: NextRequest) => {
   try {
@@ -10,6 +12,22 @@ export const GET = async (request: NextRequest) => {
 
     // kintoneからすべての案件を取得
     let jobs = await getAllJobs();
+
+    // ログインしている場合、応募ステータスも取得
+    let applicationsMap: Record<string, string> = {};
+    try {
+      const session = await getSession();
+      if (session?.user?.id) {
+        const applications = await getApplicationsByAuthUserId(session.user.id);
+        applicationsMap = applications.reduce((acc, app) => {
+          acc[app.jobId] = app.status;
+          return acc;
+        }, {} as Record<string, string>);
+      }
+    } catch (error) {
+      // ログインしていない場合はスキップ
+      console.log("User not logged in or error fetching applications");
+    }
 
     // キーワード検索（案件名、作業内容、環境、必須スキル、尚可スキルを対象）
     if (query) {
@@ -38,9 +56,15 @@ export const GET = async (request: NextRequest) => {
     }
     // 新着順はデフォルト（kintoneから取得した順序）
 
+    // 案件に応募ステータスを追加
+    const jobsWithStatus = jobs.map(job => ({
+      ...job,
+      applicationStatus: applicationsMap[job.id] || null
+    }));
+
     return NextResponse.json({
-      items: jobs,
-      total: jobs.length,
+      items: jobsWithStatus,
+      total: jobsWithStatus.length,
     });
   } catch (error) {
     console.error("案件一覧の取得に失敗:", error);
