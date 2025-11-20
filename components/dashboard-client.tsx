@@ -113,26 +113,43 @@ export function DashboardClient({ user }: DashboardClientProps) {
       <Header user={user} />
 
       <FullWidthLayout>
-        <h1
-          className="font-bold mb-6"
-          style={{
-            fontSize: "var(--pw-text-2xl)",
-            color: "var(--pw-text-primary)"
-          }}
-        >
-          案件ダッシュボード
-        </h1>
+        <DashboardFilters onSearch={handleSearch} currentSort={filters.sort} />
 
-        <DashboardFilters onSearch={handleSearch} />
-
-        <div
-          className="mb-6"
-          style={{
-            fontSize: "var(--pw-text-sm)",
-            color: "var(--pw-text-gray)"
-          }}
-        >
-          検索結果 {total}件
+        {/* ページネーション - 上部 */}
+        <div className="flex items-center gap-2 mb-6">
+          <span
+            style={{
+              fontSize: "var(--pw-text-sm)",
+              color: "var(--pw-text-primary)",
+              fontWeight: 600
+            }}
+          >
+            検索結果 {total}件
+          </span>
+          
+          {totalPages > 1 && (
+            <>
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+                <button
+                  key={p}
+                  onClick={() => setPage(p)}
+                  className="flex items-center justify-center transition-colors"
+                  style={{
+                    minWidth: "28px",
+                    height: "28px",
+                    padding: "0 6px",
+                    borderRadius: "4px",
+                    backgroundColor: p === page ? "#5a8bb5" : "transparent",
+                    color: p === page ? "#ffffff" : "#5a8bb5",
+                    fontSize: "var(--pw-text-sm)",
+                    fontWeight: 600
+                  }}
+                >
+                  {p}
+                </button>
+              ))}
+            </>
+          )}
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
@@ -141,35 +158,38 @@ export function DashboardClient({ user }: DashboardClientProps) {
           ))}
         </div>
 
+        {/* ページネーション - 下部 */}
         {totalPages > 1 && (
-          <div className="flex items-center justify-center gap-2">
-            <Button
-              variant="pw-outline"
-              size="icon"
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              disabled={page === 1}
+          <div className="flex items-center gap-2 justify-start">
+            <span
+              style={{
+                fontSize: "var(--pw-text-sm)",
+                color: "var(--pw-text-primary)",
+                fontWeight: 600
+              }}
             >
-              <ChevronLeft className="w-4 h-4" />
-            </Button>
-
+              検索結果 {total}件
+            </span>
+            
             {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-              <Button
+              <button
                 key={p}
-                variant={p === page ? "pw-primary" : "pw-outline"}
                 onClick={() => setPage(p)}
+                className="flex items-center justify-center transition-colors"
+                style={{
+                  minWidth: "28px",
+                  height: "28px",
+                  padding: "0 6px",
+                  borderRadius: "4px",
+                  backgroundColor: p === page ? "#5a8bb5" : "transparent",
+                  color: p === page ? "#ffffff" : "#5a8bb5",
+                  fontSize: "var(--pw-text-sm)",
+                  fontWeight: 600
+                }}
               >
                 {p}
-              </Button>
+              </button>
             ))}
-
-            <Button
-              variant="pw-outline"
-              size="icon"
-              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-              disabled={page === totalPages}
-            >
-              <ChevronRight className="w-4 h-4" />
-            </Button>
           </div>
         )}
       </FullWidthLayout>

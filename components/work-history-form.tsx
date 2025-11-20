@@ -131,87 +131,87 @@ export const WorkHistoryForm = ({ user, onUpdate }: WorkHistoryFormProps) => {
 
         <div className="px-6">
           <FieldSection label="言語・ツールの経験" required helper="※入力必須です">
-            <Textarea
-              id="skills"
-              placeholder="JavaScript, TypeScript, React, Next.js, Python, AWS など"
-              rows={4}
-              value={formData.skills}
-              onChange={(e) =>
-                setFormData({ ...formData, skills: e.target.value })
-              }
-            />
+        <Textarea
+          id="skills"
+          placeholder="JavaScript, TypeScript, React, Next.js, Python, AWS など"
+          rows={4}
+          value={formData.skills}
+          onChange={(e) =>
+            setFormData({ ...formData, skills: e.target.value })
+          }
+        />
             <p className="text-xs mt-2" style={{ color: "var(--pw-text-gray)" }}>
-              使用経験のある言語やツールを記載してください
-            </p>
+          使用経験のある言語やツールを記載してください
+        </p>
           </FieldSection>
 
           <FieldSection label="主な実績・PR・職務経歴" required helper="※入力必須です">
-            <Textarea
-              id="experience"
+        <Textarea
+          id="experience"
               placeholder="職務経歴・実績・アピールポイントなどをできるだけ具体的にご入力ください。"
-              rows={8}
-              value={formData.experience}
-              onChange={(e) =>
-                setFormData({ ...formData, experience: e.target.value })
-              }
-            />
+          rows={8}
+          value={formData.experience}
+          onChange={(e) =>
+            setFormData({ ...formData, experience: e.target.value })
+          }
+        />
           </FieldSection>
 
           <FieldSection label="経歴書アップロード" helper="資料を添付してください。">
-            <div className="space-y-4">
-              <FileList
-                files={formData.resumeFiles}
-                onFileDeleted={(fileKey) => {
-                  const updatedFiles = formData.resumeFiles.filter(file => file.fileKey !== fileKey);
-                  setFormData({ ...formData, resumeFiles: updatedFiles });
-                }}
-                disabled={loading}
-              />
-
-              <FileUpload
-                onUploadSuccess={(file) => {
-                  const newFile = {
-                    fileKey: file.fileKey,
-                    name: file.fileName,
-                    size: file.fileSize,
-                    contentType: file.contentType,
-                  };
-                  setFormData({ 
-                    ...formData, 
-                    resumeFiles: [...formData.resumeFiles, newFile] 
-                  });
-                }}
-                maxFiles={10}
-                currentFileCount={formData.resumeFiles.length}
-                disabled={loading}
-              />
-            </div>
+        <div className="space-y-4">
+          <FileList
+            files={formData.resumeFiles}
+            onFileDeleted={(fileKey) => {
+              const updatedFiles = formData.resumeFiles.filter(file => file.fileKey !== fileKey);
+              setFormData({ ...formData, resumeFiles: updatedFiles });
+            }}
+            disabled={loading}
+          />
+          
+          <FileUpload
+            onUploadSuccess={(file) => {
+              const newFile = {
+                fileKey: file.fileKey,
+                name: file.fileName,
+                size: file.fileSize,
+                contentType: file.contentType,
+              };
+              setFormData({ 
+                ...formData, 
+                resumeFiles: [...formData.resumeFiles, newFile] 
+              });
+            }}
+            maxFiles={10}
+            currentFileCount={formData.resumeFiles.length}
+            disabled={loading}
+          />
+        </div>
           </FieldSection>
 
           <FieldSection label="ポートフォリオ・GitHubのURL" required helper="※入力必須です">
-            <Input
-              id="portfolioUrl"
-              type="url"
-              placeholder="https://github.com/username"
-              value={formData.portfolioUrl}
-              onChange={(e) =>
-                setFormData({ ...formData, portfolioUrl: e.target.value })
-              }
-            />
+        <Input
+          id="portfolioUrl"
+          type="url"
+          placeholder="https://github.com/username"
+          value={formData.portfolioUrl}
+          onChange={(e) =>
+            setFormData({ ...formData, portfolioUrl: e.target.value })
+          }
+        />
           </FieldSection>
         </div>
       </div>
 
       <div className="flex justify-end">
-        <Button
-          type="submit"
+      <Button
+        type="submit"
           variant="pw-primary"
           size="lg"
-          disabled={loading}
+        disabled={loading}
           className="px-10"
-        >
+      >
           {loading ? "保存中..." : "職歴・資格を更新する"}
-        </Button>
+      </Button>
       </div>
     </form>
   );

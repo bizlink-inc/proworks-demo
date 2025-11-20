@@ -7,16 +7,21 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 type DashboardFiltersProps = {
   onSearch: (filters: { query: string; sort: string }) => void
+  currentSort?: string
 }
 
-export function DashboardFilters({ onSearch }: DashboardFiltersProps) {
+export function DashboardFilters({ onSearch, currentSort = "new" }: DashboardFiltersProps) {
   const [query, setQuery] = useState("")
-  const [sort, setSort] = useState("new")
+  const [sort, setSort] = useState(currentSort)
   const [isMounted, setIsMounted] = useState(false)
 
   useEffect(() => {
     setIsMounted(true)
   }, [])
+
+  useEffect(() => {
+    setSort(currentSort)
+  }, [currentSort])
 
   const handleSearch = () => {
     onSearch({ query, sort })
@@ -31,17 +36,27 @@ export function DashboardFilters({ onSearch }: DashboardFiltersProps) {
   // Hydration errorを避けるため、クライアントサイドでマウントされるまで簡易版を表示
   if (!isMounted) {
     return (
-      <div className="bg-white p-6 rounded-lg shadow-sm border mb-6">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div 
+        className="p-6 rounded-lg mb-6"
+        style={{ 
+          backgroundColor: "#d5e5f0",
+          border: "1px solid #9ab6ca"
+        }}
+      >
+        <div className="flex gap-4">
           <Input
-            placeholder="キーワード検索"
+            placeholder="フリーワードで探す"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            className="md:col-span-1"
+            className="flex-1"
           />
-          <div className="h-10 border rounded-md" /> {/* プレースホルダー */}
-          <Button onClick={handleSearch} className="bg-blue-600 hover:bg-blue-700">
-            案件検索
+          <div className="h-10 w-32 border rounded-md" />
+          <Button 
+            onClick={handleSearch}
+            variant="pw-dark"
+            style={{ fontSize: "var(--pw-text-md)" }}
+          >
+            この条件で案件検索
           </Button>
         </div>
       </div>
@@ -53,34 +68,35 @@ export function DashboardFilters({ onSearch }: DashboardFiltersProps) {
       className="p-6 rounded-lg mb-6"
       style={{ 
         backgroundColor: "#d5e5f0",
-        borderBottom: "1px solid #9ab6ca"
+        border: "1px solid #9ab6ca"
       }}
     >
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="flex gap-4 items-center">
         <Input
-          placeholder="キーワード検索"
+          placeholder="フリーワードで探す"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-          className="md:col-span-1"
+          className="flex-1"
         />
 
         <Select value={sort} onValueChange={handleSortChange}>
-          <SelectTrigger>
+          <SelectTrigger className="w-[180px]">
             <SelectValue placeholder="並び順" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="new">新着順</SelectItem>
+            <SelectItem value="recommended">おすすめ順</SelectItem>
             <SelectItem value="price">単価順</SelectItem>
           </SelectContent>
         </Select>
 
         <Button 
           onClick={handleSearch} 
-          variant="pw-primary"
-          style={{ fontSize: "var(--pw-text-md)" }}
+          variant="pw-dark"
+          style={{ fontSize: "var(--pw-text-md)", whiteSpace: "nowrap" }}
         >
-          案件検索
+          この条件で案件検索
         </Button>
       </div>
     </div>
