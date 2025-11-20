@@ -4,9 +4,10 @@ import type React from "react"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
+import { PWInput } from "@/components/ui/pw-input"
 import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { CenteredLayout } from "@/components/layouts"
+import { PWAlert } from "@/components/ui/pw-alert"
 import { useToast } from "@/hooks/use-toast"
 import { CheckCircle } from "lucide-react"
 
@@ -56,131 +57,194 @@ export default function CompleteProfilePage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-      <Card className="w-full max-w-2xl">
-        <CardHeader className="text-center">
-          <div className="mx-auto w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mb-4">
-            <CheckCircle className="w-6 h-6 text-green-600" />
-          </div>
-          <CardTitle className="text-2xl">メール認証が完了しました</CardTitle>
-          <CardDescription>
-            プロフィールを入力して、登録を完了させましょう
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm text-blue-800 mb-6">
-              <p className="font-semibold mb-1">以下の情報を入力してください</p>
-              <p className="text-xs">
-                これらの情報は案件への応募や企業とのマッチングに使用されます。
-              </p>
-            </div>
+    <CenteredLayout showFooter={false}>
+      <div className="text-center mb-6">
+        <div
+          className="mx-auto w-16 h-16 rounded-full flex items-center justify-center mb-4"
+          style={{ backgroundColor: "#e8f5f0" }}
+        >
+          <CheckCircle
+            className="w-8 h-8"
+            style={{ color: "var(--pw-alert-success)" }}
+          />
+        </div>
+        <h1
+          className="font-bold mb-2"
+          style={{
+            fontSize: "var(--pw-text-2xl)",
+            color: "var(--pw-text-primary)"
+          }}
+        >
+          メール認証が完了しました
+        </h1>
+        <p
+          className="text-[var(--pw-text-gray)]"
+          style={{ fontSize: "var(--pw-text-sm)" }}
+        >
+          プロフィールを入力して、登録を完了させましょう
+        </p>
+      </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="lastName">姓 <span className="text-red-500">*</span></Label>
-                <Input
-                  id="lastName"
-                  type="text"
-                  placeholder="山田"
-                  value={formData.lastName}
-                  onChange={(e) =>
-                    setFormData({ ...formData, lastName: e.target.value })
-                  }
-                  required
-                />
-              </div>
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <PWAlert variant="info" title="以下の情報を入力してください">
+          <p style={{ fontSize: "var(--pw-text-xs)" }}>
+            これらの情報は案件への応募や企業とのマッチングに使用されます。
+          </p>
+        </PWAlert>
 
-              <div>
-                <Label htmlFor="firstName">名 <span className="text-red-500">*</span></Label>
-                <Input
-                  id="firstName"
-                  type="text"
-                  placeholder="太郎"
-                  value={formData.firstName}
-                  onChange={(e) =>
-                    setFormData({ ...formData, firstName: e.target.value })
-                  }
-                  required
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="lastNameKana">姓（フリガナ） <span className="text-red-500">*</span></Label>
-                <Input
-                  id="lastNameKana"
-                  type="text"
-                  placeholder="ヤマダ"
-                  value={formData.lastNameKana}
-                  onChange={(e) =>
-                    setFormData({ ...formData, lastNameKana: e.target.value })
-                  }
-                  required
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="firstNameKana">名（フリガナ） <span className="text-red-500">*</span></Label>
-                <Input
-                  id="firstNameKana"
-                  type="text"
-                  placeholder="タロウ"
-                  value={formData.firstNameKana}
-                  onChange={(e) =>
-                    setFormData({ ...formData, firstNameKana: e.target.value })
-                  }
-                  required
-                />
-              </div>
-            </div>
-
-            <div>
-              <Label htmlFor="phone">電話番号 <span className="text-red-500">*</span></Label>
-              <Input
-                id="phone"
-                type="tel"
-                placeholder="090-1234-5678"
-                value={formData.phone}
-                onChange={(e) =>
-                  setFormData({ ...formData, phone: e.target.value })
-                }
-                required
-              />
-              <p className="text-xs text-gray-500 mt-1">
-                ハイフンありでも、なしでもOKです
-              </p>
-            </div>
-
-            <div>
-              <Label htmlFor="birthDate">生年月日 <span className="text-red-500">*</span></Label>
-              <Input
-                id="birthDate"
-                type="date"
-                value={formData.birthDate}
-                onChange={(e) =>
-                  setFormData({ ...formData, birthDate: e.target.value })
-                }
-                required
-              />
-            </div>
-
-            <Button
-              type="submit"
-              className="w-full bg-blue-600 hover:bg-blue-700 text-lg py-6"
-              disabled={loading}
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <Label
+              htmlFor="lastName"
+              className="text-[var(--pw-text-primary)] mb-1 block"
+              style={{ fontSize: "var(--pw-text-sm)" }}
             >
-              {loading ? "登録中..." : "プロフィールを完成させる"}
-            </Button>
+              姓 <span style={{ color: "var(--pw-alert-error)" }}>*</span>
+            </Label>
+            <PWInput
+              id="lastName"
+              type="text"
+              placeholder="山田"
+              value={formData.lastName}
+              onChange={(e) =>
+                setFormData({ ...formData, lastName: e.target.value })
+              }
+              required
+            />
+          </div>
 
-            <p className="text-xs text-center text-gray-500">
-              後からマイページで詳細なプロフィールを追加できます
-            </p>
-          </form>
-        </CardContent>
-      </Card>
-    </div>
+          <div>
+            <Label
+              htmlFor="firstName"
+              className="text-[var(--pw-text-primary)] mb-1 block"
+              style={{ fontSize: "var(--pw-text-sm)" }}
+            >
+              名 <span style={{ color: "var(--pw-alert-error)" }}>*</span>
+            </Label>
+            <PWInput
+              id="firstName"
+              type="text"
+              placeholder="太郎"
+              value={formData.firstName}
+              onChange={(e) =>
+                setFormData({ ...formData, firstName: e.target.value })
+              }
+              required
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <Label
+              htmlFor="lastNameKana"
+              className="text-[var(--pw-text-primary)] mb-1 block"
+              style={{ fontSize: "var(--pw-text-sm)" }}
+            >
+              姓（フリガナ） <span style={{ color: "var(--pw-alert-error)" }}>*</span>
+            </Label>
+            <PWInput
+              id="lastNameKana"
+              type="text"
+              placeholder="ヤマダ"
+              value={formData.lastNameKana}
+              onChange={(e) =>
+                setFormData({ ...formData, lastNameKana: e.target.value })
+              }
+              required
+            />
+          </div>
+
+          <div>
+            <Label
+              htmlFor="firstNameKana"
+              className="text-[var(--pw-text-primary)] mb-1 block"
+              style={{ fontSize: "var(--pw-text-sm)" }}
+            >
+              名（フリガナ） <span style={{ color: "var(--pw-alert-error)" }}>*</span>
+            </Label>
+            <PWInput
+              id="firstNameKana"
+              type="text"
+              placeholder="タロウ"
+              value={formData.firstNameKana}
+              onChange={(e) =>
+                setFormData({ ...formData, firstNameKana: e.target.value })
+              }
+              required
+            />
+          </div>
+        </div>
+
+        <div>
+          <Label
+            htmlFor="phone"
+            className="text-[var(--pw-text-primary)] mb-1 block"
+            style={{ fontSize: "var(--pw-text-sm)" }}
+          >
+            電話番号 <span style={{ color: "var(--pw-alert-error)" }}>*</span>
+          </Label>
+          <PWInput
+            id="phone"
+            type="tel"
+            placeholder="090-1234-5678"
+            value={formData.phone}
+            onChange={(e) =>
+              setFormData({ ...formData, phone: e.target.value })
+            }
+            required
+          />
+          <p
+            className="mt-1"
+            style={{
+              fontSize: "var(--pw-text-xs)",
+              color: "var(--pw-text-light-gray)"
+            }}
+          >
+            ハイフンありでも、なしでもOKです
+          </p>
+        </div>
+
+        <div>
+          <Label
+            htmlFor="birthDate"
+            className="text-[var(--pw-text-primary)] mb-1 block"
+            style={{ fontSize: "var(--pw-text-sm)" }}
+          >
+            生年月日 <span style={{ color: "var(--pw-alert-error)" }}>*</span>
+          </Label>
+          <PWInput
+            id="birthDate"
+            type="date"
+            value={formData.birthDate}
+            onChange={(e) =>
+              setFormData({ ...formData, birthDate: e.target.value })
+            }
+            required
+          />
+        </div>
+
+        <Button
+          type="submit"
+          variant="pw-primary"
+          className="w-full py-6"
+          disabled={loading}
+          style={{ fontSize: "var(--pw-text-lg)" }}
+        >
+          {loading ? "登録中..." : "プロフィールを完成させる"}
+        </Button>
+
+        <p
+          className="text-center"
+          style={{
+            fontSize: "var(--pw-text-xs)",
+            color: "var(--pw-text-light-gray)"
+          }}
+        >
+          後からマイページで詳細なプロフィールを追加できます
+        </p>
+      </form>
+    </CenteredLayout>
   )
 }
 

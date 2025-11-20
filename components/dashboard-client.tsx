@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { Header } from "@/components/header"
+import { FullWidthLayout } from "@/components/layouts"
 import { DashboardFilters } from "@/components/dashboard-filters"
 import { JobCard } from "@/components/job-card"
 import { JobDetailModal } from "@/components/job-detail-modal"
@@ -108,15 +109,31 @@ export function DashboardClient({ user }: DashboardClientProps) {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen">
       <Header user={user} />
 
-      <main className="container mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold mb-6">案件ダッシュボード</h1>
+      <FullWidthLayout>
+        <h1
+          className="font-bold mb-6"
+          style={{
+            fontSize: "var(--pw-text-2xl)",
+            color: "var(--pw-text-primary)"
+          }}
+        >
+          案件ダッシュボード
+        </h1>
 
         <DashboardFilters onSearch={handleSearch} />
 
-        <div className="mb-4 text-sm text-muted-foreground">{total}件の案件が見つかりました</div>
+        <div
+          className="mb-6"
+          style={{
+            fontSize: "var(--pw-text-sm)",
+            color: "var(--pw-text-gray)"
+          }}
+        >
+          検索結果 {total}件
+        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
           {jobs.map((job) => (
@@ -127,7 +144,7 @@ export function DashboardClient({ user }: DashboardClientProps) {
         {totalPages > 1 && (
           <div className="flex items-center justify-center gap-2">
             <Button
-              variant="outline"
+              variant="pw-outline"
               size="icon"
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={page === 1}
@@ -138,16 +155,15 @@ export function DashboardClient({ user }: DashboardClientProps) {
             {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
               <Button
                 key={p}
-                variant={p === page ? "default" : "outline"}
+                variant={p === page ? "pw-primary" : "pw-outline"}
                 onClick={() => setPage(p)}
-                className={p === page ? "bg-blue-600 hover:bg-blue-700" : ""}
               >
                 {p}
               </Button>
             ))}
 
             <Button
-              variant="outline"
+              variant="pw-outline"
               size="icon"
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
               disabled={page === totalPages}
@@ -156,7 +172,7 @@ export function DashboardClient({ user }: DashboardClientProps) {
             </Button>
           </div>
         )}
-      </main>
+      </FullWidthLayout>
 
       <JobDetailModal jobId={selectedJobId} onClose={() => setSelectedJobId(null)} onApply={handleApply} />
 

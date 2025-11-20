@@ -5,9 +5,9 @@ import type React from "react"
 import { useState, useEffect } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
+import { PWInput } from "@/components/ui/pw-input"
 import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { CenteredLayout } from "@/components/layouts"
 import { useToast } from "@/hooks/use-toast"
 import { CheckCircle } from "lucide-react"
 
@@ -98,78 +98,125 @@ export default function ResetPasswordPage() {
 
   if (success) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-        <Card className="w-full max-w-md">
-          <CardHeader className="text-center">
-            <div className="mx-auto w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mb-4">
-              <CheckCircle className="w-6 h-6 text-green-600" />
-            </div>
-            <CardTitle>パスワードをリセットしました</CardTitle>
-            <CardDescription>
-              新しいパスワードでログインできます
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-center text-gray-600">
-              3秒後にログインページへ移動します...
-            </p>
-          </CardContent>
-        </Card>
-      </div>
+      <CenteredLayout>
+        <div className="text-center">
+          <div
+            className="mx-auto w-16 h-16 rounded-full flex items-center justify-center mb-4"
+            style={{ backgroundColor: "#e8f5f0" }}
+          >
+            <CheckCircle
+              className="w-8 h-8"
+              style={{ color: "var(--pw-alert-success)" }}
+            />
+          </div>
+          <h1
+            className="font-semibold mb-2"
+            style={{
+              fontSize: "var(--pw-text-xl)",
+              color: "var(--pw-text-primary)"
+            }}
+          >
+            パスワードをリセットしました
+          </h1>
+          <p
+            className="text-[var(--pw-text-gray)] mb-6"
+            style={{ fontSize: "var(--pw-text-sm)" }}
+          >
+            新しいパスワードでログインできます
+          </p>
+          <p
+            className="text-center"
+            style={{
+              fontSize: "var(--pw-text-sm)",
+              color: "var(--pw-text-gray)"
+            }}
+          >
+            3秒後にログインページへ移動します...
+          </p>
+        </div>
+      </CenteredLayout>
     )
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle>新しいパスワードを設定</CardTitle>
-          <CardDescription>
-            新しいパスワードを入力してください
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <Label htmlFor="password">新しいパスワード</Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                minLength={6}
-              />
-              <p className="text-xs text-gray-500 mt-1">
-                6文字以上で入力してください
-              </p>
-            </div>
+    <CenteredLayout>
+      <div className="text-center mb-8">
+        <h1
+          className="font-bold mb-2"
+          style={{
+            fontSize: "var(--pw-text-2xl)",
+            color: "var(--pw-border-dark)"
+          }}
+        >
+          新しいパスワードを設定
+        </h1>
+        <p
+          className="text-[var(--pw-text-gray)]"
+          style={{ fontSize: "var(--pw-text-sm)" }}
+        >
+          新しいパスワードを入力してください
+        </p>
+      </div>
 
-            <div>
-              <Label htmlFor="confirmPassword">パスワードを再入力</Label>
-              <Input
-                id="confirmPassword"
-                type="password"
-                placeholder="••••••••"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                required
-                minLength={6}
-              />
-            </div>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <Label
+            htmlFor="password"
+            className="text-[var(--pw-text-primary)] mb-1 block"
+            style={{ fontSize: "var(--pw-text-sm)" }}
+          >
+            新しいパスワード
+          </Label>
+          <PWInput
+            id="password"
+            type="password"
+            placeholder="••••••••"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            minLength={6}
+          />
+          <p
+            className="mt-1"
+            style={{
+              fontSize: "var(--pw-text-xs)",
+              color: "var(--pw-text-light-gray)"
+            }}
+          >
+            6文字以上で入力してください
+          </p>
+        </div>
 
-            <Button 
-              type="submit" 
-              className="w-full" 
-              disabled={loading || !token}
-            >
-              {loading ? "リセット中..." : "パスワードをリセット"}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
-    </div>
+        <div>
+          <Label
+            htmlFor="confirmPassword"
+            className="text-[var(--pw-text-primary)] mb-1 block"
+            style={{ fontSize: "var(--pw-text-sm)" }}
+          >
+            パスワードを再入力
+          </Label>
+          <PWInput
+            id="confirmPassword"
+            type="password"
+            placeholder="••••••••"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            required
+            minLength={6}
+          />
+        </div>
+
+        <Button
+          type="submit"
+          variant="pw-primary"
+          className="w-full mt-6"
+          disabled={loading || !token}
+          style={{ fontSize: "var(--pw-text-md)" }}
+        >
+          {loading ? "リセット中..." : "パスワードをリセット"}
+        </Button>
+      </form>
+    </CenteredLayout>
   )
 }
 

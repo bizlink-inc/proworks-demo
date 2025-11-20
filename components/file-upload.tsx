@@ -202,26 +202,32 @@ export const FileUpload: React.FC<FileUploadProps> = ({
       {/* ドラッグ&ドロップエリア */}
       <div
         className={`
-          border-2 border-dashed rounded-lg p-6 text-center transition-colors
-          ${isDragOver 
-            ? "border-blue-500 bg-blue-50" 
-            : "border-gray-300 bg-gray-50"
-          }
-          ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer hover:border-gray-400"}
+          border-2 border-dashed rounded-[var(--pw-radius-sm)] p-6 text-center transition-colors
+          ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}
         `}
+        style={{
+          borderColor: "var(--pw-border-light)",
+          backgroundColor: isDragOver ? "#fff" : "var(--pw-bg-light-blue)"
+        }}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
         onClick={handleFileSelect}
       >
-        <Upload className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-        <p className="text-lg font-medium text-gray-700 mb-2">
+        <Upload 
+          className="mx-auto h-12 w-12 mb-4"
+          style={{ color: "var(--pw-border-primary)" }}
+        />
+        <p 
+          className="text-lg font-medium mb-2"
+          style={{ color: "var(--pw-text-primary)" }}
+        >
           ファイルをドラッグ&ドロップ
         </p>
-        <p className="text-sm text-gray-500 mb-4">
+        <p className="text-sm mb-4" style={{ color: "var(--pw-text-gray)" }}>
           または、クリックしてファイルを選択
         </p>
-        <div className="text-xs text-gray-400 space-y-1">
+        <div className="text-xs space-y-1" style={{ color: "var(--pw-text-gray)" }}>
           <p>対応形式: PDF, Word (.doc, .docx)</p>
           <p>最大サイズ: 10MB</p>
           <p>最大ファイル数: {maxFiles}個 (現在: {currentFileCount}個)</p>
@@ -229,7 +235,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
         
         <Button 
           type="button" 
-          variant="outline" 
+          variant="pw-outline" 
           className="mt-4"
           disabled={disabled}
           onClick={(e) => {

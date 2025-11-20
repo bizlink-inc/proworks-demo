@@ -18,6 +18,10 @@
     "test:coverage": "jest --coverage"
   },
   "dependencies": {
+    "@fortawesome/fontawesome-svg-core": "^7.1.0",
+    "@fortawesome/free-regular-svg-icons": "^7.1.0",
+    "@fortawesome/free-solid-svg-icons": "^7.1.0",
+    "@fortawesome/react-fontawesome": "^3.1.0",
     "@hookform/resolvers": "^3.10.0",
     "@kintone/rest-api-client": "^6.0.0",
     "@radix-ui/react-accordion": "1.2.2",

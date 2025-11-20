@@ -19,6 +19,11 @@ const buttonVariants = cva(
         ghost:
           'hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50',
         link: 'text-primary underline-offset-4 hover:underline',
+        // PRO WORKS専用バリエーション
+        'pw-primary': 'bg-[var(--pw-button-primary)] text-white hover:opacity-90 rounded-[var(--pw-radius-sm)] disabled:bg-[#f2f2f2] disabled:text-[#999999] disabled:hover:opacity-100',
+        'pw-secondary': 'bg-[var(--pw-button-secondary)] text-white hover:opacity-90 rounded-[var(--pw-radius-sm)] disabled:bg-[#f2f2f2] disabled:text-[#999999]',
+        'pw-dark': 'bg-[var(--pw-button-dark)] text-white hover:opacity-90 rounded-[var(--pw-radius-sm)] disabled:bg-[#f2f2f2] disabled:text-[#999999]',
+        'pw-outline': 'border border-[var(--pw-border-gray)] bg-white text-[var(--pw-text-gray)] hover:bg-[var(--pw-bg-light-blue)] rounded-[var(--pw-radius-sm)] disabled:bg-[#f2f2f2] disabled:text-[#999999] disabled:border-transparent',
       },
       size: {
         default: 'h-9 px-4 py-2 has-[>svg]:px-3',

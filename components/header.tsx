@@ -1,10 +1,14 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
-import { Bell, ChevronDown } from "lucide-react"
+import { usePathname, useSearchParams } from "next/navigation"
+import { ChevronDown } from "lucide-react"
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
+import { faGear, faAddressCard, faBuilding, faList, faComments } from "@fortawesome/free-solid-svg-icons"
 import { Button } from "@/components/ui/button"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { MobileMenu } from "@/components/mobile-menu"
 import { handleSignOut } from "@/app/actions/auth"
 import { NotificationDropdown } from "@/components/notification-dropdown"
 
@@ -16,53 +20,115 @@ type HeaderProps = {
 
 export function Header({ user }: HeaderProps) {
   const pathname = usePathname()
+  const searchParams = useSearchParams()
+  const [isMounted, setIsMounted] = useState(false)
+
+  useEffect(() => {
+    setIsMounted(true)
+  }, [])
 
   const onSignOut = async () => {
     await handleSignOut()
   }
 
+  // Hydration errorを避けるため、クライアントサイドでマウントされるまで待つ
+  if (!isMounted) {
+    return (
+      <header
+        className="bg-white"
+        style={{ borderBottom: "1px solid var(--pw-border-lighter)" }}
+      >
+        <div className="container mx-auto px-6 py-4 flex items-center justify-between">
+          <Link
+            href={user ? "/" : "/landing"}
+            className="text-[var(--pw-text-md)] font-bold"
+            style={{ color: "var(--pw-border-dark)" }}
+          >
+            PRO WORKS
+          </Link>
+          <div className="w-8 h-8" /> {/* プレースホルダー */}
+        </div>
+      </header>
+    )
+  }
+
   return (
-    <header className="border-b bg-white">
-      <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-        <Link href={user ? "/" : "/landing"} className="text-2xl font-bold text-blue-600">
+    <header
+      className="bg-white"
+      style={{
+        borderBottom: "1px solid var(--pw-border-lighter)",
+        fontSize: "var(--pw-text-md)"
+      }}
+    >
+      <div className="container mx-auto px-6 py-3 flex items-center justify-between">
+        <Link
+          href={user ? "/" : "/landing"}
+          className="font-bold"
+          style={{
+            color: "var(--pw-text-navy)",
+            fontSize: "var(--pw-text-md)"
+          }}
+        >
           PRO WORKS
         </Link>
 
         <div className="flex items-center gap-6">
           {user ? (
             <>
-              <nav className="flex gap-1">
-                <Link
-                  href="/"
-                  className={`px-4 py-2 rounded-md transition-colors ${
-                    pathname === "/"
-                      ? "bg-blue-100 text-blue-700 font-semibold border-b-2 border-blue-600"
-                      : "text-gray-600 hover:bg-gray-100"
-                  }`}
-                >
-                  案件ダッシュボード
-                </Link>
+              <nav className="hidden md:flex gap-0">
                 <Link
                   href="/me"
-                  className={`px-4 py-2 rounded-md transition-colors ${
-                    pathname === "/me"
-                      ? "bg-blue-100 text-blue-700 font-semibold border-b-2 border-blue-600"
-                      : "text-gray-600 hover:bg-gray-100"
-                  }`}
+                  className="px-4 py-3 transition-colors flex items-center gap-2"
+                  style={{
+                    fontSize: "var(--pw-text-md)",
+                    color: pathname === "/me" ? "#3966a2" : "var(--pw-text-navy)",
+                    borderBottom: pathname === "/me" ? "4.5px solid #3966a2" : "none",
+                    fontWeight: pathname === "/me" ? 600 : 400,
+                  }}
                 >
+                  <FontAwesomeIcon icon={faGear} className="w-5 h-5" />
                   マイページ
+                </Link>
+                <Link
+                  href="/"
+                  className="px-4 py-3 transition-colors flex items-center gap-2"
+                  style={{
+                    fontSize: "var(--pw-text-md)",
+                    color: pathname === "/" ? "#3966a2" : "var(--pw-text-navy)",
+                    borderBottom: pathname === "/" ? "4.5px solid #3966a2" : "none",
+                    fontWeight: pathname === "/" ? 600 : 400,
+                  }}
+                >
+                  <FontAwesomeIcon icon={faList} className="w-5 h-5" />
+                  案件一覧
+                </Link>
+                <Link
+                  href="/me?tab=applications"
+                  className="px-4 py-3 transition-colors flex items-center gap-2"
+                  style={{
+                    fontSize: "var(--pw-text-md)",
+                    color: "var(--pw-text-navy)",
+                    borderBottom: "none",
+                    fontWeight: 400,
+                  }}
+                >
+                  <FontAwesomeIcon icon={faAddressCard} className="w-5 h-5" />
+                  応募済み案件
                 </Link>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <button
-                      className={`px-4 py-2 rounded-md transition-colors flex items-center gap-1 ${
-                        pathname.startsWith("/media")
-                          ? "bg-blue-100 text-blue-700 font-semibold"
-                          : "text-gray-600 hover:bg-gray-100"
-                      }`}
+                      className="px-4 py-3 transition-colors flex items-center gap-2"
+                      style={{
+                        fontSize: "var(--pw-text-md)",
+                        color: pathname.startsWith("/media") ? "#3966a2" : "var(--pw-text-navy)",
+                        borderBottom: pathname.startsWith("/media") ? "4.5px solid #3966a2" : "none",
+                        fontWeight: pathname.startsWith("/media") ? 600 : 400,
+                      }}
                     >
-                      メディア
-                      <ChevronDown className="w-4 h-4" />
+                      <FontAwesomeIcon icon={faComments} className="w-5 h-5" />
+                      お役立ち情報
+                      <ChevronDown className="w-4 h-4 ml-auto" />
                     </button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-56">
@@ -83,33 +149,52 @@ export function Header({ user }: HeaderProps) {
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
-                <Link
-                  href="/company"
-                  className={`px-4 py-2 rounded-md transition-colors ${
-                    pathname.startsWith("/company")
-                      ? "bg-blue-100 text-blue-700 font-semibold"
-                      : "text-gray-600 hover:bg-gray-100"
-                  }`}
-                >
-                  企業情報
-                </Link>
               </nav>
 
+              <div className="hidden md:flex items-center gap-4">
               <NotificationDropdown />
 
-              <span className="text-sm font-medium text-gray-700">{user.name}</span>
+                <span
+                  className="font-medium"
+                  style={{
+                    fontSize: "var(--pw-text-sm)",
+                    color: "var(--pw-text-primary)"
+                  }}
+                >
+                  {user.name}
+                </span>
 
               <Button variant="outline" size="sm" onClick={onSignOut}>
                 ログアウト
               </Button>
+              </div>
+
+              <MobileMenu user={user} onSignOut={onSignOut} />
             </>
           ) : (
             <>
-              <nav className="hidden md:flex items-center gap-4">
-                <Link href="/media/career" className="text-gray-600 hover:text-blue-600">
-                  メディア
+              <div className="hidden md:flex items-center gap-4">
+                <nav className="flex items-center gap-4">
+                  <Link
+                    href="/media/career"
+                    className="hover:text-[var(--pw-button-primary)] transition-colors flex items-center gap-2"
+                    style={{
+                      color: "var(--pw-text-navy)",
+                      fontSize: "var(--pw-text-md)"
+                    }}
+                  >
+                    <FontAwesomeIcon icon={faComments} className="w-5 h-5" />
+                    お役立ち情報
                 </Link>
-                <Link href="/company" className="text-gray-600 hover:text-blue-600">
+                  <Link
+                    href="/company"
+                    className="hover:text-[var(--pw-button-primary)] transition-colors flex items-center gap-2"
+                    style={{
+                      color: "var(--pw-text-navy)",
+                      fontSize: "var(--pw-text-md)"
+                    }}
+                  >
+                    <FontAwesomeIcon icon={faBuilding} className="w-5 h-5" />
                   企業情報
                 </Link>
               </nav>
@@ -119,10 +204,20 @@ export function Header({ user }: HeaderProps) {
                 </Button>
               </Link>
               <Link href="/auth/signup">
-                <Button size="sm" className="bg-blue-600 hover:bg-blue-700">
+                  <Button
+                    size="sm"
+                    style={{
+                      backgroundColor: "var(--pw-button-primary)",
+                      color: "white"
+                    }}
+                    className="hover:opacity-90"
+                  >
                   新規登録
                 </Button>
               </Link>
+              </div>
+
+              <MobileMenu />
             </>
           )}
         </div>

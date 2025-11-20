@@ -4,6 +4,82 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
+  /* ================================
+     PRO WORKS デザイントークン
+     UI仕様書 Ver.01 (2025/11) に基づく
+     ================================ */
+
+  /* === 背景色 === */
+  --pw-bg-body: #f3f9fd;
+  --pw-bg-white: #ffffff;
+  --pw-bg-light-blue: #e8f0fd;
+  --pw-bg-pink-light: #fecfd7;
+  --pw-bg-pink-lighter: #ffe3e8;
+  --pw-bg-sidebar: #1f3151;
+  --pw-bg-sidebar-open: #ffffff;
+  --pw-alert-error-bg: #ffe3e8;
+  --pw-alert-warning-bg: #fff4e6;
+  --pw-alert-success-bg: #e6f7f0;
+  --pw-alert-info-bg: #e8f0fd;
+
+  /* === 枠線・ライン・ボーダー === */
+  --pw-border-light: #9ab6ca;
+  --pw-border-lighter: #d5e5f0;
+  --pw-border-gray: #c3c1c1;
+  --pw-border-input: #c3c1c1;
+  --pw-border-dark: #1f3151;
+  --pw-border-primary: #63b2cd;
+  --pw-border-separator: #999999;
+
+  /* === テキスト・フォント === */
+  --pw-text-primary: #30373f;
+  --pw-text-black: #000000;
+  --pw-text-gray: #686868;
+  --pw-text-light-gray: #999999;
+  --pw-text-lightest: #f2f2f2;
+  --pw-text-navy: #1f3151;
+  --pw-text-link: #63b2cd;
+
+  /* === アラート・サポート === */
+  --pw-alert-success: #3f9c78;
+  --pw-alert-warning: #fa8212;
+  --pw-alert-error: #d22852;
+  --pw-support-required: #fa8212;
+  --pw-support-optional: #c3c1c1;
+
+  /* === ボタン === */
+  --pw-button-primary: #63b2cd;
+  --pw-button-secondary: #686868;
+  --pw-button-dark: #1f3151;
+
+  /* === 特殊色 === */
+  --pw-shadow: rgba(188, 210, 225, 0.28);
+  --pw-overlay: rgba(51, 58, 66, 0.8);
+  --pw-input-border: #c3c1c1;
+  --pw-input-focus: #63b2cd;
+  --pw-input-error-bg: #e8f0fd;
+
+  /* === フォントサイズ === */
+  --pw-text-xs: 0.75rem;
+  /* 12pt */
+  --pw-text-sm: 0.8125rem;
+  /* 13pt */
+  --pw-text-base: 0.875rem;
+  /* 14pt */
+  --pw-text-md: 0.9375rem;
+  /* 15pt */
+  --pw-text-lg: 1rem;
+  /* 16pt */
+  --pw-text-xl: 1.125rem;
+  /* 18pt */
+  --pw-text-2xl: 1.5rem;
+  /* 24pt */
+
+  /* === ボーダー半径 === */
+  --pw-radius-sm: 4px;
+  --pw-radius-md: 12px;
+
+  /* === 既存のshadcn/ui変数（互換性のため維持） === */
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
@@ -75,8 +151,50 @@
 }
 
 @theme inline {
-  --font-sans: 'Geist', 'Geist Fallback';
-  --font-mono: 'Geist Mono', 'Geist Mono Fallback';
+  /* フォント設定 - Noto Sans JP */
+  --font-sans: var(--font-noto-sans-jp), ui-sans-serif, system-ui, sans-serif;
+
+  /* PRO WORKS カラーシステム */
+  --color-pw-bg-body: var(--pw-bg-body);
+  --color-pw-bg-white: var(--pw-bg-white);
+  --color-pw-bg-light-blue: var(--pw-bg-light-blue);
+  --color-pw-bg-pink-light: var(--pw-bg-pink-light);
+  --color-pw-bg-pink-lighter: var(--pw-bg-pink-lighter);
+
+  --color-pw-border-light: var(--pw-border-light);
+  --color-pw-border-lighter: var(--pw-border-lighter);
+  --color-pw-border-gray: var(--pw-border-gray);
+  --color-pw-border-dark: var(--pw-border-dark);
+  --color-pw-border-primary: var(--pw-border-primary);
+
+  --color-pw-text-primary: var(--pw-text-primary);
+  --color-pw-text-black: var(--pw-text-black);
+  --color-pw-text-gray: var(--pw-text-gray);
+  --color-pw-text-light-gray: var(--pw-text-light-gray);
+  --color-pw-text-lightest: var(--pw-text-lightest);
+
+  --color-pw-alert-success: var(--pw-alert-success);
+  --color-pw-alert-warning: var(--pw-alert-warning);
+  --color-pw-alert-error: var(--pw-alert-error);
+
+  --color-pw-button-primary: var(--pw-button-primary);
+  --color-pw-button-secondary: var(--pw-button-secondary);
+  --color-pw-button-dark: var(--pw-button-dark);
+
+  /* フォントサイズ */
+  --font-size-xs: var(--pw-text-xs);
+  --font-size-sm: var(--pw-text-sm);
+  --font-size-base: var(--pw-text-base);
+  --font-size-md: var(--pw-text-md);
+  --font-size-lg: var(--pw-text-lg);
+  --font-size-xl: var(--pw-text-xl);
+  --font-size-2xl: var(--pw-text-2xl);
+
+  /* ボーダー半径 */
+  --radius-sm: var(--pw-radius-sm);
+  --radius-md: var(--pw-radius-md);
+
+  /* 既存のshadcn/ui変数（互換性のため維持） */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -101,8 +219,6 @@
   --color-chart-3: var(--chart-3);
   --color-chart-4: var(--chart-4);
   --color-chart-5: var(--chart-5);
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
   --color-sidebar: var(--sidebar);
@@ -119,7 +235,9 @@
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
-    @apply bg-background text-foreground;
+    @apply bg-[var(--pw-bg-body)] text-[var(--pw-text-primary)];
+    font-family: var(--font-noto-sans-jp), ui-sans-serif, system-ui, sans-serif;
   }
 }

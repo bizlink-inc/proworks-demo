@@ -3,13 +3,13 @@
 import { useState, useEffect } from "react"
 import { useSearchParams } from "next/navigation"
 import { Header } from "@/components/header"
+import { SidebarLayout } from "@/components/layouts"
 import { ProfileForm } from "@/components/profile-form"
 import { ApplicationsTable } from "@/components/applications-table"
 import { WorkHistoryForm } from "@/components/work-history-form"
 import { PreferencesForm } from "@/components/preferences-form"
 import { PasswordChangeForm } from "@/components/password-change-form"
 import { EmailChangeForm } from "@/components/email-change-form"
-import { Button } from "@/components/ui/button"
 import { useApplicationStatusMonitor } from "@/hooks/use-application-status-monitor"
 import type { Talent } from "@/lib/kintone/types"
 
@@ -25,10 +25,10 @@ interface MyPageClientProps {
 
 export function MyPageClient({ user: sessionUser }: MyPageClientProps) {
   useApplicationStatusMonitor()
-  
+
   const searchParams = useSearchParams()
   const tabParam = searchParams.get("tab") as MenuItem | null
-  
+
   const [activeMenu, setActiveMenu] = useState<MenuItem>(tabParam || "profile")
   const [user, setUser] = useState<Talent | null>(null)
 
@@ -45,14 +45,49 @@ export function MyPageClient({ user: sessionUser }: MyPageClientProps) {
 
   const fetchUser = async () => {
     try {
-    const res = await fetch("/api/me")
+      const res = await fetch("/api/me")
+
       if (!res.ok) {
+        if (res.status === 404) {
+          // 404の場合は新規ユーザーとして空のデータを設定
+          console.log("User not found in Kintone, treating as new user")
+          const emptyUser: Talent = {
+            id: "",
+            auth_user_id: sessionUser.id || "",
+            email: sessionUser.email || "",
+            lastName: "",
+            firstName: "",
+            lastNameKana: "",
+            firstNameKana: "",
+            phone: "",
+            birthDate: "",
+            gender: "",
+            postalCode: "",
+            address: "",
+            nearestStation: "",
+            employmentStatus: "",
+            desiredWorkLocation: [],
+            desiredIndustry: [],
+            desiredOccupation: [],
+            skills: [],
+            certifications: [],
+            workHistory: [],
+            selfPR: "",
+            portfolioUrl: "",
+            githubUrl: "",
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          }
+          setUser(emptyUser)
+          return
+        }
         console.error("Failed to fetch user:", res.status, res.statusText)
         return
       }
-    const data = await res.json()
+
+      const data = await res.json()
       console.log("Fetched user data:", data)
-    setUser(data)
+      setUser(data)
     } catch (error) {
       console.error("Error fetching user:", error)
     }
@@ -68,77 +103,123 @@ export function MyPageClient({ user: sessionUser }: MyPageClientProps) {
   ]
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen">
       <Header user={sessionUser} />
 
-      <main className="container mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold mb-6">マイページ</h1>
-
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          {/* 左サイドメニュー */}
-          <aside className="md:col-span-1">
-            <nav className="bg-white rounded-lg shadow-sm border p-4 space-y-2">
-              {menuItems.map((item) => (
-                <Button
-                  key={item.id}
-                  variant={activeMenu === item.id ? "default" : "ghost"}
-                  className={`w-full justify-start ${activeMenu === item.id ? "bg-blue-600 hover:bg-blue-700" : ""}`}
-                  onClick={() => setActiveMenu(item.id)}
-                >
-                  {item.label}
-                </Button>
-              ))}
-            </nav>
-          </aside>
-
-          {/* 右コンテンツ */}
-          <div className="md:col-span-3">
-            <div className="bg-white rounded-lg shadow-sm border p-6">
-              {activeMenu === "profile" && user && (
-                <div>
-                  <h2 className="text-xl font-semibold mb-6">プロフィール</h2>
-                  <ProfileForm user={user} onUpdate={setUser} />
-                </div>
-              )}
-
-              {activeMenu === "work-history" && user && (
-                <div>
-                  <h2 className="text-xl font-semibold mb-6">職歴・資格</h2>
-                  <WorkHistoryForm user={user} onUpdate={setUser} />
-                </div>
-              )}
-
-              {activeMenu === "preferences" && user && (
-                <div>
-                  <h2 className="text-xl font-semibold mb-6">希望条件</h2>
-                  <PreferencesForm user={user} onUpdate={setUser} />
-                </div>
-              )}
-
-              {activeMenu === "applications" && (
-                <div>
-                  <h2 className="text-xl font-semibold mb-6">応募済み案件</h2>
-                  <ApplicationsTable />
-                </div>
-              )}
-
-              {activeMenu === "password" && (
-                <div>
-                  <h2 className="text-2xl font-bold mb-6">パスワード変更</h2>
-                  <PasswordChangeForm />
-                </div>
-              )}
-
-              {activeMenu === "email" && (
-                <div>
-                  <h2 className="text-2xl font-bold mb-6">メールアドレス変更</h2>
-                  <EmailChangeForm />
+      <SidebarLayout
+        activeMenu={activeMenu}
+        onMenuChange={setActiveMenu}
+      >
+        <div className="bg-white rounded-[var(--pw-radius-sm)] border border-[var(--pw-border-lighter)] p-6">
+          {activeMenu === "profile" && (
+            <div>
+              <h2
+                className="font-semibold mb-6"
+                style={{
+                  fontSize: "var(--pw-text-xl)",
+                  color: "var(--pw-text-primary)"
+                }}
+              >
+                プロフィール
+              </h2>
+              {user ? (
+                <ProfileForm user={user} onUpdate={setUser} />
+              ) : (
+                <div className="text-center py-8">
+                  <p style={{ color: "var(--pw-text-gray)" }}>データを読み込んでいます...</p>
                 </div>
               )}
             </div>
-          </div>
+          )}
+
+          {activeMenu === "work-history" && (
+            <div>
+              <h2
+                className="font-semibold mb-6"
+                style={{
+                  fontSize: "var(--pw-text-xl)",
+                  color: "var(--pw-text-primary)"
+                }}
+              >
+                職歴・資格
+              </h2>
+              {user ? (
+                <WorkHistoryForm user={user} onUpdate={setUser} />
+              ) : (
+                <div className="text-center py-8">
+                  <p style={{ color: "var(--pw-text-gray)" }}>データを読み込んでいます...</p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {activeMenu === "preferences" && (
+            <div>
+              <h2
+                className="font-semibold mb-6"
+                style={{
+                  fontSize: "var(--pw-text-xl)",
+                  color: "var(--pw-text-primary)"
+                }}
+              >
+                希望条件
+              </h2>
+              {user ? (
+                <PreferencesForm user={user} onUpdate={setUser} />
+              ) : (
+                <div className="text-center py-8">
+                  <p style={{ color: "var(--pw-text-gray)" }}>データを読み込んでいます...</p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {activeMenu === "applications" && (
+            <div>
+              <h2
+                className="font-semibold mb-6"
+                style={{
+                  fontSize: "var(--pw-text-xl)",
+                  color: "var(--pw-text-primary)"
+                }}
+              >
+                応募済み案件
+              </h2>
+              <ApplicationsTable />
+            </div>
+          )}
+
+          {activeMenu === "password" && (
+            <div>
+              <h2
+                className="font-bold mb-6"
+                style={{
+                  fontSize: "var(--pw-text-2xl)",
+                  color: "var(--pw-text-primary)"
+                }}
+              >
+                パスワード変更
+              </h2>
+              <PasswordChangeForm />
+            </div>
+          )}
+
+          {activeMenu === "email" && (
+            <div>
+              <h2
+                className="font-bold mb-6"
+                style={{
+                  fontSize: "var(--pw-text-2xl)",
+                  color: "var(--pw-text-primary)"
+                }}
+              >
+                メールアドレス変更
+              </h2>
+              <EmailChangeForm />
+            </div>
+          )}
         </div>
-      </main>
+      </SidebarLayout>
     </div>
   )
 }

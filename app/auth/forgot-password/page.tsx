@@ -5,9 +5,10 @@ import type React from "react"
 import { useState } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
+import { PWInput } from "@/components/ui/pw-input"
 import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { CenteredLayout } from "@/components/layouts"
+import { PWAlert } from "@/components/ui/pw-alert"
 import { useToast } from "@/hooks/use-toast"
 import { Mail, ArrowLeft } from "lucide-react"
 
@@ -53,82 +54,119 @@ export default function ForgotPasswordPage() {
 
   if (step === "email-sent") {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-        <Card className="w-full max-w-md">
-          <CardHeader className="text-center">
-            <div className="mx-auto w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mb-4">
-              <Mail className="w-6 h-6 text-blue-600" />
-            </div>
-            <CardTitle>メールを送信しました</CardTitle>
-            <CardDescription>
-              {email} 宛にパスワードリセット用のリンクを送信しました。
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm text-blue-800 mb-4">
-              <p className="font-semibold mb-1">次のステップ：</p>
-              <ol className="list-decimal list-inside space-y-1">
-                <li>受信トレイを確認</li>
-                <li>メール内のリンクをクリック</li>
-                <li>新しいパスワードを設定</li>
-              </ol>
-            </div>
-            <p className="text-xs text-gray-500 text-center mb-4">
-              メールが届かない場合は、迷惑メールフォルダをご確認ください。
-            </p>
-            <Link href="/auth/signin">
-              <Button variant="outline" className="w-full">
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                ログインページに戻る
-              </Button>
-            </Link>
-          </CardContent>
-        </Card>
-      </div>
+      <CenteredLayout>
+        <div className="text-center mb-6">
+          <div
+            className="mx-auto w-16 h-16 rounded-full flex items-center justify-center mb-4"
+            style={{ backgroundColor: "var(--pw-bg-light-blue)" }}
+          >
+            <Mail
+              className="w-8 h-8"
+              style={{ color: "var(--pw-button-primary)" }}
+            />
+          </div>
+          <h1
+            className="font-semibold mb-2"
+            style={{
+              fontSize: "var(--pw-text-xl)",
+              color: "var(--pw-text-primary)"
+            }}
+          >
+            メールを送信しました
+          </h1>
+          <p
+            className="text-[var(--pw-text-gray)]"
+            style={{ fontSize: "var(--pw-text-sm)" }}
+          >
+            {email} 宛にパスワードリセット用のリンクを送信しました。
+          </p>
+        </div>
+
+        <PWAlert variant="info" title="次のステップ：">
+          <ol className="list-decimal list-inside space-y-1">
+            <li>受信トレイを確認</li>
+            <li>メール内のリンクをクリック</li>
+            <li>新しいパスワードを設定</li>
+          </ol>
+        </PWAlert>
+
+        <p
+          className="text-center mt-4 mb-4"
+          style={{
+            fontSize: "var(--pw-text-xs)",
+            color: "var(--pw-text-light-gray)"
+          }}
+        >
+          メールが届かない場合は、迷惑メールフォルダをご確認ください。
+        </p>
+
+        <Link href="/auth/signin">
+          <Button variant="pw-outline" className="w-full">
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            ログインページに戻る
+          </Button>
+        </Link>
+      </CenteredLayout>
     )
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle>パスワードをリセット</CardTitle>
-          <CardDescription>
-            登録済みのメールアドレスを入力してください
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <Label htmlFor="email">メールアドレス</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="your@email.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
-            </div>
+    <CenteredLayout>
+      <div className="text-center mb-8">
+        <h1
+          className="font-bold mb-2"
+          style={{
+            fontSize: "var(--pw-text-2xl)",
+            color: "var(--pw-border-dark)"
+          }}
+        >
+          パスワードをリセット
+        </h1>
+        <p
+          className="text-[var(--pw-text-gray)]"
+          style={{ fontSize: "var(--pw-text-sm)" }}
+        >
+          登録済みのメールアドレスを入力してください
+        </p>
+      </div>
 
-            <Button 
-              type="submit" 
-              className="w-full" 
-              disabled={loading}
-            >
-              {loading ? "送信中..." : "リセットリンクを送信"}
-            </Button>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <Label
+            htmlFor="email"
+            className="text-[var(--pw-text-primary)] mb-1 block"
+            style={{ fontSize: "var(--pw-text-sm)" }}
+          >
+            メールアドレス
+          </Label>
+          <PWInput
+            id="email"
+            type="email"
+            placeholder="your@email.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+          />
+        </div>
 
-            <Link href="/auth/signin">
-              <Button variant="ghost" className="w-full">
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                ログインページに戻る
-              </Button>
-            </Link>
-          </form>
-        </CardContent>
-      </Card>
-    </div>
+        <Button
+          type="submit"
+          variant="pw-primary"
+          className="w-full mt-6"
+          disabled={loading}
+          style={{ fontSize: "var(--pw-text-md)" }}
+        >
+          {loading ? "送信中..." : "リセットリンクを送信"}
+        </Button>
+
+        <Link href="/auth/signin">
+          <Button variant="pw-outline" className="w-full mt-2">
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            ログインページに戻る
+          </Button>
+        </Link>
+      </form>
+    </CenteredLayout>
   )
 }
 

@@ -5,6 +5,7 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { useNotifications } from "@/lib/notification-context"
 import { Button } from "@/components/ui/button"
+import { NotificationBadge } from "@/components/ui/notification-badge"
 
 export function NotificationDropdown() {
   const { notifications, removeNotification } = useNotifications()
@@ -27,7 +28,9 @@ export function NotificationDropdown() {
       >
         <Bell className="w-6 h-6 text-gray-700" />
         {notifications.length > 0 && (
-          <span className="absolute top-1 right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-white" />
+          <span className="absolute top-0 right-0 -translate-y-1/4 translate-x-1/4">
+            <NotificationBadge count={notifications.length} size={16} />
+          </span>
         )}
       </button>
 

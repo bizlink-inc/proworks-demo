@@ -4,10 +4,10 @@ import type React from "react"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
+import { Mail, Lock } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { PWInput } from "@/components/ui/pw-input"
+import { CenteredLayout } from "@/components/layouts"
 import { useToast } from "@/hooks/use-toast"
 
 export default function SignInPage() {
@@ -61,62 +61,101 @@ export default function SignInPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <CardTitle className="text-3xl font-bold text-blue-600">PRO WORKS</CardTitle>
-          <CardDescription>ログインしてください</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <Label htmlFor="email">メールアドレス</Label>
-              <Input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                placeholder="your@email.com"
-              />
-            </div>
+    <>
+      <CenteredLayout showHeader={true} showFooter={false}>
+        <div className="text-center mb-8">
+          <h1
+            className="font-semibold"
+            style={{
+              fontSize: "var(--pw-text-2xl)",
+              color: "var(--pw-text-primary)"
+            }}
+          >
+            ログイン
+          </h1>
+        </div>
 
-            <div>
-              <div className="flex items-center justify-between mb-1">
-              <Label htmlFor="password">パスワード</Label>
-                <Link 
-                  href="/auth/forgot-password" 
-                  className="text-xs text-blue-600 hover:underline"
-                >
-                  パスワードを忘れた方
-                </Link>
-              </div>
-              <Input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                placeholder="••••••••"
-              />
-            </div>
-
-            <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700" disabled={loading}>
-              {loading ? "ログイン中..." : "ログイン"}
-            </Button>
-          </form>
-
-          <div className="mt-6 text-center">
-            <p className="text-sm text-gray-600">
-              アカウントをお持ちでない方は
-              <Link href="/auth/signup" className="text-blue-600 hover:underline ml-1 font-medium">
-                新規登録
-              </Link>
-            </p>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <PWInput
+              id="email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              placeholder="s_aieda@wag-wag.net"
+              leftIcon={<Mail className="w-5 h-5" />}
+            />
           </div>
 
-        </CardContent>
-      </Card>
-    </div>
+          <div>
+            <PWInput
+              id="password"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              placeholder="••••••••••••"
+              leftIcon={<Lock className="w-5 h-5" />}
+            />
+            <div className="mt-2 text-right">
+              <Link
+                href="/auth/forgot-password"
+                className="hover:underline"
+                style={{
+                  fontSize: "var(--pw-text-xs)",
+                  color: "var(--pw-button-primary)"
+                }}
+              >
+                パスワードを忘れた方
+              </Link>
+            </div>
+          </div>
+
+          <Button
+            type="submit"
+            variant="pw-primary"
+            className="w-full mt-6"
+            disabled={loading}
+            style={{ fontSize: "var(--pw-text-md)" }}
+          >
+            {loading ? "ログイン中..." : "ログイン"}
+          </Button>
+        </form>
+
+        <div className="mt-6 text-center">
+          <p
+            className="text-[var(--pw-text-gray)]"
+            style={{ fontSize: "var(--pw-text-sm)" }}
+          >
+            PRO WORKSのご利用は初めてですか？
+            <Link
+              href="/auth/signup"
+              className="ml-1 font-semibold hover:underline"
+              style={{ color: "var(--pw-text-black)" }}
+            >
+              新規登録（無料）
+            </Link>
+          </p>
+        </div>
+      </CenteredLayout>
+
+      <div className="text-center pb-8">
+        <div className="flex justify-center gap-4 text-[var(--pw-text-sm)] text-[var(--pw-text-gray)]">
+          <a href="#" className="hover:text-[var(--pw-button-primary)] transition-colors">
+            利用規約
+          </a>
+          <a href="#" className="hover:text-[var(--pw-button-primary)] transition-colors">
+            プライバシーポリシー
+          </a>
+          <a href="#" className="hover:text-[var(--pw-button-primary)] transition-colors">
+            ヘルプ
+          </a>
+          <a href="#" className="hover:text-[var(--pw-button-primary)] transition-colors">
+            お問い合わせ
+          </a>
+        </div>
+      </div>
+    </>
   )
 }
