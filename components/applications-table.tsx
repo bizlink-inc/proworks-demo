@@ -50,11 +50,11 @@ export const ApplicationsTable = () => {
   if (applications.length === 0) {
     return (
       <FormSection title="応募済み案件">
-        <div className="py-16 text-center">
+      <div className="py-16 text-center">
           <p className="text-lg" style={{ color: "var(--pw-text-gray)" }}>
             応募している案件がありません
           </p>
-        </div>
+      </div>
       </FormSection>
     )
   }
@@ -62,30 +62,30 @@ export const ApplicationsTable = () => {
   return (
     <FormSection title="応募済み案件" description="あなたが応募した案件の一覧です">
       <div className="border rounded-lg" style={{ borderColor: "var(--pw-border-lighter)" }}>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>案件名</TableHead>
-              <TableHead>ステータス</TableHead>
-              <TableHead>応募受付日</TableHead>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>案件名</TableHead>
+            <TableHead>ステータス</TableHead>
+            <TableHead>応募受付日</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {applications.map((app) => (
+            <TableRow key={app.id}>
+              <TableCell className="font-medium">{app.jobTitle}</TableCell>
+              <TableCell>
+                <div className="flex items-center gap-2">
+                  <span className={`w-2 h-2 rounded-full ${statusColors[app.status] || "bg-gray-500"}`} />
+                  <span>{app.status}</span>
+                </div>
+              </TableCell>
+              <TableCell>{format(new Date(app.appliedAt), "yyyy/MM/dd HH:mm")}</TableCell>
             </TableRow>
-          </TableHeader>
-          <TableBody>
-            {applications.map((app) => (
-              <TableRow key={app.id}>
-                <TableCell className="font-medium">{app.jobTitle}</TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-2">
-                    <span className={`w-2 h-2 rounded-full ${statusColors[app.status] || "bg-gray-500"}`} />
-                    <span>{app.status}</span>
-                  </div>
-                </TableCell>
-                <TableCell>{format(new Date(app.appliedAt), "yyyy/MM/dd HH:mm")}</TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
     </FormSection>
   )
 }

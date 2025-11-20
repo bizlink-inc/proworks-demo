@@ -18,6 +18,7 @@ import { drizzle } from "drizzle-orm/better-sqlite3";
 import * as schema from "../lib/db/schema";
 import path from "path";
 import fs from "fs";
+import { exec } from "child_process";
 
 const dbPath = path.join(process.cwd(), "auth.db");
 
@@ -33,7 +34,7 @@ const uploadDummyFiles = async (): Promise<Array<{ fileKey: string; name: string
 
   for (const dummyFile of dummyFiles) {
     const filePath = path.join(dummyFilesDir, dummyFile.filename);
-    
+
     if (!fs.existsSync(filePath)) {
       console.log(`⚠️ ダミーファイルが見つかりません: ${filePath}`);
       continue;
@@ -47,10 +48,10 @@ const uploadDummyFiles = async (): Promise<Array<{ fileKey: string; name: string
       });
 
       console.log(`📤 ダミーファイルアップロード中: ${dummyFile.displayName}`);
-      
+
       // kintoneにアップロード
       const uploadResult = await uploadFileToKintone(file);
-      
+
       uploadedFiles.push({
         fileKey: uploadResult.fileKey,
         name: uploadResult.fileName,
@@ -331,6 +332,26 @@ Web系エンジニアとして5年の実務経験があります。
       対応状況: "応募済み",
     },
   ],
+
+  // 通知 (2件) - ユーザーが見ることができるテスト通知
+  notifications: [
+    {
+      id: "notification_001",
+      userId: "seed_user_001",
+      jobTitle: "大手ECサイトのフロントエンド刷新案件",
+      oldStatus: "応募済み",
+      newStatus: "面談調整中",
+      timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2時間前
+    },
+    {
+      id: "notification_002",
+      userId: "seed_user_001",
+      jobTitle: "スタートアップ向け新規サービス開発",
+      oldStatus: "面談調整中",
+      newStatus: "面談完了",
+      timestamp: new Date(Date.now() - 30 * 60 * 1000), // 30分前
+    },
+  ],
 };
 
 // シードデータ作成
@@ -344,9 +365,9 @@ export const createSeedData = async () => {
     const applicationClient = createApplicationClient();
 
     // 1. Better Authユーザーを作成
-    console.log("=" .repeat(80));
+    console.log("=".repeat(80));
     console.log("👤 Step 1: Better Authユーザーを作成");
-    console.log("=" .repeat(80));
+    console.log("=".repeat(80));
 
     const sqlite = new Database(dbPath);
     const db = drizzle(sqlite, { schema });
@@ -364,7 +385,7 @@ export const createSeedData = async () => {
       sqlite.close();
     } else {
       sqlite.close();
-      
+
       // Better AuthのAPIを使ってユーザーを作成（メール認証なしで）
       const signUpResponse = await fetch("http://localhost:3000/api/auth/sign-up/email", {
         method: "POST",
@@ -395,9 +416,9 @@ export const createSeedData = async () => {
     }
 
     // 2. ダミーファイルをアップロード
-    console.log("\n" + "=" .repeat(80));
+    console.log("\n" + "=".repeat(80));
     console.log("📄 Step 2: ダミーファイルをアップロード");
-    console.log("=" .repeat(80));
+    console.log("=".repeat(80));
 
     let uploadedFiles: Array<{ fileKey: string; name: string; size: string }> = [];
     try {
@@ -409,9 +430,9 @@ export const createSeedData = async () => {
     }
 
     // 3. 人材DBにレコード作成（ファイル情報を含む）
-    console.log("\n" + "=" .repeat(80));
+    console.log("\n" + "=".repeat(80));
     console.log("👨‍💼 Step 3: 人材DBにレコードを作成");
-    console.log("=" .repeat(80));
+    console.log("=".repeat(80));
 
     const talentRecord = await talentClient.record.addRecord({
       app: appIds.talent,
@@ -445,9 +466,9 @@ export const createSeedData = async () => {
     console.log(`✅ 人材レコード作成: ${seedData.talent.氏名} (ID: ${talentRecord.id})`);
 
     // 4. 案件DBにレコード作成
-    console.log("\n" + "=" .repeat(80));
+    console.log("\n" + "=".repeat(80));
     console.log("💼 Step 4: 案件DBにレコードを作成");
-    console.log("=" .repeat(80));
+    console.log("=".repeat(80));
 
     const jobIds: string[] = [];
 
@@ -486,24 +507,33 @@ export const createSeedData = async () => {
       console.log(`✅ 案件レコード作成: ${job.案件名} (ID: ${jobRecord.id})`);
     }
 
-    // 5. 応募履歴DBにレコード作成
-    console.log("\n" + "=" .repeat(80));
+    // 5. 応募履歴DBにレコード作成（最初は「応募済み」で作成）
+    console.log("\n" + "=".repeat(80));
     console.log("📝 Step 5: 応募履歴DBにレコードを作成");
-    console.log("=" .repeat(80));
+    console.log("=".repeat(80));
 
     // 応募履歴の案件IDとauth_user_idを動的に設定
     const applicationsWithJobIds = [
       {
-        ...seedData.applications[0],
-        auth_user_id: authUserId, // 実際のBetter AuthのユーザーIDを使用
+        auth_user_id: authUserId,
         案件ID: jobIds[0], // 大手ECサイトのフロントエンド刷新案件
+        案件名: seedData.jobs[0].案件名,
+        初期ステータス: "応募済み",
+        最終ステータス: "面談調整中",
       },
       {
-        ...seedData.applications[1],
-        auth_user_id: authUserId, // 実際のBetter AuthのユーザーIDを使用
+        auth_user_id: authUserId,
         案件ID: jobIds[2], // スタートアップ向け新規サービス開発
+        案件名: seedData.jobs[2].案件名,
+        初期ステータス: "応募済み",
+        最終ステータス: "面談調整中",
       },
     ];
+
+    // 応募レコードのIDを記録
+    const applicationRecordIds: string[] = [];
+    const applicationJobIds: string[] = [];
+    const applicationJobTitles: string[] = [];
 
     for (const application of applicationsWithJobIds) {
       const applicationRecord = await applicationClient.record.addRecord({
@@ -511,24 +541,174 @@ export const createSeedData = async () => {
         record: {
           [APPLICATION_FIELDS.AUTH_USER_ID]: { value: application.auth_user_id },
           [APPLICATION_FIELDS.JOB_ID]: { value: application.案件ID },
-          [APPLICATION_FIELDS.STATUS]: { value: application.対応状況 },
+          [APPLICATION_FIELDS.STATUS]: { value: application.初期ステータス },
         },
       });
 
-      console.log(`✅ 応募履歴レコード作成: auth_user_id=${application.auth_user_id}, 案件ID=${application.案件ID} (ID: ${applicationRecord.id})`);
+      applicationRecordIds.push(applicationRecord.id);
+      applicationJobIds.push(application.案件ID);
+      applicationJobTitles.push(application.案件名);
+      console.log(`✅ 応募履歴レコード作成: ${application.案件名} (ID: ${applicationRecord.id}, ステータス: ${application.初期ステータス})`);
     }
 
-    console.log("\n" + "=" .repeat(80));
+    // 6. 待機してからステータスを更新（通知生成のため）
+    console.log("\n" + "=".repeat(80));
+    console.log("🔔 Step 6: 通知生成のためステータスを更新");
+    console.log("=".repeat(80));
+    console.log("⏳ 3秒待機中...");
+    
+    // 3秒待機
+    await new Promise(resolve => setTimeout(resolve, 3000));
+
+    // ステータスを更新
+    for (let i = 0; i < applicationRecordIds.length; i++) {
+      try {
+        await applicationClient.record.updateRecord({
+          app: appIds.application,
+          id: applicationRecordIds[i],
+          record: {
+            [APPLICATION_FIELDS.STATUS]: { value: applicationsWithJobIds[i].最終ステータス },
+          },
+        });
+        console.log(`✅ ステータス更新: ${applicationsWithJobIds[i].案件名} (${applicationsWithJobIds[i].初期ステータス} → ${applicationsWithJobIds[i].最終ステータス})`);
+      } catch (error) {
+        console.error(`❌ ステータス更新エラー: ${applicationsWithJobIds[i].案件名}`, error);
+      }
+    }
+
+    console.log("\n" + "=".repeat(80));
     console.log("🎉 シードデータの作成が完了しました！");
-    console.log("=" .repeat(80));
+    console.log("=".repeat(80));
     console.log("\n📊 作成されたデータ:");
     console.log(`  👤 Better Authユーザー: 1件`);
     console.log(`  👨‍💼 人材: 1件`);
     console.log(`  💼 案件: ${seedData.jobs.length}件`);
     console.log(`  📝 応募履歴: ${seedData.applications.length}件`);
+    console.log(`  🔔 通知テスト用ステータス更新: 2件（ステータス変更を検知して通知を生成）`);
     console.log("\n📝 ログイン情報:");
     console.log(`  メールアドレス: ${seedData.authUser.email}`);
     console.log(`  パスワード: ${seedData.authUser.password}`);
+    // 7. 自動的にlocalStorageを設定するHTMLページを生成して開く
+    console.log("\n" + "=".repeat(80));
+    console.log("💾 Step 7: 通知生成用のセットアップページを自動で開きます");
+    console.log("=".repeat(80));
+
+    // ログイン後、開発者ツールで実行するコマンドを生成
+    const previousApplicationsForStorage = applicationRecordIds.map((id, i) => ({
+      id: id,
+      jobId: applicationJobIds[i],
+      jobTitle: applicationJobTitles[i],
+      status: applicationsWithJobIds[i].初期ステータス, // 古いステータス
+    }));
+
+    // HTMLファイルを生成（localStorageを自動設定してログインページにリダイレクト）
+    const setupHtmlPath = path.join(process.cwd(), "public", "_seed-setup.html");
+    const setupHtmlContent = `<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>通知セットアップ - PRO WORKS</title>
+  <style>
+    body {
+      font-family: 'Noto Sans JP', sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+    .container {
+      text-align: center;
+      padding: 2rem;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 1rem;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+    }
+    h1 {
+      font-size: 2rem;
+      margin-bottom: 1rem;
+    }
+    .spinner {
+      border: 4px solid rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+      border-top: 4px solid white;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+      margin: 2rem auto;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    .message {
+      font-size: 1.1rem;
+      margin-top: 1rem;
+      opacity: 0.9;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🔔 通知セットアップ中...</h1>
+    <div class="spinner"></div>
+    <p class="message">自動的にログインページに移動します</p>
+  </div>
+  <script>
+    // localStorageに「古い状態」を保存
+    const previousApplicationStatus = ${JSON.stringify(previousApplicationsForStorage)};
+    localStorage.setItem('previous_application_status', JSON.stringify(previousApplicationStatus));
+    
+    console.log('✅ 通知生成用の状態をlocalStorageに保存しました');
+    console.log('📊 保存した状態:', previousApplicationStatus);
+    
+    // 2秒後にログインページにリダイレクト
+    setTimeout(() => {
+      window.location.href = '/auth/signin';
+    }, 2000);
+  </script>
+</body>
+</html>`;
+
+    fs.writeFileSync(setupHtmlPath, setupHtmlContent, "utf-8");
+    console.log(`✅ セットアップページを生成: ${setupHtmlPath}`);
+
+    // ブラウザで自動的に開く
+    const setupUrl = `http://localhost:3000/_seed-setup.html`;
+    console.log(`🌐 ブラウザでセットアップページを開きます: ${setupUrl}`);
+    
+    // OSに応じてブラウザを開くコマンドを実行
+    const openCommand = process.platform === "darwin" ? "open" : process.platform === "win32" ? "start" : "xdg-open";
+    
+    exec(`${openCommand} ${setupUrl}`, (error) => {
+      if (error) {
+        console.error("⚠️  ブラウザの自動起動に失敗しました:", error.message);
+        console.log(`📋 手動で以下のURLを開いてください: ${setupUrl}`);
+      }
+    });
+
+    console.log("\n" + "=".repeat(80));
+    console.log("🎉 シードデータの作成が完了しました！");
+    console.log("=".repeat(80));
+    console.log("\n📊 作成されたデータ:");
+    console.log(`  👤 Better Authユーザー: 1件`);
+    console.log(`  👨‍💼 人材: 1件`);
+    console.log(`  💼 案件: ${seedData.jobs.length}件`);
+    console.log(`  📝 応募履歴: ${applicationsWithJobIds.length}件`);
+    console.log(`  🔔 通知テスト用ステータス更新: ${applicationsWithJobIds.length}件`);
+    console.log("\n📝 ログイン情報:");
+    console.log(`  メールアドレス: ${seedData.authUser.email}`);
+    console.log(`  パスワード: ${seedData.authUser.password}`);
+    console.log("\n💡 次のステップ:");
+    console.log(`  1. セットアップページが自動的に開きます（開かない場合は ${setupUrl} を開く）`);
+    console.log(`  2. 自動的にログインページにリダイレクトされます`);
+    console.log(`  3. 上記のメールアドレス・パスワードでログイン`);
+    console.log(`  4. ヘッダーのベルアイコン(🔔)に通知バッジ（数字2）が表示されます`);
+    console.log(`  5. ベルアイコンをクリックして、通知ドロップダウンのデザインを確認`);
     console.log("\n");
 
   } catch (error) {
@@ -553,9 +733,9 @@ export const deleteSeedData = async () => {
     const applicationClient = createApplicationClient();
 
     // 1. 応募履歴を全件削除
-    console.log("\n" + "=" .repeat(80));
+    console.log("\n" + "=".repeat(80));
     console.log("📝 Step 1: 応募履歴を全件削除");
-    console.log("=" .repeat(80));
+    console.log("=".repeat(80));
 
     const applications = await applicationClient.record.getRecords({
       app: appIds.application,
@@ -573,9 +753,9 @@ export const deleteSeedData = async () => {
     }
 
     // 2. 案件を全件削除
-    console.log("\n" + "=" .repeat(80));
+    console.log("\n" + "=".repeat(80));
     console.log("💼 Step 2: 案件を全件削除");
-    console.log("=" .repeat(80));
+    console.log("=".repeat(80));
 
     const jobs = await jobClient.record.getRecords({
       app: appIds.job,
@@ -593,9 +773,9 @@ export const deleteSeedData = async () => {
     }
 
     // 3. 人材を全件削除
-    console.log("\n" + "=" .repeat(80));
+    console.log("\n" + "=".repeat(80));
     console.log("👨‍💼 Step 3: 人材を全件削除");
-    console.log("=" .repeat(80));
+    console.log("=".repeat(80));
 
     const talents = await talentClient.record.getRecords({
       app: appIds.talent,
@@ -613,22 +793,22 @@ export const deleteSeedData = async () => {
     }
 
     // 4. Better Authユーザーを削除
-    console.log("\n" + "=" .repeat(80));
+    console.log("\n" + "=".repeat(80));
     console.log("👤 Step 4: Better Authユーザーを削除");
-    console.log("=" .repeat(80));
+    console.log("=".repeat(80));
 
     const sqlite = new Database(dbPath);
-    
+
     // すべてのテーブルのレコード数を確認
     const userCount = sqlite.prepare("SELECT COUNT(*) as count FROM user").get() as { count: number };
-    
+
     if (userCount.count > 0) {
       // すべてのテーブルを削除（外部キー制約の順番に注意）
       sqlite.prepare("DELETE FROM session").run();
       sqlite.prepare("DELETE FROM account").run();
       sqlite.prepare("DELETE FROM verification").run();
       sqlite.prepare("DELETE FROM user").run();
-      
+
       console.log(`✅ ユーザーを削除: ${userCount.count}件`);
     } else {
       console.log("✅ ユーザー: 削除対象なし");
@@ -636,9 +816,9 @@ export const deleteSeedData = async () => {
 
     sqlite.close();
 
-    console.log("\n" + "=" .repeat(80));
+    console.log("\n" + "=".repeat(80));
     console.log("🎉 シードデータの削除が完了しました！");
-    console.log("=" .repeat(80));
+    console.log("=".repeat(80));
     console.log("\n");
 
   } catch (error) {
