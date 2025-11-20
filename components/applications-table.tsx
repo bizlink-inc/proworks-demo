@@ -10,11 +10,19 @@ type ApplicationWithJob = Application & {
   job: Job | null
 }
 
-const statusColors: Record<string, string> = {
-  回答待ち: "bg-yellow-500",
-  応募終了: "bg-gray-500",
-  面談調整中: "bg-blue-500",
-  契約締結: "bg-green-500",
+// ステータスに応じた色（案件一覧と統一）
+const getStatusColor = (status: string): string => {
+  switch (status) {
+    case "案件参画":
+      return "#d22852" // 赤
+    case "面談予定":
+    case "面談調整中":
+      return "#fa8212" // オレンジ
+    case "応募済み":
+      return "#3f9c78" // 緑
+    default:
+      return "#686868" // グレー（その他）
+  }
 }
 
 export const ApplicationsTable = () => {
@@ -76,7 +84,10 @@ export const ApplicationsTable = () => {
               <TableCell className="font-medium">{app.jobTitle}</TableCell>
               <TableCell>
                 <div className="flex items-center gap-2">
-                  <span className={`w-2 h-2 rounded-full ${statusColors[app.status] || "bg-gray-500"}`} />
+                  <span 
+                    className="w-2 h-2 rounded-full"
+                    style={{ backgroundColor: getStatusColor(app.status) }}
+                  />
                   <span>{app.status}</span>
                 </div>
               </TableCell>
