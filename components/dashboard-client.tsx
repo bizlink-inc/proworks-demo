@@ -34,13 +34,31 @@ export function DashboardClient({ user }: DashboardClientProps) {
     jobTitle: string
     appliedAt: string
   } | null>(null)
+  const [applicationStatuses, setApplicationStatuses] = useState<Record<string, string>>({})
 
   const size = 6
   const totalPages = Math.ceil(total / size)
 
   useEffect(() => {
     fetchJobs()
+    fetchApplicationStatuses()
   }, [page, filters])
+
+  const fetchApplicationStatuses = async () => {
+    try {
+      const res = await fetch("/api/applications/me")
+      if (res.ok) {
+        const applications = await res.json()
+        const statusMap: Record<string, string> = {}
+        applications.forEach((app: any) => {
+          statusMap[app.jobId] = app.status
+        })
+        setApplicationStatuses(statusMap)
+      }
+    } catch (error) {
+      console.error("応募ステータスの取得に失敗:", error)
+    }
+  }
 
   const fetchJobs = async () => {
     const params = new URLSearchParams({
@@ -154,7 +172,12 @@ export function DashboardClient({ user }: DashboardClientProps) {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
           {jobs.map((job) => (
-            <JobCard key={job.id} job={job} onViewDetail={setSelectedJobId} />
+            <JobCard 
+              key={job.id} 
+              job={job} 
+              onViewDetail={setSelectedJobId}
+              applicationStatus={applicationStatuses[job.id]}
+            />
           ))}
         </div>
 
