@@ -58,12 +58,13 @@ export const MobileMenu = ({ user, onSignOut }: MobileMenuProps) => {
       {/* メニューパネル */}
       <div
         className={cn(
-          "fixed right-0 w-64 bg-white shadow-lg z-50 transform transition-transform duration-300 ease-in-out md:hidden",
+          "fixed right-0 w-64 shadow-lg z-50 transform transition-transform duration-300 ease-in-out md:hidden",
           isOpen ? "translate-x-0" : "translate-x-full"
         )}
         style={{
           top: "60px",
           height: "calc(100vh - 60px)",
+          backgroundColor: "var(--pw-bg-light-blue)",
           borderLeft: "1px solid var(--pw-border-lighter)",
         }}
       >

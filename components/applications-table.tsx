@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { format } from "date-fns"
+import { FormSection } from "@/components/ui/form-section"
 import type { Application, Job } from "@/lib/kintone/types"
 
 type ApplicationWithJob = Application & {
@@ -37,42 +38,54 @@ export const ApplicationsTable = () => {
   }, [])
 
   if (loading) {
-    return <div className="py-8 text-center text-muted-foreground">読み込み中...</div>
+    return (
+      <FormSection title="応募済み案件">
+        <div className="py-8 text-center" style={{ color: "var(--pw-text-gray)" }}>
+          読み込み中...
+        </div>
+      </FormSection>
+    )
   }
 
   if (applications.length === 0) {
     return (
-      <div className="py-16 text-center">
-        <p className="text-lg text-muted-foreground">応募している案件がありません</p>
-      </div>
+      <FormSection title="応募済み案件">
+        <div className="py-16 text-center">
+          <p className="text-lg" style={{ color: "var(--pw-text-gray)" }}>
+            応募している案件がありません
+          </p>
+        </div>
+      </FormSection>
     )
   }
 
   return (
-    <div className="border rounded-lg">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>案件名</TableHead>
-            <TableHead>ステータス</TableHead>
-            <TableHead>応募受付日</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {applications.map((app) => (
-            <TableRow key={app.id}>
-              <TableCell className="font-medium">{app.jobTitle}</TableCell>
-              <TableCell>
-                <div className="flex items-center gap-2">
-                  <span className={`w-2 h-2 rounded-full ${statusColors[app.status] || "bg-gray-500"}`} />
-                  <span>{app.status}</span>
-                </div>
-              </TableCell>
-              <TableCell>{format(new Date(app.appliedAt), "yyyy/MM/dd HH:mm")}</TableCell>
+    <FormSection title="応募済み案件" description="あなたが応募した案件の一覧です">
+      <div className="border rounded-lg" style={{ borderColor: "var(--pw-border-lighter)" }}>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>案件名</TableHead>
+              <TableHead>ステータス</TableHead>
+              <TableHead>応募受付日</TableHead>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </div>
+          </TableHeader>
+          <TableBody>
+            {applications.map((app) => (
+              <TableRow key={app.id}>
+                <TableCell className="font-medium">{app.jobTitle}</TableCell>
+                <TableCell>
+                  <div className="flex items-center gap-2">
+                    <span className={`w-2 h-2 rounded-full ${statusColors[app.status] || "bg-gray-500"}`} />
+                    <span>{app.status}</span>
+                  </div>
+                </TableCell>
+                <TableCell>{format(new Date(app.appliedAt), "yyyy/MM/dd HH:mm")}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+    </FormSection>
   )
 }
