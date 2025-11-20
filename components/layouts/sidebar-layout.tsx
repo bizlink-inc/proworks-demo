@@ -6,6 +6,8 @@
 
 import type React from "react"
 import { cn } from "@/lib/utils"
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faAddressCard, faFileLines, faCircleCheck, faEnvelope, faLock, faAt } from '@fortawesome/free-solid-svg-icons'
 
 interface SidebarLayoutProps {
   children: React.ReactNode
@@ -17,16 +19,16 @@ interface SidebarLayoutProps {
 interface MenuItem {
   id: string
   label: string
-  icon?: string
+  icon?: any
 }
 
 const defaultMenuItems: MenuItem[] = [
-  { id: "profile", label: "プロフィール" },
-  { id: "work-history", label: "職歴・資格" },
-  { id: "preferences", label: "希望条件" },
-  { id: "applications", label: "応募済み案件" },
-  { id: "password", label: "パスワード変更" },
-  { id: "email", label: "メールアドレス変更" },
+  { id: "profile", label: "プロフィール", icon: faAddressCard },
+  { id: "work-history", label: "職歴・資格", icon: faFileLines },
+  { id: "preferences", label: "希望条件", icon: faCircleCheck },
+  { id: "applications", label: "応募済み案件", icon: faEnvelope },
+  { id: "password", label: "パスワード変更", icon: faLock },
+  { id: "email", label: "メールアドレス変更", icon: faAt },
 ]
 
 export const SidebarLayout = ({
@@ -40,40 +42,46 @@ export const SidebarLayout = ({
       <div className="flex flex-col md:flex-row max-w-[1400px] mx-auto">
         {/* サイドメニュー - デスクトップ */}
         <aside
-          className="hidden md:block w-64 min-h-screen border-r"
+          className="hidden md:block w-64 min-h-screen"
           style={{ 
-            backgroundColor: "var(--pw-bg-light-blue)",
-            borderColor: "var(--pw-border-lighter)"
+            backgroundColor: "var(--pw-bg-body)",
           }}
           aria-label="サイドバーナビゲーション"
         >
-          <div className="px-6 py-4 border-b" style={{ borderColor: "var(--pw-border-lighter)" }}>
+          <div className="px-6 py-4">
             <p 
-              className="text-sm font-semibold"
-              style={{ color: "var(--pw-text-navy)" }}
+              className="text-sm font-medium"
+              style={{ color: "var(--pw-text-primary)" }}
             >
               メニュー
             </p>
           </div>
-          <nav className="py-4" role="navigation">
+          <nav className="py-2 px-4" role="navigation">
             {menuItems.map((item) => (
               <button
                 key={item.id}
                 onClick={() => onMenuChange?.(item.id)}
                 className={cn(
-                  "w-full text-left block px-6 py-3 transition-colors",
+                  "w-full text-left flex items-center gap-3 px-4 py-3 mb-2 transition-all",
                   activeMenu === item.id
-                    ? "bg-white font-medium"
-                    : "text-[var(--pw-text-primary)] hover:bg-white/60"
+                    ? "font-medium"
+                    : "hover:bg-white/50"
                 )}
                 style={{
                   fontSize: "var(--pw-text-md)",
-                  color: activeMenu === item.id ? "var(--pw-text-navy)" : "var(--pw-text-navy)",
-                  borderRadius: activeMenu === item.id ? "0 4px 4px 0" : "0"
+                  color: activeMenu === item.id ? "#ffffff" : "var(--pw-text-navy)",
+                  borderRadius: "4px",
+                  backgroundColor: activeMenu === item.id ? "#3966a2" : "transparent",
                 }}
                 aria-current={activeMenu === item.id ? "page" : undefined}
               >
-                {item.label}
+                {item.icon && (
+                  <FontAwesomeIcon 
+                    icon={item.icon} 
+                    className="w-5 h-5 flex-shrink-0"
+                  />
+                )}
+                <span>{item.label}</span>
               </button>
             ))}
           </nav>
