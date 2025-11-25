@@ -81,28 +81,44 @@ export const createApplicationClient = () => {
 };
 
 // kintone クライアントの作成（推薦DB用）
+// 推薦DBは人材DBと案件DBを参照するルックアップがあるため、3つのAPIトークンを連結
 export const createRecommendationClient = () => {
   const baseUrl = process.env.KINTONE_BASE_URL;
-  const apiToken = process.env.KINTONE_RECOMMENDATION_API_TOKEN;
+  const recommendationToken = process.env.KINTONE_RECOMMENDATION_API_TOKEN;
+  const talentToken = process.env.KINTONE_TALENT_API_TOKEN;
+  const jobToken = process.env.KINTONE_JOB_API_TOKEN;
 
   if (!baseUrl) {
     console.error("❌ KINTONE_BASE_URL が設定されていません");
     throw new Error("KINTONE_BASE_URL is not defined");
   }
 
-  if (!apiToken) {
+  if (!recommendationToken) {
     console.error("❌ KINTONE_RECOMMENDATION_API_TOKEN が設定されていません");
     throw new Error("KINTONE_RECOMMENDATION_API_TOKEN is not defined");
   }
 
+  if (!talentToken) {
+    console.error("❌ KINTONE_TALENT_API_TOKEN が設定されていません");
+    throw new Error("KINTONE_TALENT_API_TOKEN is not defined");
+  }
+
+  if (!jobToken) {
+    console.error("❌ KINTONE_JOB_API_TOKEN が設定されていません");
+    throw new Error("KINTONE_JOB_API_TOKEN is not defined");
+  }
+
+  // 複数のAPIトークンをカンマ区切りで連結（ルックアップ参照用）
+  const combinedToken = [recommendationToken, talentToken, jobToken].join(",");
+
   console.log("✅ kintone Recommendation Client 初期化成功");
   console.log("   Base URL:", baseUrl);
-  console.log("   API Token:", apiToken.substring(0, 10) + "...");
+  console.log("   Combined API Tokens: 3つのトークンを連結（推薦DB + 人材DB + 案件DB）");
 
   return new KintoneRestAPIClient({
     baseUrl,
     auth: {
-      apiToken,
+      apiToken: combinedToken,
     },
   });
 };

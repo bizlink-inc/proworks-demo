@@ -35,6 +35,7 @@ export const TALENT_FIELDS = {
 // 案件DB（Job）のフィールドコード
 export const JOB_FIELDS = {
   ID: '$id',
+  JOB_ID: '案件ID', // ルックアップ参照用のキーフィールド
   TITLE: '案件名',
   FEATURES: '案件特徴',
   POSITION: '職種_ポジション',
