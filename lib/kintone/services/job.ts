@@ -8,6 +8,7 @@ const convertJobRecord = (record: JobRecord): Job => {
     title: record.案件名.value,
     features: record.案件特徴.value,
     position: record.職種_ポジション.value,
+    skills: record.スキル?.value || [],
     description: record.概要.value,
     environment: record.環境.value,
     notes: record.備考.value,

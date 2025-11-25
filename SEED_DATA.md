@@ -4,28 +4,49 @@
 
 ## 📋 シードデータの内容
 
-- **Better Auth ユーザー**: 1 件
+### Better Auth ユーザー: 5 件
 
-  - メール: `seed_yamada@example.com`
-  - パスワード: `password123`
-  - 名前: `山田 太郎`
+| 名前      | メールアドレス               | パスワード    | 専門分野               |
+| --------- | ---------------------------- | ------------- | ---------------------- |
+| 田中 一郎 | `seed_tanaka@example.com`    | `password123` | フロントエンド         |
+| 佐藤 次郎 | `seed_sato@example.com`      | `password123` | バックエンド           |
+| 鈴木 三郎 | `seed_suzuki@example.com`    | `password123` | フルスタック           |
+| 高橋 四郎 | `seed_takahashi@example.com` | `password123` | モバイル               |
+| 伊藤 五郎 | `seed_ito@example.com`       | `password123` | データエンジニアリング |
 
-- **kintone 人材 DB**: 1 件
+### kintone 人材 DB: 5 件
 
-  - 上記ユーザーと連携（auth_user_id）
-  - 基本情報、スキル、希望条件を含む
+各ユーザーと連携（auth_user_id）し、それぞれ異なるスキルセットを持つ：
 
-- **kintone 案件 DB**: 5 件
+| 人材      | スキル                                         | 最適合案件               |
+| --------- | ---------------------------------------------- | ------------------------ |
+| 田中 一郎 | JavaScript, TypeScript, React, Vue.js, Next.js | 案件 1（フロントエンド） |
+| 佐藤 次郎 | Python, Django, FastAPI, PostgreSQL, Docker    | 案件 2（バックエンド）   |
+| 鈴木 三郎 | JavaScript, TypeScript, Node.js, React, AWS    | 案件 3（フルスタック）   |
+| 高橋 四郎 | React Native, TypeScript, Firebase, Swift      | 案件 4（モバイル）       |
+| 伊藤 五郎 | Python, SQL, AWS, BigQuery, Apache Spark       | 案件 5（データ）         |
 
-  - 大手 EC サイトのフロントエンド刷新案件
-  - 金融系 Web アプリケーション開発
-  - スタートアップ向け新規サービス開発
-  - 社内システムのリプレイス案件
-  - 官公庁向けポータルサイト開発
+### kintone 案件 DB: 5 件
 
-- **kintone 応募履歴 DB**: 2 件
-  - 山田太郎が 2 つの案件に応募済み
-  - 対応状況: 「応募済み」「書類選考中」
+| 案件名                                 | スキル                             | 最適合人材 |
+| -------------------------------------- | ---------------------------------- | ---------- |
+| 大手 EC サイトのフロントエンド刷新案件 | JavaScript, React, TypeScript      | 田中 一郎  |
+| 金融系 Web アプリケーション API 開発   | Python, Django, PostgreSQL         | 佐藤 次郎  |
+| スタートアップ向け新規サービス開発     | JavaScript, Node.js, React, AWS    | 鈴木 三郎  |
+| ヘルスケアアプリ開発案件               | React Native, TypeScript, Firebase | 高橋 四郎  |
+| データ基盤構築・運用案件               | Python, SQL, AWS                   | 伊藤 五郎  |
+
+### kintone 応募履歴 DB: 3 件
+
+| 人材      | 案件                                   | ステータス |
+| --------- | -------------------------------------- | ---------- |
+| 田中 一郎 | 大手 EC サイトのフロントエンド刷新案件 | 応募済み   |
+| 佐藤 次郎 | 金融系 Web アプリケーション API 開発   | 面談調整中 |
+| 鈴木 三郎 | スタートアップ向け新規サービス開発     | 案件参画   |
+
+### kintone 推薦 DB: 25 件（オプション）
+
+各人材と各案件の適合スコアが設定されています。マッチングロジックのテスト用データです。
 
 ## 🚀 シードデータ作成
 
@@ -36,37 +57,11 @@ npm run seed:create
 
 ### 作成される内容
 
-1. Better Auth にユーザー登録（メール認証済み）
-2. kintone 人材 DB にレコード作成
-3. kintone 案件 DB に 5 件のレコード作成
-4. kintone 応募履歴 DB に 2 件のレコード作成
-
-### 実行ログ例
-
-```
-================================================================================
-👤 Step 1: Better Authユーザーを作成
-================================================================================
-✅ ユーザー作成: seed_yamada@example.com (ID: abc123...)
-
-================================================================================
-👨‍💼 Step 2: 人材DBにレコードを作成
-================================================================================
-✅ 人材レコード作成: 山田 太郎 (ID: 15)
-
-================================================================================
-💼 Step 3: 案件DBにレコードを作成
-================================================================================
-✅ 案件レコード作成: 大手ECサイトのフロントエンド刷新案件 (ID: 16)
-✅ 案件レコード作成: 金融系Webアプリケーション開発 (ID: 17)
-...
-
-================================================================================
-📝 Step 4: 応募履歴DBにレコードを作成
-================================================================================
-✅ 応募履歴レコード作成: auth_user_id=abc123..., 案件ID=16 (ID: 18)
-✅ 応募履歴レコード作成: auth_user_id=abc123..., 案件ID=18 (ID: 19)
-```
+1. Better Auth にユーザー登録（5 名、メール認証済み）
+2. kintone 人材 DB にレコード作成（5 件）
+3. kintone 案件 DB にレコード作成（5 件、スキルフィールド付き）
+4. kintone 応募履歴 DB にレコード作成（3 件）
+5. kintone 推薦 DB にレコード作成（25 件、設定されている場合のみ）
 
 ## 🗑️ シードデータ削除
 
@@ -77,52 +72,11 @@ npm run seed:delete
 
 ### 削除される内容
 
-1. kintone 応募履歴 DB のレコード削除
-2. kintone 案件 DB のレコード削除
-3. kintone 人材 DB のレコード削除
-4. Better Auth のユーザーとセッションデータ削除
-
-## 👤 個別ユーザー削除
-
-```bash
-# 特定のユーザーを削除（Better Auth + kintone）
-npm run delete-user <メールアドレス>
-
-# 例
-npm run delete-user test@example.com
-npm run delete-user seed_yamada@example.com
-```
-
-## 🧪 テスト用ユーザー作成
-
-```bash
-# ランダムなメールアドレスでテストユーザーを作成
-npm run test-signup
-
-# 指定したメールアドレスでテストユーザーを作成
-npm run test-signup test@example.com
-```
-
-### テスト用ユーザー作成の流れ
-
-1. Better Auth にユーザー登録
-2. kintone 人材 DB にレコード作成
-3. ログイン情報と削除コマンドを表示
-
-## 📊 kintone フィールド情報取得
-
-```bash
-# 全アプリのフィールド一覧を取得
-npm run get-fields
-```
-
-### 取得される情報
-
-- 人材 DB（Talent）のフィールド一覧
-- 案件 DB（Job）のフィールド一覧
-- 応募履歴 DB（Application）のフィールド一覧
-
-結果は `fields-data.json` に保存されます。
+1. kintone 推薦 DB のレコード削除（設定されている場合）
+2. kintone 応募履歴 DB のレコード削除
+3. kintone 案件 DB のレコード削除
+4. kintone 人材 DB のレコード削除
+5. Better Auth のユーザーとセッションデータ削除
 
 ## ⚠️ 注意事項
 
@@ -133,12 +87,18 @@ npm run get-fields
 ```bash
 # .env.local
 KINTONE_BASE_URL=https://your-domain.cybozu.com
+
+# 必須アプリ
 KINTONE_TALENT_APP_ID=81
 KINTONE_JOB_APP_ID=85
 KINTONE_APPLICATION_APP_ID=84
 KINTONE_TALENT_API_TOKEN=your_talent_token
 KINTONE_JOB_API_TOKEN=your_job_token
 KINTONE_APPLICATION_API_TOKEN=your_application_token
+
+# 推薦DB（オプション - 設定しない場合はスキップされます）
+KINTONE_RECOMMENDATION_APP_ID=97
+KINTONE_RECOMMENDATION_API_TOKEN=RGizwa6pEfbLigChtI2vGUQ6J2DrErgjnN12G7pf
 ```
 
 ### API トークンの権限
@@ -150,12 +110,26 @@ KINTONE_APPLICATION_API_TOKEN=your_application_token
 - **レコード編集**: ✅
 - **レコード削除**: ✅
 
-### ルックアップフィールドの設定
+### 案件 DB のスキルフィールド
 
-応募履歴 DB のルックアップが正常に動作するため、以下の設定が必要です：
+案件 DB に「スキル」フィールド（チェックボックス or 複数選択）が必要です。
+以下のような選択肢を設定してください：
 
-- 人材 DB の `auth_user_id` フィールド: 「値の重複を禁止する」を有効
-- 案件 DB の `案件ID` フィールド: 「値の重複を禁止する」を有効
+- JavaScript
+- TypeScript
+- React
+- Vue.js
+- Node.js
+- Python
+- Django
+- FastAPI
+- PostgreSQL
+- MySQL
+- AWS
+- Firebase
+- React Native
+- SQL
+- BigQuery
 
 ## 🔧 トラブルシューティング
 
@@ -177,13 +151,13 @@ KINTONE_APPLICATION_API_TOKEN=your_application_token
 
 **解決方法**: kintone アプリの設定で、API トークンに必要な権限を付与してください。
 
-#### 3. ルックアップエラー
+#### 3. スキルフィールドエラー
 
 ```
-❌ [400] ルックアップの参照先から値をコピーできません。
+❌ [520] 指定したフィールドコードが見つかりません。（スキル）
 ```
 
-**解決方法**: 参照元フィールドで「値の重複を禁止する」を有効にしてください。
+**解決方法**: 案件 DB に「スキル」フィールドを追加してください。
 
 #### 4. 重複ユーザーエラー
 
@@ -194,22 +168,37 @@ KINTONE_APPLICATION_API_TOKEN=your_application_token
 **解決方法**: 既存のユーザーを削除してから再作成してください。
 
 ```bash
-npm run delete-user seed_yamada@example.com
+npm run seed:delete
 npm run seed:create
 ```
 
 ## 📝 ログイン情報
 
-### シードデータユーザー
+### シードデータユーザー（5 名）
 
-- **メール**: `seed_yamada@example.com`
-- **パスワード**: `password123`
+```
+田中 一郎: seed_tanaka@example.com / password123
+佐藤 次郎: seed_sato@example.com / password123
+鈴木 三郎: seed_suzuki@example.com / password123
+高橋 四郎: seed_takahashi@example.com / password123
+伊藤 五郎: seed_ito@example.com / password123
+```
 
-このユーザーでログインすると、応募済み案件が 2 件表示されます。
+## 🎯 マッチングテスト用データ
 
-### テストユーザー
+シードデータは、マッチングロジックのテストを想定して設計されています：
 
-`npm run test-signup` で作成したユーザーは、実行後に表示される情報でログインできます。
+### 適合度スコア（参考）
+
+| 人材 / 案件 | 案件 1 | 案件 2 | 案件 3 | 案件 4 | 案件 5 |
+| ----------- | ------ | ------ | ------ | ------ | ------ |
+| 田中 一郎   | **95** | 20     | 70     | 60     | 10     |
+| 佐藤 次郎   | 15     | **95** | 30     | 10     | 65     |
+| 鈴木 三郎   | 75     | 25     | **98** | 55     | 50     |
+| 高橋 四郎   | 45     | 10     | 40     | **95** | 15     |
+| 伊藤 五郎   | 5      | 55     | 45     | 10     | **98** |
+
+※太字は各人材が最も適合する案件
 
 ---
 
@@ -219,12 +208,10 @@ npm run seed:create
 # 1. 開発開始時：シードデータ作成
 npm run seed:create
 
-# 2. 開発中：テストユーザー作成
-npm run test-signup
+# 2. マッチングロジックのテスト
+# - 各人材が自分に最適な案件を検索できるか確認
+# - 適合スコアが正しく計算されるか確認
 
-# 3. テスト後：不要なユーザー削除
-npm run delete-user test@example.com
-
-# 4. 開発終了時：全データ削除
+# 3. 開発終了時：全データ削除
 npm run seed:delete
 ```

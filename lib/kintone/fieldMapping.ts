@@ -38,6 +38,7 @@ export const JOB_FIELDS = {
   TITLE: '案件名',
   FEATURES: '案件特徴',
   POSITION: '職種_ポジション',
+  SKILLS: 'スキル',
   DESCRIPTION: '概要',
   ENVIRONMENT: '環境',
   NOTES: '備考',
@@ -62,6 +63,14 @@ export const APPLICATION_FIELDS = {
   CREATED_AT: '作成日時',
 } as const;
 
+// 推薦DB（Recommendation）のフィールドコード
+export const RECOMMENDATION_FIELDS = {
+  ID: '$id',
+  TALENT_ID: '人材ID',
+  JOB_ID: '案件ID',
+  SCORE: '適合スコア',
+} as const;
+
 /**
  * フィールドコードの逆マッピング用ユーティリティ
  * （キーから値を探すときに使用）
@@ -77,6 +86,7 @@ export const createFieldsByValue = <T extends Record<string, string>>(fields: T)
 export const TALENT_FIELDS_BY_VALUE = createFieldsByValue(TALENT_FIELDS);
 export const JOB_FIELDS_BY_VALUE = createFieldsByValue(JOB_FIELDS);
 export const APPLICATION_FIELDS_BY_VALUE = createFieldsByValue(APPLICATION_FIELDS);
+export const RECOMMENDATION_FIELDS_BY_VALUE = createFieldsByValue(RECOMMENDATION_FIELDS);
 
 /**
  * ドロップダウンフィールドの選択肢

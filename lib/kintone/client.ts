@@ -80,11 +80,39 @@ export const createApplicationClient = () => {
   });
 };
 
+// kintone クライアントの作成（推薦DB用）
+export const createRecommendationClient = () => {
+  const baseUrl = process.env.KINTONE_BASE_URL;
+  const apiToken = process.env.KINTONE_RECOMMENDATION_API_TOKEN;
+
+  if (!baseUrl) {
+    console.error("❌ KINTONE_BASE_URL が設定されていません");
+    throw new Error("KINTONE_BASE_URL is not defined");
+  }
+
+  if (!apiToken) {
+    console.error("❌ KINTONE_RECOMMENDATION_API_TOKEN が設定されていません");
+    throw new Error("KINTONE_RECOMMENDATION_API_TOKEN is not defined");
+  }
+
+  console.log("✅ kintone Recommendation Client 初期化成功");
+  console.log("   Base URL:", baseUrl);
+  console.log("   API Token:", apiToken.substring(0, 10) + "...");
+
+  return new KintoneRestAPIClient({
+    baseUrl,
+    auth: {
+      apiToken,
+    },
+  });
+};
+
 // アプリIDの取得
 export const getAppIds = () => {
   const talentAppId = process.env.KINTONE_TALENT_APP_ID;
   const jobAppId = process.env.KINTONE_JOB_APP_ID;
   const applicationAppId = process.env.KINTONE_APPLICATION_APP_ID;
+  const recommendationAppId = process.env.KINTONE_RECOMMENDATION_APP_ID;
 
   if (!talentAppId) {
     console.error("❌ KINTONE_TALENT_APP_ID が設定されていません");
@@ -101,15 +129,26 @@ export const getAppIds = () => {
     throw new Error("KINTONE_APPLICATION_APP_ID is not defined");
   }
 
-  console.log("✅ kintone App IDs 取得成功");
-  console.log("   Talent App ID:", talentAppId);
-  console.log("   Job App ID:", jobAppId);
-  console.log("   Application App ID:", applicationAppId);
+  // 推薦DBはオプション（なくても動作する）
+  if (recommendationAppId) {
+    console.log("✅ kintone App IDs 取得成功");
+    console.log("   Talent App ID:", talentAppId);
+    console.log("   Job App ID:", jobAppId);
+    console.log("   Application App ID:", applicationAppId);
+    console.log("   Recommendation App ID:", recommendationAppId);
+  } else {
+    console.log("✅ kintone App IDs 取得成功");
+    console.log("   Talent App ID:", talentAppId);
+    console.log("   Job App ID:", jobAppId);
+    console.log("   Application App ID:", applicationAppId);
+    console.log("   ⚠️ Recommendation App ID: 未設定");
+  }
 
   return {
     talent: talentAppId,
     job: jobAppId,
     application: applicationAppId,
+    recommendation: recommendationAppId,
   };
 };
 

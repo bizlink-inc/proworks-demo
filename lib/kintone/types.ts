@@ -32,6 +32,7 @@ export type JobRecord = {
   案件名: { value: string };
   案件特徴: { value: string[] }; // 複数選択
   職種_ポジション: { value: string[] }; // 複数選択
+  スキル: { value: string[] }; // 複数選択
   概要: { value: string };
   環境: { value: string };
   備考: { value: string };
@@ -89,6 +90,7 @@ export type Job = {
   title: string;
   features: string[];
   position: string[];
+  skills: string[]; // スキル（複数選択）
   description: string;
   environment: string;
   notes: string;
@@ -111,5 +113,20 @@ export type Application = {
   jobTitle: string; // ルックアップで取得される案件名
   status: string;
   appliedAt: string;
+};
+
+// 推薦DBの型定義
+export type RecommendationRecord = {
+  $id: { value: string };
+  人材ID: { value: string };
+  案件ID: { value: string };
+  適合スコア: { value: string };
+};
+
+export type Recommendation = {
+  id: string;
+  talentId: string;
+  jobId: string;
+  score: number;
 };
 
