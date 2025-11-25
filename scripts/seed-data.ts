@@ -13,12 +13,24 @@ config({ path: ".env.local" });
 import { createTalentClient, createJobClient, createApplicationClient, createRecommendationClient, getAppIds } from "../lib/kintone/client";
 import { uploadFileToKintone } from "../lib/kintone/services/file";
 import { TALENT_FIELDS, JOB_FIELDS, APPLICATION_FIELDS, RECOMMENDATION_FIELDS } from "../lib/kintone/fieldMapping";
+import { seedData3, showSeedData3Stats } from "./seed-data-large";
 import Database from "better-sqlite3";
 import { drizzle } from "drizzle-orm/better-sqlite3";
 import * as schema from "../lib/db/schema";
 import path from "path";
 import fs from "fs";
 import { exec } from "child_process";
+import { hash } from "bcryptjs";
+
+// ランダムID生成（Better Auth互換）
+const generateId = (length: number = 32): string => {
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+  let result = "";
+  for (let i = 0; i < length; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return result;
+};
 
 const dbPath = path.join(process.cwd(), "auth.db");
 
@@ -916,8 +928,27 @@ const filterValidOptions = (values: string[], validOptions: readonly string[]): 
 export const createSeedData = async () => {
   // コマンドライン引数で データセットを選択（デフォルト: seedData2）
   const datasetVersion = process.argv[3] || "2";
-  const seedData = datasetVersion === "1" ? seedData1 : seedData2;
-  const datasetName = datasetVersion === "1" ? "セット1（Yamada + 5案件）" : "セット2（5人+5案件+適合度）";
+  let seedData: typeof seedData1 | typeof seedData2 | typeof seedData3;
+  let datasetName: string;
+  
+  switch (datasetVersion) {
+    case "1":
+      seedData = seedData1;
+      datasetName = "セット1（Yamada + 5案件）";
+      break;
+    case "2":
+      seedData = seedData2;
+      datasetName = "セット2（5人+5案件+適合度）";
+      break;
+    case "3":
+      seedData = seedData3;
+      datasetName = "セット3（50人+50案件）";
+      showSeedData3Stats();
+      break;
+    default:
+      seedData = seedData2;
+      datasetName = "セット2（5人+5案件+適合度）";
+  }
 
   console.log("\n🌱 シードデータを作成します\n");
   console.log(`📦 使用データセット: ${datasetName}`);
@@ -947,185 +978,177 @@ export const createSeedData = async () => {
     console.log(`   スキル: ${JOB_FIELD_OPTIONS.スキル.length}件`);
     console.log(`   案件特徴: ${JOB_FIELD_OPTIONS.案件特徴.length}件`);
 
-    // 1. Better Authユーザーを作成
+    // 1. Better Authユーザーを作成（直接SQLite挿入で高速化）
     console.log("=".repeat(80));
-    console.log("👤 Step 1: Better Authユーザーを作成 (5人)");
+    console.log(`👤 Step 1: Better Authユーザーを作成 (${seedData.authUsers.length}人)`);
     console.log("=".repeat(80));
 
     const authUserIds: string[] = [];
-
-    for (const authUser of seedData.authUsers) {
-      const sqlite = new Database(dbPath);
-      const db = drizzle(sqlite, { schema });
-
-      // 既存のユーザーをチェック
-      const existingUser = await db.query.user.findFirst({
-        where: (users, { eq }) => eq(users.email, authUser.email),
-      });
-
-      if (existingUser) {
-        console.log(`⚠️  ユーザー ${authUser.email} は既に存在します。スキップします。`);
-        authUserIds.push(existingUser.id);
-        sqlite.close();
-        continue;
-      }
-
-      sqlite.close();
+    const sqlite = new Database(dbPath);
+    
+    try {
+      // パスワードを一括ハッシュ化
+      console.log("🔐 パスワードをハッシュ化中...");
+      const hashedPassword = await hash("password123", 10);
       
-      // Better AuthのAPIを使ってユーザーを作成
-      const signUpResponse = await fetch("http://localhost:3000/api/auth/sign-up/email", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: authUser.email,
-          password: authUser.password,
-          name: authUser.name,
-        }),
+      // 既存ユーザーのメールアドレスを取得
+      const existingEmails = new Set<string>();
+      const existingRows = sqlite.prepare("SELECT email, id FROM user").all() as { email: string; id: string }[];
+      for (const row of existingRows) {
+        existingEmails.set(row.email);
+      }
+      
+      // トランザクションで一括挿入
+      const insertUser = sqlite.prepare(`
+        INSERT INTO user (id, name, email, emailVerified, image, createdAt, updatedAt)
+        VALUES (?, ?, ?, 1, NULL, ?, ?)
+      `);
+      const insertAccount = sqlite.prepare(`
+        INSERT INTO account (id, accountId, providerId, userId, accessToken, refreshToken, idToken, accessTokenExpiresAt, refreshTokenExpiresAt, scope, password, createdAt, updatedAt)
+        VALUES (?, ?, 'credential', ?, NULL, NULL, NULL, NULL, NULL, NULL, ?, ?, ?)
+      `);
+      
+      const insertMany = sqlite.transaction((users: typeof seedData.authUsers) => {
+        for (const authUser of users) {
+          // 既存チェック
+          if (existingEmails.has(authUser.email)) {
+            const existingRow = existingRows.find(r => r.email === authUser.email);
+            if (existingRow) {
+              authUserIds.push(existingRow.id);
+              console.log(`⚠️  ユーザー ${authUser.email} は既に存在します。スキップします。`);
+            }
+            continue;
+          }
+          
+          const userId = generateId(32);
+          const accountId = generateId(32);
+          const now = new Date().toISOString();
+          
+          insertUser.run(userId, authUser.name, authUser.email, now, now);
+          insertAccount.run(accountId, authUser.email, userId, hashedPassword, now, now);
+          
+          authUserIds.push(userId);
+        }
       });
-
-      if (!signUpResponse.ok) {
-        const error = await signUpResponse.json();
-        throw new Error(`Better Auth登録失敗: ${JSON.stringify(error)}`);
-      }
-
-      const authData = await signUpResponse.json();
-      authUserIds.push(authData.user.id);
-
-      // シードデータ用にメール認証済みの状態に更新
-      const sqlite2 = new Database(dbPath);
-      try {
-        sqlite2.prepare("UPDATE user SET emailVerified = 1 WHERE id = ?").run(authData.user.id);
-        console.log(`✅ ユーザー作成: ${authUser.email} (ID: ${authData.user.id}) - メール認証済み`);
-      } finally {
-        sqlite2.close();
-      }
+      
+      insertMany(seedData.authUsers);
+      console.log(`✅ ${authUserIds.length}人のユーザーを一括作成しました（メール認証済み）`);
+      
+    } finally {
+      sqlite.close();
     }
 
-    // 2. 人材DBにレコード作成
+    // 2. 人材DBにレコード作成（一括作成で高速化）
     console.log("\n" + "=".repeat(80));
-    console.log("👨‍💼 Step 2: 人材DBにレコードを作成 (5人)");
+    console.log(`👨‍💼 Step 2: 人材DBにレコードを作成 (${seedData.talents.length}人)`);
     console.log("=".repeat(80));
 
-    const talentRecordIds: string[] = [];
+    const talentRecords = seedData.talents.map((talent, i) => ({
+      [TALENT_FIELDS.AUTH_USER_ID]: { value: authUserIds[i] },
+      [TALENT_FIELDS.LAST_NAME]: { value: talent.姓 },
+      [TALENT_FIELDS.FIRST_NAME]: { value: talent.名 },
+      [TALENT_FIELDS.FULL_NAME]: { value: talent.氏名 },
+      [TALENT_FIELDS.LAST_NAME_KANA]: { value: talent.セイ },
+      [TALENT_FIELDS.FIRST_NAME_KANA]: { value: talent.メイ },
+      [TALENT_FIELDS.EMAIL]: { value: talent.メールアドレス },
+      [TALENT_FIELDS.PHONE]: { value: talent.電話番号 },
+      [TALENT_FIELDS.BIRTH_DATE]: { value: talent.生年月日 },
+      [TALENT_FIELDS.POSTAL_CODE]: { value: talent.郵便番号 },
+      [TALENT_FIELDS.ADDRESS]: { value: talent.住所 },
+      [TALENT_FIELDS.SKILLS]: { value: talent.言語_ツール },
+      [TALENT_FIELDS.EXPERIENCE]: { value: talent.主な実績_PR_職務経歴 },
+      [TALENT_FIELDS.RESUME_FILES]: { value: [] },
+      [TALENT_FIELDS.PORTFOLIO_URL]: { value: talent.ポートフォリオリンク },
+      [TALENT_FIELDS.AVAILABLE_FROM]: { value: talent.稼働可能時期 },
+      [TALENT_FIELDS.DESIRED_RATE]: { value: talent.希望単価_月額 },
+      [TALENT_FIELDS.DESIRED_WORK_DAYS]: { value: talent.希望勤務日数 },
+      [TALENT_FIELDS.DESIRED_COMMUTE]: { value: talent.希望出社頻度 },
+      [TALENT_FIELDS.DESIRED_WORK_STYLE]: { value: talent.希望勤務スタイル },
+      [TALENT_FIELDS.DESIRED_WORK]: { value: talent.希望案件_作業内容 },
+      [TALENT_FIELDS.NG_COMPANIES]: { value: talent.NG企業 },
+      [TALENT_FIELDS.OTHER_REQUESTS]: { value: talent.その他要望 },
+    }));
 
-    for (let i = 0; i < seedData.talents.length; i++) {
-      const talent = seedData.talents[i];
-      const authUserId = authUserIds[i];
+    const talentCreateResult = await talentClient.record.addRecords({
+      app: appIds.talent,
+      records: talentRecords,
+    });
 
-      const talentRecord = await talentClient.record.addRecord({
-        app: appIds.talent,
-        record: {
-          [TALENT_FIELDS.AUTH_USER_ID]: { value: authUserId },
-          [TALENT_FIELDS.LAST_NAME]: { value: talent.姓 },
-          [TALENT_FIELDS.FIRST_NAME]: { value: talent.名 },
-          [TALENT_FIELDS.FULL_NAME]: { value: talent.氏名 },
-          [TALENT_FIELDS.LAST_NAME_KANA]: { value: talent.セイ },
-          [TALENT_FIELDS.FIRST_NAME_KANA]: { value: talent.メイ },
-          [TALENT_FIELDS.EMAIL]: { value: talent.メールアドレス },
-          [TALENT_FIELDS.PHONE]: { value: talent.電話番号 },
-          [TALENT_FIELDS.BIRTH_DATE]: { value: talent.生年月日 },
-          [TALENT_FIELDS.POSTAL_CODE]: { value: talent.郵便番号 },
-          [TALENT_FIELDS.ADDRESS]: { value: talent.住所 },
-          [TALENT_FIELDS.SKILLS]: { value: talent.言語_ツール },
-          [TALENT_FIELDS.EXPERIENCE]: { value: talent.主な実績_PR_職務経歴 },
-          [TALENT_FIELDS.RESUME_FILES]: { value: [] },
-          [TALENT_FIELDS.PORTFOLIO_URL]: { value: talent.ポートフォリオリンク },
-          [TALENT_FIELDS.AVAILABLE_FROM]: { value: talent.稼働可能時期 },
-          [TALENT_FIELDS.DESIRED_RATE]: { value: talent.希望単価_月額 },
-          [TALENT_FIELDS.DESIRED_WORK_DAYS]: { value: talent.希望勤務日数 },
-          [TALENT_FIELDS.DESIRED_COMMUTE]: { value: talent.希望出社頻度 },
-          [TALENT_FIELDS.DESIRED_WORK_STYLE]: { value: talent.希望勤務スタイル },
-          [TALENT_FIELDS.DESIRED_WORK]: { value: talent.希望案件_作業内容 },
-          [TALENT_FIELDS.NG_COMPANIES]: { value: talent.NG企業 },
-          [TALENT_FIELDS.OTHER_REQUESTS]: { value: talent.その他要望 },
-        },
-      });
+    const talentRecordIds = talentCreateResult.ids;
+    console.log(`✅ ${talentRecordIds.length}人の人材レコードを一括作成しました`);
 
-      talentRecordIds.push(talentRecord.id);
-      console.log(`✅ 人材レコード作成: ${talent.氏名} (ID: ${talentRecord.id})`);
-    }
-
-    // 3. 案件DBにレコード作成
+    // 3. 案件DBにレコード作成（一括作成で高速化）
     console.log("\n" + "=".repeat(80));
-    console.log("💼 Step 3: 案件DBにレコードを作成 (5件)");
+    console.log(`💼 Step 3: 案件DBにレコードを作成 (${seedData.jobs.length}件)`);
     console.log("=".repeat(80));
 
-    const jobIds: string[] = [];
-
-    for (const job of seedData.jobs) {
+    const jobRecords = seedData.jobs.map((job) => {
       // 選択肢をフィルタリング（kintoneに存在する値のみを使用）
       const validPositions = filterValidOptions(job.職種_ポジション, JOB_FIELD_OPTIONS.職種_ポジション);
       const validSkills = filterValidOptions(job.スキル, JOB_FIELD_OPTIONS.スキル);
       const validFeatures = filterValidOptions(job.案件特徴, JOB_FIELD_OPTIONS.案件特徴);
 
-      // フィルタリング結果を表示
-      if (validPositions.length !== job.職種_ポジション.length) {
-        console.log(`   ⚠️ 職種_ポジション: "${job.職種_ポジション.join(", ")}" → "${validPositions.join(", ")}"`);
-      }
-      if (validSkills.length !== job.スキル.length) {
-        console.log(`   ⚠️ スキル: "${job.スキル.join(", ")}" → "${validSkills.join(", ")}"`);
-      }
-      if (validFeatures.length !== job.案件特徴.length) {
-        console.log(`   ⚠️ 案件特徴: 一部の値がフィルタリングされました`);
-      }
+      return {
+        案件名: { value: job.案件名 },
+        職種_ポジション: { value: validPositions },
+        スキル: { value: validSkills },
+        概要: { value: job.概要 },
+        環境: { value: job.環境 },
+        必須スキル: { value: job.必須スキル },
+        尚可スキル: { value: job.尚可スキル },
+        勤務地エリア: { value: job.勤務地エリア },
+        最寄駅: { value: job.最寄駅 },
+        下限h: { value: job.下限h },
+        上限h: { value: job.上限h },
+        掲載単価: { value: job.掲載単価 },
+        数値_0: { value: job.MAX単価 },
+        案件期間: { value: job.案件期間 },
+        日付: { value: job.参画時期 },
+        面談回数: { value: job.面談回数 },
+        案件特徴: { value: validFeatures },
+        ラジオボタン: { value: job.ラジオボタン },
+        ラジオボタン_0: { value: job.ラジオボタン_0 },
+        ドロップダウン: { value: job.商流 },
+        ドロップダウン_2: { value: job.契約形態 },
+        ドロップダウン_3: { value: job.リモート },
+        ドロップダウン_0: { value: job.外国籍 },
+        数値: { value: job.募集人数 },
+      };
+    });
 
-      const jobRecord = await jobClient.record.addRecord({
-        app: appIds.job,
-        record: {
-          案件名: { value: job.案件名 },
-          職種_ポジション: { value: validPositions },
-          スキル: { value: validSkills },
-          概要: { value: job.概要 },
-          環境: { value: job.環境 },
-          必須スキル: { value: job.必須スキル },
-          尚可スキル: { value: job.尚可スキル },
-          勤務地エリア: { value: job.勤務地エリア },
-          最寄駅: { value: job.最寄駅 },
-          下限h: { value: job.下限h },
-          上限h: { value: job.上限h },
-          掲載単価: { value: job.掲載単価 },
-          数値_0: { value: job.MAX単価 },
-          案件期間: { value: job.案件期間 },
-          日付: { value: job.参画時期 },
-          面談回数: { value: job.面談回数 },
-          案件特徴: { value: validFeatures },
-          ラジオボタン: { value: job.ラジオボタン },
-          ラジオボタン_0: { value: job.ラジオボタン_0 },
-          ドロップダウン: { value: job.商流 },
-          ドロップダウン_2: { value: job.契約形態 },
-          ドロップダウン_3: { value: job.リモート },
-          ドロップダウン_0: { value: job.外国籍 },
-          数値: { value: job.募集人数 },
-        },
-      });
+    const jobCreateResult = await jobClient.record.addRecords({
+      app: appIds.job,
+      records: jobRecords,
+    });
 
-      jobIds.push(jobRecord.id);
-      console.log(`✅ 案件レコード作成: ${job.案件名} (ID: ${jobRecord.id})`);
-      console.log(`   職種: ${validPositions.join(", ") || "(未設定)"}`);
-      console.log(`   スキル: ${validSkills.join(", ") || "(未設定)"}`);
-    }
+    const jobIds = jobCreateResult.ids;
+    console.log(`✅ ${jobIds.length}件の案件レコードを一括作成しました`);
 
-    // 4. 応募履歴DBにレコード作成
+    // 4. 応募履歴DBにレコード作成（一括作成で高速化）
     console.log("\n" + "=".repeat(80));
     console.log("📝 Step 4: 応募履歴DBにレコードを作成");
     console.log("=".repeat(80));
 
-    for (const application of seedData.applications) {
+    const applicationRecords = seedData.applications.map((application) => {
       const authUserIndex = seedData.authUsers.findIndex(u => u.id === application.auth_user_id);
       const authUserId = authUserIds[authUserIndex];
       const jobId = jobIds[application.jobIndex];
-      const jobTitle = seedData.jobs[application.jobIndex].案件名;
 
-      const applicationRecord = await applicationClient.record.addRecord({
+      return {
+        [APPLICATION_FIELDS.AUTH_USER_ID]: { value: authUserId },
+        [APPLICATION_FIELDS.JOB_ID]: { value: jobId },
+        [APPLICATION_FIELDS.STATUS]: { value: application.対応状況 },
+      };
+    });
+
+    if (applicationRecords.length > 0) {
+      const applicationCreateResult = await applicationClient.record.addRecords({
         app: appIds.application,
-        record: {
-          [APPLICATION_FIELDS.AUTH_USER_ID]: { value: authUserId },
-          [APPLICATION_FIELDS.JOB_ID]: { value: jobId },
-          [APPLICATION_FIELDS.STATUS]: { value: application.対応状況 },
-        },
+        records: applicationRecords,
       });
-
-      console.log(`✅ 応募履歴レコード作成: ${jobTitle} (ID: ${applicationRecord.id}, ステータス: ${application.対応状況})`);
+      console.log(`✅ ${applicationCreateResult.ids.length}件の応募履歴レコードを一括作成しました`);
+    } else {
+      console.log("✅ 応募履歴: 作成対象なし");
     }
 
     // 5. 推薦DBにレコード作成（存在する場合のみ）
@@ -1168,15 +1191,33 @@ export const createSeedData = async () => {
       console.log(`  🎯 推薦データ: ${seedData.recommendations.length}件`);
     }
     console.log("\n📝 ログイン情報:");
-    for (const user of seedData.authUsers) {
+    // セット3の場合は最初の5人だけ表示
+    const usersToShow = seedData.authUsers.slice(0, 5);
+    for (const user of usersToShow) {
       console.log(`  - ${user.name}: ${user.email} / ${user.password}`);
     }
-    console.log("\n💡 人材と案件の適合度:");
-    console.log("  - 人材1（田中 一郎）: フロントエンド特化 → 案件1に最適合");
-    console.log("  - 人材2（佐藤 次郎）: バックエンド特化 → 案件2に最適合");
-    console.log("  - 人材3（鈴木 三郎）: フルスタック → 案件3に最適合");
-    console.log("  - 人材4（高橋 四郎）: モバイル特化 → 案件4に最適合");
-    console.log("  - 人材5（伊藤 五郎）: データエンジニア → 案件5に最適合");
+    if (seedData.authUsers.length > 5) {
+      console.log(`  ... 他 ${seedData.authUsers.length - 5}人（パスワードはすべて password123）`);
+    }
+    
+    if (datasetVersion === "3") {
+      console.log("\n💡 人材と案件の適合度:");
+      console.log("  カテゴリ別にマッチング度合いが変わります:");
+      console.log("  - フロントエンド人材 × フロントエンド案件 → 高マッチ");
+      console.log("  - バックエンド人材 × バックエンド案件 → 高マッチ");
+      console.log("  - インフラ人材 × インフラ案件 → 高マッチ");
+      console.log("  - モバイル人材 × モバイル案件 → 高マッチ");
+      console.log("  - データ/AI人材 × データ/AI案件 → 高マッチ");
+      console.log("\n⚡ マッチングスコアを計算するには:");
+      console.log("  npm run recommend:create");
+    } else {
+      console.log("\n💡 人材と案件の適合度:");
+      console.log("  - 人材1（田中 一郎）: フロントエンド特化 → 案件1に最適合");
+      console.log("  - 人材2（佐藤 次郎）: バックエンド特化 → 案件2に最適合");
+      console.log("  - 人材3（鈴木 三郎）: フルスタック → 案件3に最適合");
+      console.log("  - 人材4（高橋 四郎）: モバイル特化 → 案件4に最適合");
+      console.log("  - 人材5（伊藤 五郎）: データエンジニア → 案件5に最適合");
+    }
     console.log("\n");
 
   } catch (error) {
@@ -1338,11 +1379,22 @@ if (command === "create") {
   createSeedData();
 } else if (command === "delete") {
   deleteSeedData();
+} else if (command === "create:1") {
+  // seed:create:1 用（引数なしでcreate呼び出し時のため）
+  process.argv[3] = "1";
+  createSeedData();
+} else if (command === "create:2") {
+  process.argv[3] = "2";
+  createSeedData();
+} else if (command === "create:3") {
+  process.argv[3] = "3";
+  createSeedData();
 } else {
   console.error("使用方法:");
   console.error("  npm run seed:create      - シードデータを作成（デフォルト: セット2）");
   console.error("  npm run seed:create:1    - セット1を作成（削除 + 作成）");
   console.error("  npm run seed:create:2    - セット2を作成（削除 + 作成）");
+  console.error("  npm run seed:create:3    - セット3を作成（50人+50案件）");
   console.error("  npm run seed:delete      - シードデータを全件削除");
   process.exit(1);
 }

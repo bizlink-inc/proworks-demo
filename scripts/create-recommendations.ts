@@ -243,10 +243,20 @@ const createRecommendations = async () => {
     let updatedCount = 0;
     let skippedCount = 0;
 
+    // 新規作成用と更新用に分類
+    const recordsToCreate: any[] = [];
+    const recordsToUpdate: { id: string; record: any }[] = [];
+
     for (const result of matchResults) {
       // auth_user_idがない人材はスキップ
       if (!result.talentAuthUserId) {
         console.log(`   ⚠️ ${result.talentName}: auth_user_idがないためスキップ`);
+        skippedCount++;
+        continue;
+      }
+
+      // スコア0のレコードはスキップ
+      if (result.score === 0) {
         skippedCount++;
         continue;
       }
@@ -256,8 +266,7 @@ const createRecommendations = async () => {
 
       if (existingRecId) {
         // 既存レコードを更新
-        await recommendationClient.record.updateRecord({
-          app: appIds.recommendation,
+        recordsToUpdate.push({
           id: existingRecId,
           record: {
             [RECOMMENDATION_FIELDS.SCORE]: { value: result.score },
@@ -266,16 +275,39 @@ const createRecommendations = async () => {
         updatedCount++;
       } else {
         // 新規レコードを作成（人材IDはauth_user_idを使用）
-        await recommendationClient.record.addRecord({
-          app: appIds.recommendation,
-          record: {
-            [RECOMMENDATION_FIELDS.TALENT_ID]: { value: result.talentAuthUserId },
-            [RECOMMENDATION_FIELDS.JOB_ID]: { value: result.jobId },
-            [RECOMMENDATION_FIELDS.SCORE]: { value: result.score },
-          },
+        recordsToCreate.push({
+          [RECOMMENDATION_FIELDS.TALENT_ID]: { value: result.talentAuthUserId },
+          [RECOMMENDATION_FIELDS.JOB_ID]: { value: result.jobId },
+          [RECOMMENDATION_FIELDS.SCORE]: { value: result.score },
         });
         createdCount++;
       }
+    }
+
+    // 一括作成（100件ずつ分割）
+    if (recordsToCreate.length > 0) {
+      console.log(`\n💾 推薦レコードを一括作成中 (${recordsToCreate.length}件)...`);
+      for (let i = 0; i < recordsToCreate.length; i += 100) {
+        const batch = recordsToCreate.slice(i, Math.min(i + 100, recordsToCreate.length));
+        await recommendationClient.record.addRecords({
+          app: appIds.recommendation,
+          records: batch,
+        });
+      }
+      console.log(`✅ ${recordsToCreate.length}件の推薦レコードを一括作成しました`);
+    }
+
+    // 一括更新（100件ずつ分割）
+    if (recordsToUpdate.length > 0) {
+      console.log(`\n🔄 推薦レコードを一括更新中 (${recordsToUpdate.length}件)...`);
+      for (let i = 0; i < recordsToUpdate.length; i += 100) {
+        const batch = recordsToUpdate.slice(i, Math.min(i + 100, recordsToUpdate.length));
+        await recommendationClient.record.updateRecords({
+          app: appIds.recommendation,
+          records: batch,
+        });
+      }
+      console.log(`✅ ${recordsToUpdate.length}件の推薦レコードを一括更新しました`);
     }
 
     // 6. 結果サマリを表示
