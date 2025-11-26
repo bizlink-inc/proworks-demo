@@ -1367,17 +1367,45 @@ const upsertYamadaSeedData = async () => {
     const sqlite = new Database(dbPath);
 
     try {
-      // 既存ユーザーを確認
-      const existingUser = sqlite.prepare("SELECT id FROM user WHERE id = ?").get(YAMADA_AUTH_USER_ID) as { id: string } | undefined;
+      // 既存ユーザーを確認（ID またはメールアドレスで検索）
+      const existingUserById = sqlite.prepare("SELECT id, email FROM user WHERE id = ?").get(YAMADA_AUTH_USER_ID) as { id: string; email: string } | undefined;
+      const existingUserByEmail = sqlite.prepare("SELECT id, email FROM user WHERE email = ?").get(seedData.authUsers[0].email) as { id: string; email: string } | undefined;
 
-      if (existingUser) {
-        console.log(`✅ 既存ユーザーを確認: ${YAMADA_AUTH_USER_ID}`);
+      if (existingUserById) {
+        console.log(`✅ 既存ユーザーを確認（ID一致）: ${YAMADA_AUTH_USER_ID}`);
         // 更新（名前とメールアドレス）
         const updateUser = sqlite.prepare(`
           UPDATE user SET name = ?, email = ?, updatedAt = ? WHERE id = ?
         `);
         updateUser.run(seedData.authUsers[0].name, seedData.authUsers[0].email, Date.now(), YAMADA_AUTH_USER_ID);
         console.log(`✅ ユーザー情報を更新しました`);
+      } else if (existingUserByEmail) {
+        console.log(`⚠️ 同じメールアドレスで別のユーザーが存在: ${existingUserByEmail.id}`);
+        console.log(`🔄 既存ユーザーを削除して、正しい ID で再作成します`);
+        
+        // 既存ユーザーを削除（外部キー制約の順番に注意）
+        sqlite.prepare("DELETE FROM session WHERE userId = ?").run(existingUserByEmail.id);
+        sqlite.prepare("DELETE FROM account WHERE userId = ?").run(existingUserByEmail.id);
+        sqlite.prepare("DELETE FROM user WHERE id = ?").run(existingUserByEmail.id);
+        console.log(`✅ 既存ユーザーを削除しました`);
+
+        // 新規作成
+        const hashedPassword = await hashPasswordBetterAuth(seedData.authUsers[0].password);
+        const now = Date.now();
+
+        const insertUser = sqlite.prepare(`
+          INSERT INTO user (id, name, email, emailVerified, image, createdAt, updatedAt)
+          VALUES (?, ?, ?, 1, NULL, ?, ?)
+        `);
+        const insertAccount = sqlite.prepare(`
+          INSERT INTO account (id, userId, accountId, providerId, accessToken, refreshToken, accessTokenExpiresAt, refreshTokenExpiresAt, scope, idToken, password, createdAt, updatedAt)
+          VALUES (?, ?, ?, 'credential', NULL, NULL, NULL, NULL, NULL, NULL, ?, ?, ?)
+        `);
+
+        const accountId = generateId(32);
+        insertUser.run(YAMADA_AUTH_USER_ID, seedData.authUsers[0].name, seedData.authUsers[0].email, now, now);
+        insertAccount.run(accountId, YAMADA_AUTH_USER_ID, YAMADA_AUTH_USER_ID, hashedPassword, now, now);
+        console.log(`✅ 正しい ID でユーザーを再作成しました`);
       } else {
         console.log(`📝 新規ユーザーを作成: ${YAMADA_AUTH_USER_ID}`);
         // 新規作成
