@@ -9,77 +9,82 @@ const generateRandomPassword = () => {
   return crypto.randomBytes(16).toString("hex");
 };
 
-// Vercel 環境では SQLite を使用せず、メモリ DB を使用
-// 注意: この状態ではユーザー認証機能は正常に動作しません
-// デモ目的では管理者ログイン（ハードコード）を使用してください
-export const auth = betterAuth({
-  database: {
-    provider: "sqlite",
-    url: ":memory:",
-  },
-  secret: process.env.BETTER_AUTH_SECRET || "demo-secret-key-for-development",
-  baseURL: process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
-  basePath: "/api/auth",
-  emailAndPassword: {
-    enabled: true,
-    minPasswordLength: 6,
-    requireEmailVerification: false, // Vercel 環境ではメール認証を無効化
-    sendResetPassword: async ({ user, url }) => {
-      // パスワードリセットメール送信
-      if (process.env.NODE_ENV === "development") {
-        console.log("\n" + "=".repeat(80));
-        console.log("🔑 パスワードリセットリンク");
-        console.log("=".repeat(80));
-        console.log(`宛先: ${user.email}`);
-        console.log(`リンク: ${url}`);
-        console.log("=".repeat(80) + "\n");
-        return;
-      }
-    },
-  },
-  emailVerification: {
-    sendOnSignUp: false, // Vercel 環境ではメール送信を無効化
-    autoSignInAfterVerification: true,
-    sendVerificationEmail: async ({ user, url, token }) => {
-      // コールバックURLをマイページに設定
-      const callbackUrl = `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/callback`;
-      const verificationUrl = url.includes('callbackURL') 
-        ? url.replace(/callbackURL=[^&]*/, `callbackURL=${encodeURIComponent(callbackUrl)}`)
-        : `${url}&callbackURL=${encodeURIComponent(callbackUrl)}`;
+// デモ用ユーザー情報（yamada）
+export const DEMO_USER = {
+  id: "seed_user_001",
+  name: "山田 太郎",
+  email: "seed_yamada@example.com",
+  password: "password123",
+  emailVerified: true,
+  image: null,
+  createdAt: new Date(),
+  updatedAt: new Date(),
+};
 
-      // 開発環境ではコンソールに出力
-      if (process.env.NODE_ENV === "development") {
-        console.log("\n" + "=".repeat(80));
-        console.log("📧 【PRO WORKS】メールアドレスの確認");
-        console.log("=".repeat(80));
-        console.log(`宛先: ${user.email}`);
-        console.log("");
-        console.log("以下のリンクをクリックして、メールアドレスの確認を完了してください。");
-        console.log("");
-        console.log(`▶ ${verificationUrl}`);
-        console.log("");
-        console.log("※ このリンクの有効期限は1時間です。");
-        console.log("※ このメールに心当たりがない場合は、削除してください。");
-        console.log("=".repeat(80) + "\n");
-        return;
-      }
+// Vercel 環境では better-auth を初期化しない
+// ローカル環境でのみ動作
+let auth: ReturnType<typeof betterAuth>;
+
+if (!isVercel) {
+  // ローカル環境では通常通り better-auth を初期化
+  auth = betterAuth({
+    database: {
+      provider: "sqlite",
+      url: ":memory:",
     },
-  },
-  session: {
-    cookieCache: {
+    secret: process.env.BETTER_AUTH_SECRET || "demo-secret-key-for-development",
+    baseURL: process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
+    basePath: "/api/auth",
+    emailAndPassword: {
       enabled: true,
-      maxAge: 5 * 60, // 5分
+      minPasswordLength: 6,
+      requireEmailVerification: false,
     },
-  },
-  // 開発環境でネットワークアドレスからのアクセスを許可
-  trustedOrigins: [
-    "http://localhost:3000",
-    "http://192.168.100.5:3000",
-    process.env.NEXT_PUBLIC_APP_URL || "",
-  ].filter(Boolean),
-});
+    session: {
+      cookieCache: {
+        enabled: true,
+        maxAge: 5 * 60,
+      },
+    },
+    trustedOrigins: [
+      "http://localhost:3000",
+      "http://192.168.100.5:3000",
+      process.env.NEXT_PUBLIC_APP_URL || "",
+    ].filter(Boolean),
+  });
+} else {
+  // Vercel 環境ではダミーの auth オブジェクトを作成
+  // API は別途ハンドリングする
+  auth = {
+    api: {
+      getSession: async () => null,
+    },
+    handler: async () => new Response("Not available in demo", { status: 503 }),
+  } as unknown as ReturnType<typeof betterAuth>;
+}
 
-export { generateRandomPassword };
+export { auth, generateRandomPassword, isVercel };
 
-export type Session = typeof auth.$Infer.Session;
-export type User = typeof auth.$Infer.User;
+export type Session = {
+  user: {
+    id: string;
+    name: string;
+    email: string;
+    emailVerified: boolean;
+    image: string | null;
+    createdAt: Date;
+    updatedAt: Date;
+  };
+  session: {
+    id: string;
+    expiresAt: Date;
+    token: string;
+    createdAt: Date;
+    updatedAt: Date;
+    ipAddress: string | null;
+    userAgent: string | null;
+    userId: string;
+  };
+};
+
+export type User = Session["user"];
