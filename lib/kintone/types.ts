@@ -121,6 +121,17 @@ export type RecommendationRecord = {
   人材ID: { value: string };
   案件ID: { value: string };
   適合スコア: { value: string };
+  // AI評価フィールド
+  AIマッチ実行状況?: { value: string }; // "未実行" | "実行済み" | "スキップ"
+  AI技術スキルスコア?: { value: string };
+  AI開発工程スコア?: { value: string };
+  AIインフラスコア?: { value: string };
+  AI業務知識スコア?: { value: string };
+  AIチーム開発スコア?: { value: string };
+  AIツール環境スコア?: { value: string };
+  AI総合スコア?: { value: string };
+  AI評価結果?: { value: string };
+  AI実行日時?: { value: string };
 };
 
 export type Recommendation = {
@@ -128,5 +139,16 @@ export type Recommendation = {
   talentId: string;
   jobId: string;
   score: number;
+  // AI評価
+  aiExecutionStatus?: string;
+  aiSkillScore?: number;
+  aiProcessScore?: number;
+  aiInfraScore?: number;
+  aiDomainScore?: number;
+  aiTeamScore?: number;
+  aiToolScore?: number;
+  aiOverallScore?: number;
+  aiResult?: string;
+  aiExecutedAt?: string;
 };
 

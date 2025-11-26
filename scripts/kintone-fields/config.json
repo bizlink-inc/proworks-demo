@@ -1,0 +1,53 @@
+{
+  "development": {
+    "baseUrl": "https://jecen6wnsv66.cybozu.com",
+    "apps": {
+      "recommendation": {
+        "appId": 97,
+        "token": "RGizwa6pEfbLigChtI2vGUQ6J2DrErgjnN12G7pf",
+        "description": "推薦DB - 人材と案件のマッチングスコアを管理"
+      },
+      "talent": {
+        "appId": 81,
+        "token": "wibVjIMxpMDcXHwmXWsxbNNpIv8q5lCBU3yIYTqV",
+        "description": "人材DB - フリーランス人材のプロフィール"
+      },
+      "job": {
+        "appId": 85,
+        "token": "jfBxRWXn3W5DLMTDPfQwBVKRYWwYLMz7FPDiL1lo",
+        "description": "案件DB - 案件情報"
+      },
+      "application": {
+        "appId": 84,
+        "token": "YOUR_APPLICATION_API_TOKEN",
+        "description": "応募履歴DB - 人材の案件応募履歴"
+      }
+    }
+  },
+  "production": {
+    "baseUrl": "https://YOUR_PRODUCTION_SUBDOMAIN.cybozu.com",
+    "apps": {
+      "recommendation": {
+        "appId": null,
+        "token": null,
+        "description": "推薦DB - 本番環境（未設定）"
+      },
+      "talent": {
+        "appId": null,
+        "token": null,
+        "description": "人材DB - 本番環境（未設定）"
+      },
+      "job": {
+        "appId": null,
+        "token": null,
+        "description": "案件DB - 本番環境（未設定）"
+      },
+      "application": {
+        "appId": null,
+        "token": null,
+        "description": "応募履歴DB - 本番環境（未設定）"
+      }
+    }
+  }
+}
+

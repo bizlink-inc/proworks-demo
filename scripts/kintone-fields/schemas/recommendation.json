@@ -1,0 +1,297 @@
+{
+  "_comment": "recommendation のフィールド定義",
+  "_updatedAt": "2025-11-26",
+  "revision": "9",
+  "currentFields": {
+    "AIチーム開発スコア": {
+      "type": "NUMBER",
+      "code": "AIチーム開発スコア",
+      "label": "AIチーム開発スコア",
+      "noLabel": false,
+      "required": false,
+      "minValue": "",
+      "maxValue": "",
+      "digit": false,
+      "unique": false,
+      "defaultValue": "",
+      "displayScale": "",
+      "unit": "",
+      "unitPosition": "BEFORE"
+    },
+    "AIツール環境スコア": {
+      "type": "NUMBER",
+      "code": "AIツール環境スコア",
+      "label": "AIツール環境スコア",
+      "noLabel": false,
+      "required": false,
+      "minValue": "",
+      "maxValue": "",
+      "digit": false,
+      "unique": false,
+      "defaultValue": "",
+      "displayScale": "",
+      "unit": "",
+      "unitPosition": "BEFORE"
+    },
+    "レコード番号": {
+      "type": "RECORD_NUMBER",
+      "code": "レコード番号",
+      "label": "レコード番号",
+      "noLabel": false
+    },
+    "作業者": {
+      "type": "STATUS_ASSIGNEE",
+      "code": "作業者",
+      "label": "作業者",
+      "enabled": false
+    },
+    "更新者": {
+      "type": "MODIFIER",
+      "code": "更新者",
+      "label": "更新者",
+      "noLabel": false
+    },
+    "案件ID": {
+      "type": "NUMBER",
+      "code": "案件ID",
+      "label": "案件ID",
+      "noLabel": false,
+      "required": false,
+      "lookup": null
+    },
+    "適合スコア": {
+      "type": "NUMBER",
+      "code": "適合スコア",
+      "label": "適合スコア",
+      "noLabel": false,
+      "required": false,
+      "minValue": "",
+      "maxValue": "",
+      "digit": false,
+      "unique": false,
+      "defaultValue": "",
+      "displayScale": "",
+      "unit": "",
+      "unitPosition": "BEFORE"
+    },
+    "作成者": {
+      "type": "CREATOR",
+      "code": "作成者",
+      "label": "作成者",
+      "noLabel": false
+    },
+    "ステータス": {
+      "type": "STATUS",
+      "code": "ステータス",
+      "label": "ステータス",
+      "enabled": false
+    },
+    "AI評価結果": {
+      "type": "MULTI_LINE_TEXT",
+      "code": "AI評価結果",
+      "label": "AI評価結果",
+      "noLabel": false,
+      "required": false,
+      "defaultValue": ""
+    },
+    "更新日時": {
+      "type": "UPDATED_TIME",
+      "code": "更新日時",
+      "label": "更新日時",
+      "noLabel": false
+    },
+    "AI技術スキルスコア": {
+      "type": "NUMBER",
+      "code": "AI技術スキルスコア",
+      "label": "AI技術スキルスコア",
+      "noLabel": false,
+      "required": false,
+      "minValue": "",
+      "maxValue": "",
+      "digit": false,
+      "unique": false,
+      "defaultValue": "",
+      "displayScale": "",
+      "unit": "",
+      "unitPosition": "BEFORE"
+    },
+    "AIインフラスコア": {
+      "type": "NUMBER",
+      "code": "AIインフラスコア",
+      "label": "AIインフラスコア",
+      "noLabel": false,
+      "required": false,
+      "minValue": "",
+      "maxValue": "",
+      "digit": false,
+      "unique": false,
+      "defaultValue": "",
+      "displayScale": "",
+      "unit": "",
+      "unitPosition": "BEFORE"
+    },
+    "AI実行日時": {
+      "type": "DATETIME",
+      "code": "AI実行日時",
+      "label": "AI実行日時",
+      "noLabel": false,
+      "required": false,
+      "unique": false,
+      "defaultValue": "",
+      "defaultNowValue": false
+    },
+    "カテゴリー": {
+      "type": "CATEGORY",
+      "code": "カテゴリー",
+      "label": "カテゴリー",
+      "enabled": false
+    },
+    "AI開発工程スコア": {
+      "type": "NUMBER",
+      "code": "AI開発工程スコア",
+      "label": "AI開発工程スコア",
+      "noLabel": false,
+      "required": false,
+      "minValue": "",
+      "maxValue": "",
+      "digit": false,
+      "unique": false,
+      "defaultValue": "",
+      "displayScale": "",
+      "unit": "",
+      "unitPosition": "BEFORE"
+    },
+    "AI総合スコア": {
+      "type": "NUMBER",
+      "code": "AI総合スコア",
+      "label": "AI総合スコア",
+      "noLabel": false,
+      "required": false,
+      "minValue": "",
+      "maxValue": "",
+      "digit": false,
+      "unique": false,
+      "defaultValue": "",
+      "displayScale": "",
+      "unit": "",
+      "unitPosition": "BEFORE"
+    },
+    "AI業務知識スコア": {
+      "type": "NUMBER",
+      "code": "AI業務知識スコア",
+      "label": "AI業務知識スコア",
+      "noLabel": false,
+      "required": false,
+      "minValue": "",
+      "maxValue": "",
+      "digit": false,
+      "unique": false,
+      "defaultValue": "",
+      "displayScale": "",
+      "unit": "",
+      "unitPosition": "BEFORE"
+    },
+    "AIマッチ実行状況": {
+      "type": "DROP_DOWN",
+      "code": "AIマッチ実行状況",
+      "label": "AIマッチ実行状況",
+      "noLabel": false,
+      "required": false,
+      "options": {
+        "実行済み": {
+          "label": "実行済み",
+          "index": "1"
+        },
+        "未実行": {
+          "label": "未実行",
+          "index": "0"
+        },
+        "スキップ": {
+          "label": "スキップ",
+          "index": "2"
+        }
+      },
+      "defaultValue": ""
+    },
+    "人材ID": {
+      "type": "SINGLE_LINE_TEXT",
+      "code": "人材ID",
+      "label": "人材ID",
+      "noLabel": false,
+      "required": false,
+      "lookup": null
+    },
+    "作成日時": {
+      "type": "CREATED_TIME",
+      "code": "作成日時",
+      "label": "作成日時",
+      "noLabel": false
+    }
+  },
+  "fieldsToAdd": {
+    "AIマッチ実行状況": {
+      "type": "DROP_DOWN",
+      "label": "AIマッチ実行状況",
+      "code": "AIマッチ実行状況",
+      "options": {
+        "未実行": {
+          "label": "未実行",
+          "index": "0"
+        },
+        "実行済み": {
+          "label": "実行済み",
+          "index": "1"
+        },
+        "スキップ": {
+          "label": "スキップ",
+          "index": "2"
+        }
+      }
+    },
+    "AI技術スキルスコア": {
+      "type": "NUMBER",
+      "label": "AI技術スキルスコア",
+      "code": "AI技術スキルスコア"
+    },
+    "AI開発工程スコア": {
+      "type": "NUMBER",
+      "label": "AI開発工程スコア",
+      "code": "AI開発工程スコア"
+    },
+    "AIインフラスコア": {
+      "type": "NUMBER",
+      "label": "AIインフラスコア",
+      "code": "AIインフラスコア"
+    },
+    "AI業務知識スコア": {
+      "type": "NUMBER",
+      "label": "AI業務知識スコア",
+      "code": "AI業務知識スコア"
+    },
+    "AIチーム開発スコア": {
+      "type": "NUMBER",
+      "label": "AIチーム開発スコア",
+      "code": "AIチーム開発スコア"
+    },
+    "AIツール環境スコア": {
+      "type": "NUMBER",
+      "label": "AIツール環境スコア",
+      "code": "AIツール環境スコア"
+    },
+    "AI総合スコア": {
+      "type": "NUMBER",
+      "label": "AI総合スコア",
+      "code": "AI総合スコア"
+    },
+    "AI評価結果": {
+      "type": "MULTI_LINE_TEXT",
+      "label": "AI評価結果",
+      "code": "AI評価結果"
+    },
+    "AI実行日時": {
+      "type": "DATETIME",
+      "label": "AI実行日時",
+      "code": "AI実行日時"
+    }
+  }
+}
