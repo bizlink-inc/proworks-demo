@@ -1,26 +1,55 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
-import Database from "better-sqlite3";
-import { drizzle } from "drizzle-orm/better-sqlite3";
-import path from "path";
-import * as schema from "./db/schema";
 import crypto from "crypto";
 
-const dbPath = path.join(process.cwd(), "auth.db");
-const sqlite = new Database(dbPath);
-sqlite.pragma("journal_mode = WAL");
+// Vercel 環境では SQLite は使用できないため、動的にインポート
+// ローカル開発環境でのみ SQLite を使用
+const isVercel = process.env.VERCEL === "1" || process.env.VERCEL === "true";
 
-const db = drizzle(sqlite, { schema });
+// データベース接続を遅延初期化
+const getDb = () => {
+  if (isVercel) {
+    // Vercel 環境ではダミーの DB を返す（認証機能は制限される）
+    return null;
+  }
+  
+  // ローカル環境では SQLite を使用
+  const Database = require("better-sqlite3");
+  const { drizzle } = require("drizzle-orm/better-sqlite3");
+  const path = require("path");
+  const schema = require("./db/schema");
+  
+  const dbPath = path.join(process.cwd(), "auth.db");
+  const sqlite = new Database(dbPath);
+  sqlite.pragma("journal_mode = WAL");
+  
+  return drizzle(sqlite, { schema });
+};
+
+const db = getDb();
 
 // ランダムなパスワードを生成する関数
 const generateRandomPassword = () => {
   return crypto.randomBytes(16).toString("hex");
 };
 
-export const auth = betterAuth({
-  database: drizzleAdapter(db, {
+// Vercel 環境では認証機能が制限されることを許容
+const getDatabaseConfig = () => {
+  if (!db) {
+    // Vercel 環境ではメモリ内のダミー設定を使用
+    // 注意: この状態では認証機能は正常に動作しません
+    return {
+      provider: "sqlite" as const,
+      url: ":memory:",
+    };
+  }
+  return drizzleAdapter(db, {
     provider: "better-sqlite3",
-  }),
+  });
+};
+
+export const auth = betterAuth({
+  database: getDatabaseConfig(),
   baseURL: process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
   basePath: "/api/auth",
   emailAndPassword: {
