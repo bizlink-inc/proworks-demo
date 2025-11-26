@@ -153,10 +153,10 @@ export const getAppIds = () => {
     console.log("   Application App ID:", applicationAppId);
     console.log("   Recommendation App ID:", recommendationAppId);
   } else {
-    console.log("✅ kintone App IDs 取得成功");
-    console.log("   Talent App ID:", talentAppId);
-    console.log("   Job App ID:", jobAppId);
-    console.log("   Application App ID:", applicationAppId);
+  console.log("✅ kintone App IDs 取得成功");
+  console.log("   Talent App ID:", talentAppId);
+  console.log("   Job App ID:", jobAppId);
+  console.log("   Application App ID:", applicationAppId);
     console.log("   ⚠️ Recommendation App ID: 未設定");
   }
 

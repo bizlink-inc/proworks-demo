@@ -20,7 +20,7 @@ import * as schema from "../lib/db/schema";
 import path from "path";
 import fs from "fs";
 import { exec } from "child_process";
-import { hash } from "bcryptjs";
+import { auth } from "../lib/auth";
 
 // ランダムID生成（Better Auth互換）
 const generateId = (length: number = 32): string => {
@@ -960,7 +960,7 @@ export const createSeedData = async () => {
     console.log(`   スキル: ${JOB_FIELD_OPTIONS.スキル.length}件`);
     console.log(`   案件特徴: ${JOB_FIELD_OPTIONS.案件特徴.length}件`);
 
-    // 1. Better Authユーザーを作成（直接SQLite挿入で高速化）
+    // 1. Better Authユーザーを作成（auth.api使用）
     console.log("=".repeat(80));
     console.log(`👤 Step 1: Better Authユーザーを作成 (${seedData.authUsers.length}人)`);
     console.log("=".repeat(80));
@@ -969,52 +969,46 @@ export const createSeedData = async () => {
     const sqlite = new Database(dbPath);
     
     try {
-      // パスワードを一括ハッシュ化
-      console.log("🔐 パスワードをハッシュ化中...");
-      const hashedPassword = await hash("password123", 10);
-
       // 既存ユーザーのメールアドレスを取得
-      const existingEmails = new Set<string>();
+      const existingEmails = new Map<string, string>();
       const existingRows = sqlite.prepare("SELECT email, id FROM user").all() as { email: string; id: string }[];
       for (const row of existingRows) {
-        existingEmails.set(row.email);
+        existingEmails.set(row.email, row.id);
       }
-      
-      // トランザクションで一括挿入
-      const insertUser = sqlite.prepare(`
-        INSERT INTO user (id, name, email, emailVerified, image, createdAt, updatedAt)
-        VALUES (?, ?, ?, 1, NULL, ?, ?)
-      `);
-      const insertAccount = sqlite.prepare(`
-        INSERT INTO account (id, accountId, providerId, userId, accessToken, refreshToken, idToken, accessTokenExpiresAt, refreshTokenExpiresAt, scope, password, createdAt, updatedAt)
-        VALUES (?, ?, 'credential', ?, NULL, NULL, NULL, NULL, NULL, NULL, ?, ?, ?)
-      `);
-      
-      const insertMany = sqlite.transaction((users: typeof seedData.authUsers) => {
-        for (const authUser of users) {
-          // 既存チェック
-          if (existingEmails.has(authUser.email)) {
-            const existingRow = existingRows.find(r => r.email === authUser.email);
-            if (existingRow) {
-              authUserIds.push(existingRow.id);
-              console.log(`⚠️  ユーザー ${authUser.email} は既に存在します。スキップします。`);
-            }
-            continue;
-      }
-          
-          const userId = generateId(32);
-          const accountId = generateId(32);
-          const now = new Date().toISOString();
-          
-          insertUser.run(userId, authUser.name, authUser.email, now, now);
-          insertAccount.run(accountId, authUser.email, userId, hashedPassword, now, now);
-          
-          authUserIds.push(userId);
+
+      for (const authUser of seedData.authUsers) {
+        // 既存チェック
+        if (existingEmails.has(authUser.email)) {
+          const existingId = existingEmails.get(authUser.email)!;
+          authUserIds.push(existingId);
+          console.log(`⚠️  ユーザー ${authUser.email} は既に存在します。スキップします。`);
+          continue;
         }
-      });
+
+        try {
+          // Better Auth APIでユーザー作成
+          const result = await auth.api.signUpEmail({
+            body: {
+              email: authUser.email,
+              password: authUser.password,
+              name: authUser.name,
+            },
+          });
+
+          if (result.user) {
+            authUserIds.push(result.user.id);
+            
+            // メール認証済みに更新
+            sqlite.prepare("UPDATE user SET emailVerified = 1 WHERE id = ?").run(result.user.id);
+            
+            console.log(`✅ ユーザー作成: ${authUser.email} (ID: ${result.user.id}) - メール認証済み`);
+          }
+        } catch (error) {
+          console.error(`❌ ユーザー作成失敗: ${authUser.email}`, error);
+        }
+      }
       
-      insertMany(seedData.authUsers);
-      console.log(`✅ ${authUserIds.length}人のユーザーを一括作成しました（メール認証済み）`);
+      console.log(`\n✅ ${authUserIds.length}人のユーザーを作成しました`);
       
     } finally {
       sqlite.close();
