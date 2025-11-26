@@ -13,6 +13,7 @@
     "get-fields": "npx tsx scripts/get-kintone-fields.ts",
     "seed:create": "npm run seed:delete && npx tsx scripts/seed-data.ts create",
     "seed:delete": "npx tsx scripts/seed-data.ts delete",
+    "seed:upsert": "npx tsx scripts/seed-data.ts upsert",
     "kintone:fields:get": "./scripts/kintone-fields/manage-fields.sh get",
     "kintone:fields:add": "./scripts/kintone-fields/manage-fields.sh add",
     "kintone:fields:deploy": "./scripts/kintone-fields/manage-fields.sh deploy",

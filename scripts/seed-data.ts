@@ -1340,6 +1340,255 @@ export const deleteSeedData = async () => {
   }
 };
 
+// ========================================
+// yamada ユーザーの Upsert（更新 or 作成）
+// Vercel 環境との整合性を保つため、auth_user_id を固定で使用
+// ========================================
+const YAMADA_AUTH_USER_ID = "seed_user_001";
+
+const upsertYamadaSeedData = async () => {
+  console.log("\n🔄 yamada シードデータを Upsert（更新 or 作成）します\n");
+  console.log("📌 auth_user_id:", YAMADA_AUTH_USER_ID);
+  console.log("📌 この ID は Vercel 環境と共有されます\n");
+
+  try {
+    const appIds = getAppIds();
+    const talentClient = createTalentClient();
+    const jobClient = createJobClient();
+    const applicationClient = createApplicationClient();
+
+    const seedData = seedData1;
+
+    // 1. Better Auth ユーザーの Upsert
+    console.log("=".repeat(80));
+    console.log("👤 Step 1: Better Auth ユーザーを Upsert");
+    console.log("=".repeat(80));
+
+    const sqlite = new Database(dbPath);
+
+    try {
+      // 既存ユーザーを確認
+      const existingUser = sqlite.prepare("SELECT id FROM user WHERE id = ?").get(YAMADA_AUTH_USER_ID) as { id: string } | undefined;
+
+      if (existingUser) {
+        console.log(`✅ 既存ユーザーを確認: ${YAMADA_AUTH_USER_ID}`);
+        // 更新（名前とメールアドレス）
+        const updateUser = sqlite.prepare(`
+          UPDATE user SET name = ?, email = ?, updatedAt = ? WHERE id = ?
+        `);
+        updateUser.run(seedData.authUsers[0].name, seedData.authUsers[0].email, Date.now(), YAMADA_AUTH_USER_ID);
+        console.log(`✅ ユーザー情報を更新しました`);
+      } else {
+        console.log(`📝 新規ユーザーを作成: ${YAMADA_AUTH_USER_ID}`);
+        // 新規作成
+        const hashedPassword = await hashPasswordBetterAuth(seedData.authUsers[0].password);
+        const now = Date.now();
+
+        const insertUser = sqlite.prepare(`
+          INSERT INTO user (id, name, email, emailVerified, image, createdAt, updatedAt)
+          VALUES (?, ?, ?, 1, NULL, ?, ?)
+        `);
+        const insertAccount = sqlite.prepare(`
+          INSERT INTO account (id, userId, accountId, providerId, accessToken, refreshToken, accessTokenExpiresAt, refreshTokenExpiresAt, scope, idToken, password, createdAt, updatedAt)
+          VALUES (?, ?, ?, 'credential', NULL, NULL, NULL, NULL, NULL, NULL, ?, ?, ?)
+        `);
+
+        const accountId = generateId(32);
+        insertUser.run(YAMADA_AUTH_USER_ID, seedData.authUsers[0].name, seedData.authUsers[0].email, now, now);
+        insertAccount.run(accountId, YAMADA_AUTH_USER_ID, YAMADA_AUTH_USER_ID, hashedPassword, now, now);
+        console.log(`✅ 新規ユーザーを作成しました`);
+      }
+    } finally {
+      sqlite.close();
+    }
+
+    // 2. 人材DB の Upsert
+    console.log("\n" + "=".repeat(80));
+    console.log("👨‍💼 Step 2: 人材DBを Upsert");
+    console.log("=".repeat(80));
+
+    // auth_user_id で既存レコードを検索
+    const existingTalents = await talentClient.record.getRecords({
+      app: appIds.talent,
+      query: `${TALENT_FIELDS.AUTH_USER_ID} = "${YAMADA_AUTH_USER_ID}"`,
+    });
+
+    const talent = seedData.talents[0];
+    const talentRecord = {
+      [TALENT_FIELDS.AUTH_USER_ID]: { value: YAMADA_AUTH_USER_ID },
+      [TALENT_FIELDS.LAST_NAME]: { value: talent.姓 },
+      [TALENT_FIELDS.FIRST_NAME]: { value: talent.名 },
+      [TALENT_FIELDS.FULL_NAME]: { value: talent.氏名 },
+      [TALENT_FIELDS.LAST_NAME_KANA]: { value: talent.セイ },
+      [TALENT_FIELDS.FIRST_NAME_KANA]: { value: talent.メイ },
+      [TALENT_FIELDS.EMAIL]: { value: talent.メールアドレス },
+      [TALENT_FIELDS.PHONE]: { value: talent.電話番号 },
+      [TALENT_FIELDS.BIRTH_DATE]: { value: talent.生年月日 },
+      [TALENT_FIELDS.POSTAL_CODE]: { value: talent.郵便番号 },
+      [TALENT_FIELDS.ADDRESS]: { value: talent.住所 },
+      [TALENT_FIELDS.SKILLS]: { value: talent.言語_ツール },
+      [TALENT_FIELDS.EXPERIENCE]: { value: talent.主な実績_PR_職務経歴 },
+      [TALENT_FIELDS.PORTFOLIO_URL]: { value: talent.ポートフォリオリンク },
+      [TALENT_FIELDS.AVAILABLE_FROM]: { value: talent.稼働可能時期 },
+      [TALENT_FIELDS.DESIRED_RATE]: { value: talent.希望単価_月額 },
+      [TALENT_FIELDS.DESIRED_WORK_DAYS]: { value: talent.希望勤務日数 },
+      [TALENT_FIELDS.DESIRED_COMMUTE]: { value: talent.希望出社頻度 },
+      [TALENT_FIELDS.DESIRED_WORK_STYLE]: { value: talent.希望勤務スタイル },
+      [TALENT_FIELDS.DESIRED_WORK]: { value: talent.希望案件_作業内容 },
+      [TALENT_FIELDS.NG_COMPANIES]: { value: talent.NG企業 },
+      [TALENT_FIELDS.OTHER_REQUESTS]: { value: talent.その他要望 },
+    };
+
+    let talentRecordId: string;
+
+    if (existingTalents.records.length > 0) {
+      // 更新
+      const existingId = (existingTalents.records[0] as any).$id.value;
+      await talentClient.record.updateRecord({
+        app: appIds.talent,
+        id: existingId,
+        record: talentRecord,
+      });
+      talentRecordId = existingId;
+      console.log(`✅ 既存の人材レコードを更新: ID=${existingId}`);
+    } else {
+      // 新規作成
+      const result = await talentClient.record.addRecord({
+        app: appIds.talent,
+        record: talentRecord,
+      });
+      talentRecordId = result.id;
+      console.log(`✅ 新規人材レコードを作成: ID=${result.id}`);
+    }
+
+    // 3. 案件DB の Upsert（案件名で識別）
+    console.log("\n" + "=".repeat(80));
+    console.log("💼 Step 3: 案件DBを Upsert");
+    console.log("=".repeat(80));
+
+    const jobIds: string[] = [];
+
+    for (const job of seedData.jobs) {
+      // 案件名で既存レコードを検索
+      const existingJobs = await jobClient.record.getRecords({
+        app: appIds.job,
+        query: `案件名 = "${job.案件名}"`,
+      });
+
+      const jobRecord = {
+        案件名: { value: job.案件名 },
+        職種_ポジション: { value: job.職種_ポジション },
+        スキル: { value: job.スキル },
+        概要: { value: job.概要 },
+        環境: { value: job.環境 },
+        必須スキル: { value: job.必須スキル },
+        尚可スキル: { value: job.尚可スキル },
+        勤務地エリア: { value: job.勤務地エリア },
+        最寄駅: { value: job.最寄駅 },
+        下限h: { value: job.下限h },
+        上限h: { value: job.上限h },
+        掲載単価: { value: job.掲載単価 },
+        数値_0: { value: job.MAX単価 },
+        案件期間: { value: job.案件期間 },
+        日付: { value: job.参画時期 },
+        面談回数: { value: job.面談回数 },
+        案件特徴: { value: job.案件特徴 },
+        ラジオボタン: { value: job.ラジオボタン },
+        ラジオボタン_0: { value: job.ラジオボタン_0 },
+        ドロップダウン: { value: job.商流 },
+        ドロップダウン_2: { value: job.契約形態 },
+        ドロップダウン_3: { value: job.リモート },
+        ドロップダウン_0: { value: job.外国籍 },
+        数値: { value: job.募集人数 },
+      };
+
+      if (existingJobs.records.length > 0) {
+        // 更新
+        const existingId = (existingJobs.records[0] as any).$id.value;
+        await jobClient.record.updateRecord({
+          app: appIds.job,
+          id: existingId,
+          record: jobRecord,
+        });
+        jobIds.push(existingId);
+        console.log(`✅ 既存の案件を更新: ${job.案件名} (ID=${existingId})`);
+      } else {
+        // 新規作成
+        const result = await jobClient.record.addRecord({
+          app: appIds.job,
+          record: jobRecord,
+        });
+        jobIds.push(result.id);
+        console.log(`✅ 新規案件を作成: ${job.案件名} (ID=${result.id})`);
+      }
+    }
+
+    // 4. 応募履歴DB の Upsert（auth_user_id + job_id で識別）
+    console.log("\n" + "=".repeat(80));
+    console.log("📝 Step 4: 応募履歴DBを Upsert");
+    console.log("=".repeat(80));
+
+    for (const application of seedData.applications) {
+      const jobId = jobIds[application.jobIndex];
+
+      // auth_user_id と job_id で既存レコードを検索
+      const existingApplications = await applicationClient.record.getRecords({
+        app: appIds.application,
+        query: `${APPLICATION_FIELDS.AUTH_USER_ID} = "${YAMADA_AUTH_USER_ID}" and ${APPLICATION_FIELDS.JOB_ID} = "${jobId}"`,
+      });
+
+      const applicationRecord = {
+        [APPLICATION_FIELDS.AUTH_USER_ID]: { value: YAMADA_AUTH_USER_ID },
+        [APPLICATION_FIELDS.JOB_ID]: { value: jobId },
+        [APPLICATION_FIELDS.STATUS]: { value: application.対応状況 },
+      };
+
+      if (existingApplications.records.length > 0) {
+        // 更新
+        const existingId = (existingApplications.records[0] as any).$id.value;
+        await applicationClient.record.updateRecord({
+          app: appIds.application,
+          id: existingId,
+          record: applicationRecord,
+        });
+        console.log(`✅ 既存の応募履歴を更新: 案件ID=${jobId} (ID=${existingId})`);
+      } else {
+        // 新規作成
+        const result = await applicationClient.record.addRecord({
+          app: appIds.application,
+          record: applicationRecord,
+        });
+        console.log(`✅ 新規応募履歴を作成: 案件ID=${jobId} (ID=${result.id})`);
+      }
+    }
+
+    // 完了メッセージ
+    console.log("\n" + "=".repeat(80));
+    console.log("🎉 yamada シードデータの Upsert が完了しました！");
+    console.log("=".repeat(80));
+    console.log("\n📊 処理されたデータ:");
+    console.log(`  👤 Better Authユーザー: 1件`);
+    console.log(`  👨‍💼 人材: 1件`);
+    console.log(`  💼 案件: ${seedData.jobs.length}件`);
+    console.log(`  📝 応募履歴: ${seedData.applications.length}件`);
+
+    console.log("\n📝 ログイン情報:");
+    console.log(`  - 山田 太郎: seed_yamada@example.com / password123`);
+    console.log(`  - auth_user_id: ${YAMADA_AUTH_USER_ID}`);
+
+    console.log("\n💡 Vercel 環境でも同じ auth_user_id でログインできます");
+    console.log("\n");
+
+  } catch (error) {
+    console.error("\n❌ エラーが発生しました:", error);
+    if (error instanceof Error) {
+      console.error("エラーメッセージ:", error.message);
+      console.error("スタックトレース:", error.stack);
+    }
+    process.exit(1);
+  }
+};
+
 // コマンドライン引数で処理を分岐
 const command = process.argv[2];
 
@@ -1347,6 +1596,8 @@ if (command === "create") {
   createSeedData();
 } else if (command === "delete") {
   deleteSeedData();
+} else if (command === "upsert") {
+  upsertYamadaSeedData();
 } else if (command === "create:1") {
   // seed:create:1 用（引数なしでcreate呼び出し時のため）
   process.argv[3] = "1";
@@ -1363,6 +1614,7 @@ if (command === "create") {
   console.error("  npm run seed:create:1    - セット1を作成（削除 + 作成）");
   console.error("  npm run seed:create:2    - セット2を作成（削除 + 作成）");
   console.error("  npm run seed:create:3    - セット3を作成（50人+50案件）");
+  console.error("  npm run seed:upsert      - yamada シードデータを Upsert（Vercel 連携用）");
   console.error("  npm run seed:delete      - シードデータを全件削除");
   process.exit(1);
 }
