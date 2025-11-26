@@ -21,6 +21,8 @@ import path from "path";
 import fs from "fs";
 import { exec } from "child_process";
 import { auth } from "../lib/auth";
+// Better Authの公式ハッシュ関数を使用
+import { hashPassword as hashPasswordBetterAuth } from "better-auth/crypto";
 
 // ランダムID生成（Better Auth互換）
 const generateId = (length: number = 32): string => {
@@ -960,9 +962,9 @@ export const createSeedData = async () => {
     console.log(`   スキル: ${JOB_FIELD_OPTIONS.スキル.length}件`);
     console.log(`   案件特徴: ${JOB_FIELD_OPTIONS.案件特徴.length}件`);
 
-    // 1. Better Authユーザーを作成（auth.api使用）
+    // 1. Better Authユーザーを一括作成（SQLite直接挿入で高速化）
     console.log("=".repeat(80));
-    console.log(`👤 Step 1: Better Authユーザーを作成 (${seedData.authUsers.length}人)`);
+    console.log(`👤 Step 1: Better Authユーザーを一括作成 (${seedData.authUsers.length}人)`);
     console.log("=".repeat(80));
 
     const authUserIds: string[] = [];
@@ -976,39 +978,50 @@ export const createSeedData = async () => {
         existingEmails.set(row.email, row.id);
       }
 
-      for (const authUser of seedData.authUsers) {
-        // 既存チェック
-        if (existingEmails.has(authUser.email)) {
-          const existingId = existingEmails.get(authUser.email)!;
-          authUserIds.push(existingId);
-          console.log(`⚠️  ユーザー ${authUser.email} は既に存在します。スキップします。`);
-          continue;
-        }
+      // 新規ユーザーをフィルタリング
+      const newUsers = seedData.authUsers.filter(user => !existingEmails.has(user.email));
+      const skippedUsers = seedData.authUsers.filter(user => existingEmails.has(user.email));
+      
+      // スキップされるユーザーのIDを追加
+      for (const user of skippedUsers) {
+        authUserIds.push(existingEmails.get(user.email)!);
+        console.log(`⚠️  ユーザー ${user.email} は既に存在します。スキップします。`);
+      }
 
-        try {
-          // Better Auth APIでユーザー作成
-          const result = await auth.api.signUpEmail({
-            body: {
-              email: authUser.email,
-              password: authUser.password,
-              name: authUser.name,
-            },
-          });
+      if (newUsers.length > 0) {
+        console.log(`🔐 ${newUsers.length}人のパスワードをハッシュ化中...`);
+        
+        // パスワードは全員同じなので、一度だけハッシュ化
+        const hashedPassword = await hashPasswordBetterAuth("password123");
+        const now = Date.now();
 
-          if (result.user) {
-            authUserIds.push(result.user.id);
-            
-            // メール認証済みに更新
-            sqlite.prepare("UPDATE user SET emailVerified = 1 WHERE id = ?").run(result.user.id);
-            
-            console.log(`✅ ユーザー作成: ${authUser.email} (ID: ${result.user.id}) - メール認証済み`);
+        // トランザクション内で一括挿入
+        const insertUser = sqlite.prepare(`
+          INSERT INTO user (id, name, email, emailVerified, image, createdAt, updatedAt)
+          VALUES (?, ?, ?, 1, NULL, ?, ?)
+        `);
+        const insertAccount = sqlite.prepare(`
+          INSERT INTO account (id, userId, accountId, providerId, accessToken, refreshToken, accessTokenExpiresAt, refreshTokenExpiresAt, scope, idToken, password, createdAt, updatedAt)
+          VALUES (?, ?, ?, 'credential', NULL, NULL, NULL, NULL, NULL, NULL, ?, ?, ?)
+        `);
+
+        const transaction = sqlite.transaction(() => {
+          for (const user of newUsers) {
+            const userId = generateId(32);
+            const accountId = generateId(32);
+
+            insertUser.run(userId, user.name, user.email, now, now);
+            insertAccount.run(accountId, userId, userId, hashedPassword, now, now);
+
+            authUserIds.push(userId);
           }
-        } catch (error) {
-          console.error(`❌ ユーザー作成失敗: ${authUser.email}`, error);
-        }
+        });
+
+        transaction();
+        console.log(`✅ ${newUsers.length}人のユーザーを一括作成しました`);
       }
       
-      console.log(`\n✅ ${authUserIds.length}人のユーザーを作成しました`);
+      console.log(`\n✅ 合計 ${authUserIds.length}人のユーザーを処理しました`);
       
     } finally {
       sqlite.close();
@@ -1095,7 +1108,7 @@ export const createSeedData = async () => {
     const jobCreateResult = await jobClient.record.addRecords({
       app: appIds.job,
       records: jobRecords,
-    });
+      });
 
     const jobIds = jobCreateResult.ids;
     console.log(`✅ ${jobIds.length}件の案件レコードを一括作成しました`);
@@ -1119,13 +1132,13 @@ export const createSeedData = async () => {
 
     if (applicationRecords.length > 0) {
       const applicationCreateResult = await applicationClient.record.addRecords({
-        app: appIds.application,
+          app: appIds.application,
         records: applicationRecords,
-      });
+        });
       console.log(`✅ ${applicationCreateResult.ids.length}件の応募履歴レコードを一括作成しました`);
     } else {
       console.log("✅ 応募履歴: 作成対象なし");
-    }
+      }
 
     // 完了メッセージ
     console.log("\n" + "=".repeat(80));
@@ -1188,9 +1201,9 @@ export const deleteSeedData = async () => {
 
     // 1. 推薦データを全件削除（存在する場合）
     if (recommendationClient && appIds.recommendation) {
-      console.log("\n" + "=".repeat(80));
+    console.log("\n" + "=".repeat(80));
       console.log("🎯 Step 1: 推薦データを全件削除");
-      console.log("=".repeat(80));
+    console.log("=".repeat(80));
 
       const recommendations = await recommendationClient.record.getAllRecords({
         app: appIds.recommendation,
@@ -1228,10 +1241,10 @@ export const deleteSeedData = async () => {
       // 100件ずつ削除
       for (let i = 0; i < applicationIds.length; i += 100) {
         const batch = applicationIds.slice(i, i + 100);
-        await applicationClient.record.deleteRecords({
-          app: appIds.application,
+      await applicationClient.record.deleteRecords({
+        app: appIds.application,
           ids: batch,
-        });
+      });
       }
       console.log(`✅ 応募履歴を削除: ${applicationIds.length}件`);
     } else {
@@ -1253,10 +1266,10 @@ export const deleteSeedData = async () => {
       // 100件ずつ削除
       for (let i = 0; i < jobIds.length; i += 100) {
         const batch = jobIds.slice(i, i + 100);
-        await jobClient.record.deleteRecords({
-          app: appIds.job,
+      await jobClient.record.deleteRecords({
+        app: appIds.job,
           ids: batch,
-        });
+      });
       }
       console.log(`✅ 案件を削除: ${jobIds.length}件`);
     } else {
@@ -1278,10 +1291,10 @@ export const deleteSeedData = async () => {
       // 100件ずつ削除
       for (let i = 0; i < talentIds.length; i += 100) {
         const batch = talentIds.slice(i, i + 100);
-        await talentClient.record.deleteRecords({
-          app: appIds.talent,
+      await talentClient.record.deleteRecords({
+        app: appIds.talent,
           ids: batch,
-        });
+      });
       }
       console.log(`✅ 人材を削除: ${talentIds.length}件`);
     } else {
