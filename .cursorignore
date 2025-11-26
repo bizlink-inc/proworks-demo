@@ -1,0 +1,4 @@
+# Cursor で参照可能にする .env ファイル
+!.env.local
+!.env.production
+!.env.vercel

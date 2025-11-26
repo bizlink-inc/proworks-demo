@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { PWInput } from "@/components/ui/pw-input"
@@ -11,7 +11,7 @@ import { CenteredLayout } from "@/components/layouts"
 import { useToast } from "@/hooks/use-toast"
 import { CheckCircle } from "lucide-react"
 
-export default function ResetPasswordPage() {
+const ResetPasswordContent = () => {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { toast } = useToast()
@@ -220,3 +220,18 @@ export default function ResetPasswordPage() {
   )
 }
 
+const ResetPasswordPage = () => {
+  return (
+    <Suspense fallback={
+      <CenteredLayout>
+        <div className="text-center">
+          <p>読み込み中...</p>
+        </div>
+      </CenteredLayout>
+    }>
+      <ResetPasswordContent />
+    </Suspense>
+  )
+}
+
+export default ResetPasswordPage
