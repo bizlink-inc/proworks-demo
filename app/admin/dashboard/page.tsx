@@ -34,6 +34,35 @@ type Talent = {
   desiredRate: string;
   positions: string[];
   score: number;
+  // AI評価結果
+  aiExecutionStatus?: string;
+  aiSkillScore?: number;
+  aiProcessScore?: number;
+  aiInfraScore?: number;
+  aiDomainScore?: number;
+  aiTeamScore?: number;
+  aiToolScore?: number;
+  aiOverallScore?: number;
+  aiResult?: string;
+  aiExecutedAt?: string;
+};
+
+// AI評価結果型
+type AIMatchResult = {
+  talentAuthUserId: string;
+  talentName: string;
+  result: {
+    skillScore: number;
+    processScore: number;
+    infraScore: number;
+    domainScore: number;
+    teamScore: number;
+    toolScore: number;
+    overallScore: number;
+    resultText: string;
+    error?: string;
+  };
+  recommendationId: string;
 };
 
 const AdminDashboardPage = () => {
@@ -48,6 +77,12 @@ const AdminDashboardPage = () => {
   const [isExtracting, setIsExtracting] = useState(false);
   const [hasExtracted, setHasExtracted] = useState(false);
   const [error, setError] = useState("");
+  
+  // AI評価関連
+  const [isAIMatching, setIsAIMatching] = useState(false);
+  const [aiMatchResults, setAiMatchResults] = useState<AIMatchResult[]>([]);
+  const [showResultModal, setShowResultModal] = useState(false);
+  const [selectedResultTalent, setSelectedResultTalent] = useState<Talent | null>(null);
 
   // 認証チェック
   useEffect(() => {
@@ -195,14 +230,80 @@ const AdminDashboardPage = () => {
     });
   };
 
-  // AIマッチ実行（未実装 - UIのみ）
-  const handleAIMatch = () => {
-    // TODO: AIマッチ実行処理を実装
-    console.log("AIマッチ実行:", {
-      jobId: selectedJob?.jobId,
-      selectedTalentIds: Array.from(selectedTalentIds),
-    });
-    alert(`AIマッチ実行機能は現在開発中です\n\n選択された人材: ${selectedTalentIds.size}名`);
+  // AIマッチ実行
+  const handleAIMatch = async () => {
+    if (!selectedJob || selectedTalentIds.size === 0) return;
+
+    try {
+      setIsAIMatching(true);
+      setError("");
+      setAiMatchResults([]);
+
+      const response = await fetch("/api/admin/ai-match", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          jobId: selectedJob.jobId,
+          talentAuthUserIds: Array.from(selectedTalentIds),
+        }),
+      });
+
+      if (response.status === 401) {
+        router.push("/admin/login");
+        return;
+      }
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError(data.error || "AIマッチの実行に失敗しました");
+        return;
+      }
+
+      // 結果を保存
+      setAiMatchResults(data.results);
+
+      // 人材リストを更新（AI評価結果を反映）
+      setTalents((prev) =>
+        prev.map((talent) => {
+          const result = data.results.find(
+            (r: AIMatchResult) => r.talentAuthUserId === talent.authUserId
+          );
+          if (result) {
+            return {
+              ...talent,
+              aiExecutionStatus: "実行済み",
+              aiSkillScore: result.result.skillScore,
+              aiProcessScore: result.result.processScore,
+              aiInfraScore: result.result.infraScore,
+              aiDomainScore: result.result.domainScore,
+              aiTeamScore: result.result.teamScore,
+              aiToolScore: result.result.toolScore,
+              aiOverallScore: result.result.overallScore,
+              aiResult: result.result.resultText,
+              aiExecutedAt: new Date().toISOString(),
+            };
+          }
+          return talent;
+        })
+      );
+
+      // 結果モーダルを表示
+      setShowResultModal(true);
+    } catch (error) {
+      console.error("AIマッチ実行エラー:", error);
+      setError("通信エラーが発生しました");
+    } finally {
+      setIsAIMatching(false);
+    }
+  };
+
+  // AI評価詳細を表示
+  const handleShowAIResult = (talent: Talent) => {
+    setSelectedResultTalent(talent);
+    setShowResultModal(true);
   };
 
   // ログアウト処理
@@ -231,8 +332,17 @@ const AdminDashboardPage = () => {
     return "参考";
   };
 
-  // 選択数のバリデーション
-  const isValidSelection = selectedTalentIds.size >= 3 && selectedTalentIds.size <= 5;
+  // 選択数のバリデーション（1人以上選択でOK）
+  const isValidSelection = selectedTalentIds.size >= 1;
+  
+  // AI総合スコアに応じた色を取得
+  const getAIScoreColor = (score: number | undefined) => {
+    if (!score) return "bg-gray-400";
+    if (score >= 80) return "bg-emerald-500";
+    if (score >= 60) return "bg-[var(--pw-button-primary)]";
+    if (score >= 40) return "bg-amber-500";
+    return "bg-red-400";
+  };
 
   return (
     <div className="min-h-screen bg-[var(--pw-bg-body)]">
@@ -522,7 +632,7 @@ const AdminDashboardPage = () => {
                   <div className="space-y-4">
                     {/* 選択ガイド */}
                     <div className="bg-[var(--pw-bg-light-blue)] rounded-lg p-3 text-sm text-[var(--pw-text-gray)]">
-                      <span className="font-medium">💡 ヒント:</span> 3〜5名を選択して「AIマッチ実行」をクリックしてください
+                      <span className="font-medium">💡 ヒント:</span> 人材を選択して「AIマッチ実行」をクリックすると、AIによる詳細評価を実行できます
                     </div>
                     
                     {talents.map((talent, index) => {
@@ -584,6 +694,57 @@ const AdminDashboardPage = () => {
                                 </div>
                               )}
 
+                              {/* AI評価バッジ */}
+                              {talent.aiExecutionStatus === "実行済み" && (
+                                <div className="mt-3 p-3 bg-gradient-to-r from-purple-50 to-indigo-50 rounded-lg border border-purple-200">
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-xs font-bold text-purple-600 bg-purple-100 px-2 py-0.5 rounded-full">
+                                        🤖 AI評価済
+                                      </span>
+                                      <span className={`text-lg font-bold px-2 py-1 rounded ${getAIScoreColor(talent.aiOverallScore)} text-white`}>
+                                        {talent.aiOverallScore}点
+                                      </span>
+                                    </div>
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleShowAIResult(talent);
+                                      }}
+                                      className="text-xs text-purple-600 hover:text-purple-800 font-medium underline"
+                                    >
+                                      詳細を見る
+                                    </button>
+                                  </div>
+                                  <div className="mt-2 grid grid-cols-3 gap-2 text-xs">
+                                    <div className="text-center">
+                                      <div className="text-gray-500">技術</div>
+                                      <div className="font-bold text-gray-700">{talent.aiSkillScore}</div>
+                                    </div>
+                                    <div className="text-center">
+                                      <div className="text-gray-500">工程</div>
+                                      <div className="font-bold text-gray-700">{talent.aiProcessScore}</div>
+                                    </div>
+                                    <div className="text-center">
+                                      <div className="text-gray-500">インフラ</div>
+                                      <div className="font-bold text-gray-700">{talent.aiInfraScore}</div>
+                                    </div>
+                                    <div className="text-center">
+                                      <div className="text-gray-500">業務知識</div>
+                                      <div className="font-bold text-gray-700">{talent.aiDomainScore}</div>
+                                    </div>
+                                    <div className="text-center">
+                                      <div className="text-gray-500">チーム</div>
+                                      <div className="font-bold text-gray-700">{talent.aiTeamScore}</div>
+                                    </div>
+                                    <div className="text-center">
+                                      <div className="text-gray-500">ツール</div>
+                                      <div className="font-bold text-gray-700">{talent.aiToolScore}</div>
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
+
                               {/* スキル */}
                               {talent.skills && (
                                 <div className="mt-3">
@@ -629,6 +790,198 @@ const AdminDashboardPage = () => {
           </div>
         </div>
       </main>
+
+      {/* AIマッチ実行中のローディングオーバーレイ */}
+      {isAIMatching && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl p-8 max-w-md w-full mx-4 text-center shadow-2xl">
+            <div className="relative mx-auto w-20 h-20 mb-6">
+              <div className="absolute inset-0 border-4 border-purple-200 rounded-full"></div>
+              <div className="absolute inset-0 border-4 border-purple-600 border-t-transparent rounded-full animate-spin"></div>
+              <div className="absolute inset-2 border-4 border-indigo-200 rounded-full"></div>
+              <div className="absolute inset-2 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin" style={{ animationDirection: "reverse", animationDuration: "0.8s" }}></div>
+            </div>
+            <h3 className="text-xl font-bold text-gray-800 mb-2">
+              🤖 AI評価を実行中...
+            </h3>
+            <p className="text-gray-600 mb-4">
+              選択された {selectedTalentIds.size} 名の人材を評価しています
+            </p>
+            <div className="text-sm text-gray-500">
+              <p>• 技術スキルマッチを分析中...</p>
+              <p>• 開発工程経験を評価中...</p>
+              <p>• 総合マッチ度を算出中...</p>
+            </div>
+            <p className="text-xs text-gray-400 mt-4">
+              この処理には数十秒かかる場合があります
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* AI評価結果モーダル */}
+      {showResultModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden shadow-2xl">
+            {/* モーダルヘッダー */}
+            <div className="bg-gradient-to-r from-purple-600 to-indigo-600 p-6 text-white">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-2xl font-bold">
+                    🤖 AI評価結果
+                  </h3>
+                  {selectedResultTalent ? (
+                    <p className="mt-1 opacity-90">
+                      {selectedResultTalent.name} さんの詳細評価
+                    </p>
+                  ) : (
+                    <p className="mt-1 opacity-90">
+                      {aiMatchResults.length} 名の評価が完了しました
+                    </p>
+                  )}
+                </div>
+                <button
+                  onClick={() => {
+                    setShowResultModal(false);
+                    setSelectedResultTalent(null);
+                  }}
+                  className="p-2 hover:bg-white/20 rounded-full transition-colors"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            {/* モーダルコンテンツ */}
+            <div className="p-6 overflow-y-auto max-h-[calc(90vh-120px)]">
+              {selectedResultTalent ? (
+                // 個別の人材詳細
+                <div className="space-y-6">
+                  {/* スコアサマリー */}
+                  <div className="bg-gray-50 rounded-xl p-6">
+                    <div className="flex items-center justify-center gap-4 mb-6">
+                      <div className={`text-5xl font-bold ${getAIScoreColor(selectedResultTalent.aiOverallScore)} text-white px-6 py-3 rounded-xl`}>
+                        {selectedResultTalent.aiOverallScore}点
+                      </div>
+                      <div className="text-left">
+                        <p className="text-lg font-bold text-gray-800">総合マッチ度</p>
+                        <p className="text-sm text-gray-600">6項目の平均スコア</p>
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                      {[
+                        { label: "技術スキル", score: selectedResultTalent.aiSkillScore, icon: "💻" },
+                        { label: "開発工程", score: selectedResultTalent.aiProcessScore, icon: "🔧" },
+                        { label: "インフラ/クラウド", score: selectedResultTalent.aiInfraScore, icon: "☁️" },
+                        { label: "業務知識", score: selectedResultTalent.aiDomainScore, icon: "📊" },
+                        { label: "チーム開発", score: selectedResultTalent.aiTeamScore, icon: "👥" },
+                        { label: "ツール/環境", score: selectedResultTalent.aiToolScore, icon: "🛠️" },
+                      ].map((item, i) => (
+                        <div key={i} className="bg-white rounded-lg p-4 text-center shadow-sm">
+                          <div className="text-2xl mb-1">{item.icon}</div>
+                          <div className="text-xs text-gray-500 mb-1">{item.label}</div>
+                          <div className={`text-xl font-bold ${
+                            (item.score || 0) >= 80 ? "text-emerald-600" :
+                            (item.score || 0) >= 60 ? "text-blue-600" :
+                            (item.score || 0) >= 40 ? "text-amber-600" :
+                            "text-red-600"
+                          }`}>
+                            {item.score || 0}点
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* 詳細評価テキスト */}
+                  {selectedResultTalent.aiResult && (
+                    <div className="bg-white border border-gray-200 rounded-xl p-6">
+                      <h4 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                        <span>📝</span> 詳細評価
+                      </h4>
+                      <div className="prose prose-sm max-w-none text-gray-700 whitespace-pre-wrap">
+                        {selectedResultTalent.aiResult}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                // 複数人材の結果一覧
+                <div className="space-y-4">
+                  {aiMatchResults.map((result, index) => (
+                    <div
+                      key={result.talentAuthUserId}
+                      className="bg-gray-50 rounded-xl p-5 hover:bg-gray-100 transition-colors"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                          <div className="w-10 h-10 rounded-full bg-purple-600 text-white flex items-center justify-center font-bold">
+                            {index + 1}
+                          </div>
+                          <div>
+                            <h4 className="font-bold text-gray-800">{result.talentName}</h4>
+                            {result.result.error ? (
+                              <p className="text-sm text-red-600">⚠️ {result.result.error}</p>
+                            ) : (
+                              <div className="flex items-center gap-3 mt-1">
+                                <span className={`text-lg font-bold px-2 py-0.5 rounded ${getAIScoreColor(result.result.overallScore)} text-white`}>
+                                  {result.result.overallScore}点
+                                </span>
+                                <span className="text-xs text-gray-500">
+                                  技術:{result.result.skillScore} / 工程:{result.result.processScore} / インフラ:{result.result.infraScore}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => {
+                            const talent = talents.find(t => t.authUserId === result.talentAuthUserId);
+                            if (talent) {
+                              setSelectedResultTalent(talent);
+                            }
+                          }}
+                          className="text-sm text-purple-600 hover:text-purple-800 font-medium"
+                        >
+                          詳細 →
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* 戻るボタン（個別詳細表示時） */}
+              {selectedResultTalent && aiMatchResults.length > 0 && (
+                <div className="mt-6 text-center">
+                  <button
+                    onClick={() => setSelectedResultTalent(null)}
+                    className="text-purple-600 hover:text-purple-800 font-medium"
+                  >
+                    ← 一覧に戻る
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* モーダルフッター */}
+            <div className="border-t border-gray-200 p-4 bg-gray-50 flex justify-end">
+              <button
+                onClick={() => {
+                  setShowResultModal(false);
+                  setSelectedResultTalent(null);
+                }}
+                className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg font-medium hover:bg-gray-300 transition-colors"
+              >
+                閉じる
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
