@@ -1,17 +1,30 @@
 import { NextRequest, NextResponse } from "next/server";
-import { drizzle } from "drizzle-orm/better-sqlite3";
-import Database from "better-sqlite3";
-import { eq } from "drizzle-orm";
-import * as schema from "@/lib/db/schema";
-import bcrypt from "bcryptjs";
-import path from "path";
 
-const dbPath = path.join(process.cwd(), "auth.db");
-const sqlite = new Database(dbPath);
-const db = drizzle(sqlite, { schema });
+// Vercel 環境では SQLite が使用できないため、この API は機能しません
+const isVercel = process.env.VERCEL === "1" || process.env.VERCEL === "true";
 
 export const POST = async (request: NextRequest) => {
+  // Vercel 環境では機能しないことを返す
+  if (isVercel) {
+    return NextResponse.json(
+      { error: "この機能はデモ環境では利用できません" },
+      { status: 503 }
+    );
+  }
+
+  // ローカル環境でのみ動的インポート
   try {
+    const { drizzle } = await import("drizzle-orm/better-sqlite3");
+    const Database = (await import("better-sqlite3")).default;
+    const { eq } = await import("drizzle-orm");
+    const schema = await import("@/lib/db/schema");
+    const bcrypt = await import("bcryptjs");
+    const path = await import("path");
+
+    const dbPath = path.join(process.cwd(), "auth.db");
+    const sqlite = new Database(dbPath);
+    const db = drizzle(sqlite, { schema });
+
     const body = await request.json();
     const { token, password } = body;
 
@@ -68,4 +81,3 @@ export const POST = async (request: NextRequest) => {
     );
   }
 };
-

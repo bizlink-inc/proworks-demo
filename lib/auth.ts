@@ -1,61 +1,29 @@
 import { betterAuth } from "better-auth";
-import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import crypto from "crypto";
 
-// Vercel 環境では SQLite は使用できないため、動的にインポート
-// ローカル開発環境でのみ SQLite を使用
+// Vercel 環境かどうかを判定
 const isVercel = process.env.VERCEL === "1" || process.env.VERCEL === "true";
-
-// データベース接続を遅延初期化
-const getDb = () => {
-  if (isVercel) {
-    // Vercel 環境ではダミーの DB を返す（認証機能は制限される）
-    return null;
-  }
-  
-  // ローカル環境では SQLite を使用
-  const Database = require("better-sqlite3");
-  const { drizzle } = require("drizzle-orm/better-sqlite3");
-  const path = require("path");
-  const schema = require("./db/schema");
-  
-  const dbPath = path.join(process.cwd(), "auth.db");
-  const sqlite = new Database(dbPath);
-  sqlite.pragma("journal_mode = WAL");
-  
-  return drizzle(sqlite, { schema });
-};
-
-const db = getDb();
 
 // ランダムなパスワードを生成する関数
 const generateRandomPassword = () => {
   return crypto.randomBytes(16).toString("hex");
 };
 
-// Vercel 環境では認証機能が制限されることを許容
-const getDatabaseConfig = () => {
-  if (!db) {
-    // Vercel 環境ではメモリ内のダミー設定を使用
-    // 注意: この状態では認証機能は正常に動作しません
-    return {
-      provider: "sqlite" as const,
-      url: ":memory:",
-    };
-  }
-  return drizzleAdapter(db, {
-    provider: "better-sqlite3",
-  });
-};
-
+// Vercel 環境では SQLite を使用せず、メモリ DB を使用
+// 注意: この状態ではユーザー認証機能は正常に動作しません
+// デモ目的では管理者ログイン（ハードコード）を使用してください
 export const auth = betterAuth({
-  database: getDatabaseConfig(),
+  database: {
+    provider: "sqlite",
+    url: ":memory:",
+  },
+  secret: process.env.BETTER_AUTH_SECRET || "demo-secret-key-for-development",
   baseURL: process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
   basePath: "/api/auth",
   emailAndPassword: {
     enabled: true,
     minPasswordLength: 6,
-    requireEmailVerification: true, // メール認証を必須にする
+    requireEmailVerification: false, // Vercel 環境ではメール認証を無効化
     sendResetPassword: async ({ user, url }) => {
       // パスワードリセットメール送信
       if (process.env.NODE_ENV === "development") {
@@ -70,8 +38,8 @@ export const auth = betterAuth({
     },
   },
   emailVerification: {
-    sendOnSignUp: true, // サインアップ時にメール送信
-    autoSignInAfterVerification: true, // メール認証後に自動ログイン
+    sendOnSignUp: false, // Vercel 環境ではメール送信を無効化
+    autoSignInAfterVerification: true,
     sendVerificationEmail: async ({ user, url, token }) => {
       // コールバックURLをマイページに設定
       const callbackUrl = `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/callback`;
@@ -95,28 +63,6 @@ export const auth = betterAuth({
         console.log("=".repeat(80) + "\n");
         return;
       }
-
-      // 本番環境ではResendを使用（後で実装）
-      // const resend = new Resend(process.env.RESEND_API_KEY);
-      // await resend.emails.send({
-      //   from: "noreply@yourapp.com",
-      //   to: user.email,
-      //   subject: "【PRO WORKS】メールアドレスの確認",
-      //   html: `
-      //     <h2>メールアドレスの確認</h2>
-      //     <p>${user.email} 様</p>
-      //     <p>PRO WORKS にご登録いただきありがとうございます。</p>
-      //     <p>以下のリンクをクリックして、メールアドレスの確認を完了してください。</p>
-      //     <p><a href="${verificationUrl}" style="background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">メールアドレスを確認する</a></p>
-      //     <p>または、以下のURLをブラウザにコピーしてください：</p>
-      //     <p style="color: #666; font-size: 12px; word-break: break-all;">${verificationUrl}</p>
-      //     <hr style="margin: 20px 0; border: none; border-top: 1px solid #eee;">
-      //     <p style="color: #999; font-size: 12px;">
-      //       ※ このリンクの有効期限は1時間です。<br>
-      //       ※ このメールに心当たりがない場合は、削除してください。
-      //     </p>
-      //   `,
-      // });
     },
   },
   session: {
@@ -129,7 +75,8 @@ export const auth = betterAuth({
   trustedOrigins: [
     "http://localhost:3000",
     "http://192.168.100.5:3000",
-  ],
+    process.env.NEXT_PUBLIC_APP_URL || "",
+  ].filter(Boolean),
 });
 
 export { generateRandomPassword };

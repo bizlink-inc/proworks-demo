@@ -1,20 +1,31 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSession } from "@/lib/auth-server";
-import { auth } from "@/lib/auth";
-import { drizzle } from "drizzle-orm/better-sqlite3";
-import Database from "better-sqlite3";
-import { eq, and } from "drizzle-orm";
-import * as schema from "@/lib/db/schema";
-import path from "path";
-import { randomBytes } from "crypto";
-import { headers } from "next/headers";
 
-const dbPath = path.join(process.cwd(), "auth.db");
-const sqlite = new Database(dbPath);
-const db = drizzle(sqlite, { schema });
+// Vercel 環境では SQLite が使用できないため、この API は機能しません
+const isVercel = process.env.VERCEL === "1" || process.env.VERCEL === "true";
 
 export const POST = async (request: NextRequest) => {
+  // Vercel 環境では機能しないことを返す
+  if (isVercel) {
+    return NextResponse.json(
+      { error: "この機能はデモ環境では利用できません" },
+      { status: 503 }
+    );
+  }
+
+  // ローカル環境でのみ動的インポート
   try {
+    const { getSession } = await import("@/lib/auth-server");
+    const { drizzle } = await import("drizzle-orm/better-sqlite3");
+    const Database = (await import("better-sqlite3")).default;
+    const { eq } = await import("drizzle-orm");
+    const schema = await import("@/lib/db/schema");
+    const path = await import("path");
+    const { randomBytes } = await import("crypto");
+
+    const dbPath = path.join(process.cwd(), "auth.db");
+    const sqlite = new Database(dbPath);
+    const db = drizzle(sqlite, { schema });
+
     const session = await getSession();
     console.log("🔍 メールアドレス変更リクエスト - セッション:", session?.user?.email, session?.user?.id);
 
@@ -133,8 +144,6 @@ export const POST = async (request: NextRequest) => {
       console.log("=".repeat(80) + "\n");
     }
 
-    // TODO: 本番環境ではResendを使用してメール送信
-
     console.log("✅ メールアドレス変更リクエスト成功:", session.user.email, "→", newEmail);
 
     return NextResponse.json(
@@ -149,4 +158,3 @@ export const POST = async (request: NextRequest) => {
     );
   }
 };
-
