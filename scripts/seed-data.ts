@@ -12,8 +12,8 @@ config({ path: ".env.local" });
 
 import { createTalentClient, createJobClient, createApplicationClient, createRecommendationClient, getAppIds } from "../lib/kintone/client";
 import { uploadFileToKintone } from "../lib/kintone/services/file";
-import { TALENT_FIELDS, JOB_FIELDS, APPLICATION_FIELDS, RECOMMENDATION_FIELDS } from "../lib/kintone/fieldMapping";
-import { seedData3, showSeedData3Stats } from "./seed-data-large";
+import { TALENT_FIELDS, JOB_FIELDS, APPLICATION_FIELDS } from "../lib/kintone/fieldMapping";
+import { seedData3 } from "./seed-data-large";
 import Database from "better-sqlite3";
 import { drizzle } from "drizzle-orm/better-sqlite3";
 import * as schema from "../lib/db/schema";
@@ -87,32 +87,32 @@ const uploadDummyFiles = async (): Promise<Array<{ fileKey: string; name: string
 const seedData1 = {
   authUsers: [
     {
-      id: "seed_user_001",
-      name: "山田 太郎",
-      email: "seed_yamada@example.com",
+    id: "seed_user_001",
+    name: "山田 太郎",
+    email: "seed_yamada@example.com",
       password: "password123",
-      emailVerified: false,
-      image: null,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    },
+    emailVerified: false,
+    image: null,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
   ],
 
   talents: [
     {
-      auth_user_id: "seed_user_001",
-      姓: "山田",
-      名: "太郎",
-      氏名: "山田 太郎",
-      セイ: "ヤマダ",
-      メイ: "タロウ",
-      メールアドレス: "seed_yamada@example.com",
-      電話番号: "090-1234-5678",
-      生年月日: "1990-01-15",
-      郵便番号: "150-0001",
-      住所: "東京都渋谷区神宮前1-1-1",
-      言語_ツール: "JavaScript, TypeScript, React, Next.js, Node.js, Python, Django",
-      主な実績_PR_職務経歴: `【経歴概要】
+    auth_user_id: "seed_user_001",
+    姓: "山田",
+    名: "太郎",
+    氏名: "山田 太郎",
+    セイ: "ヤマダ",
+    メイ: "タロウ",
+    メールアドレス: "seed_yamada@example.com",
+    電話番号: "090-1234-5678",
+    生年月日: "1990-01-15",
+    郵便番号: "150-0001",
+    住所: "東京都渋谷区神宮前1-1-1",
+    言語_ツール: "JavaScript, TypeScript, React, Next.js, Node.js, Python, Django",
+    主な実績_PR_職務経歴: `【経歴概要】
 Web系エンジニアとして5年の実務経験があります。
 フロントエンド・バックエンドの両方を経験し、特にReact/Next.jsを使ったモダンな開発が得意です。
 
@@ -125,19 +125,19 @@ Web系エンジニアとして5年の実務経験があります。
 ・要件定義から運用まで一貫して対応可能
 ・チーム開発の経験豊富
 ・新しい技術のキャッチアップが早い`,
-      ポートフォリオリンク: "https://github.com/yamada-taro",
-      稼働可能時期: "2025-12-01",
-      希望単価_月額: 70,
-      希望勤務日数: "週5",
-      希望出社頻度: "週2",
-      希望勤務スタイル: ["ハイブリッド", "リモート"],
-      希望案件_作業内容: `・モダンなフロントエンド開発（React/Next.js）
+    ポートフォリオリンク: "https://github.com/yamada-taro",
+    稼働可能時期: "2025-12-01",
+    希望単価_月額: 70,
+    希望勤務日数: "週5",
+    希望出社頻度: "週2",
+    希望勤務スタイル: ["ハイブリッド", "リモート"],
+    希望案件_作業内容: `・モダンなフロントエンド開発（React/Next.js）
 ・バックエンドAPI開発（Node.js/Python）
 ・新規サービスの立ち上げ
 ・技術選定やアーキテクチャ設計にも関わりたい`,
-      NG企業: "特になし",
-      その他要望: "リモート中心で、フレックスタイム制の案件を希望します。",
-    },
+    NG企業: "特になし",
+    その他要望: "リモート中心で、フレックスタイム制の案件を希望します。",
+  },
   ],
 
   jobs: [
@@ -924,50 +924,32 @@ const filterValidOptions = (values: string[], validOptions: readonly string[]): 
   return values.filter(v => validOptions.includes(v as any));
 };
 
-// シードデータ作成
+// シードデータ作成（Yamada + 50人50案件を統合、推薦DBは作成しない）
 export const createSeedData = async () => {
-  // コマンドライン引数で データセットを選択（デフォルト: seedData2）
-  const datasetVersion = process.argv[3] || "2";
-  let seedData: typeof seedData1 | typeof seedData2 | typeof seedData3;
-  let datasetName: string;
-  
-  switch (datasetVersion) {
-    case "1":
-      seedData = seedData1;
-      datasetName = "セット1（Yamada + 5案件）";
-      break;
-    case "2":
-      seedData = seedData2;
-      datasetName = "セット2（5人+5案件+適合度）";
-      break;
-    case "3":
-      seedData = seedData3;
-      datasetName = "セット3（50人+50案件）";
-      showSeedData3Stats();
-      break;
-    default:
-      seedData = seedData2;
-      datasetName = "セット2（5人+5案件+適合度）";
-  }
-
   console.log("\n🌱 シードデータを作成します\n");
-  console.log(`📦 使用データセット: ${datasetName}`);
+  console.log("📦 統合データセット: Yamada（1人+5案件） + 大規模（50人+50案件）");
+  console.log("⚠️  推薦DBは「候補者抽出」ボタンで動的に作成されます\n");
+  
+  // seedData1とseedData3を統合
+  const combinedAuthUsers = [...seedData1.authUsers, ...seedData3.authUsers];
+  const combinedTalents = [...seedData1.talents, ...seedData3.talents];
+  const combinedJobs = [...seedData1.jobs, ...seedData3.jobs];
+  const combinedApplications = [...seedData1.applications, ...seedData3.applications];
+  
+  // 統合データ
+  const seedData = {
+    authUsers: combinedAuthUsers,
+    talents: combinedTalents,
+    jobs: combinedJobs,
+    applications: combinedApplications,
+    recommendations: [], // 推薦DBは作成しない
+  };
 
   try {
     const appIds = getAppIds();
     const talentClient = createTalentClient();
     const jobClient = createJobClient();
     const applicationClient = createApplicationClient();
-
-    // 推薦DBのクライアント（存在する場合のみ）
-    let recommendationClient: ReturnType<typeof createRecommendationClient> | null = null;
-    if (appIds.recommendation) {
-      try {
-        recommendationClient = createRecommendationClient();
-      } catch {
-        console.log("⚠️ 推薦DBクライアントの初期化をスキップしました");
-      }
-    }
 
     // 0. ハードコーディングされた選択肢を使用
     console.log("=".repeat(80));
@@ -990,7 +972,7 @@ export const createSeedData = async () => {
       // パスワードを一括ハッシュ化
       console.log("🔐 パスワードをハッシュ化中...");
       const hashedPassword = await hash("password123", 10);
-      
+
       // 既存ユーザーのメールアドレスを取得
       const existingEmails = new Set<string>();
       const existingRows = sqlite.prepare("SELECT email, id FROM user").all() as { email: string; id: string }[];
@@ -1018,7 +1000,7 @@ export const createSeedData = async () => {
               console.log(`⚠️  ユーザー ${authUser.email} は既に存在します。スキップします。`);
             }
             continue;
-          }
+      }
           
           const userId = generateId(32);
           const accountId = generateId(32);
@@ -1089,32 +1071,32 @@ export const createSeedData = async () => {
       const validFeatures = filterValidOptions(job.案件特徴, JOB_FIELD_OPTIONS.案件特徴);
 
       return {
-        案件名: { value: job.案件名 },
+          案件名: { value: job.案件名 },
         職種_ポジション: { value: validPositions },
         スキル: { value: validSkills },
-        概要: { value: job.概要 },
-        環境: { value: job.環境 },
-        必須スキル: { value: job.必須スキル },
-        尚可スキル: { value: job.尚可スキル },
-        勤務地エリア: { value: job.勤務地エリア },
-        最寄駅: { value: job.最寄駅 },
-        下限h: { value: job.下限h },
-        上限h: { value: job.上限h },
-        掲載単価: { value: job.掲載単価 },
-        数値_0: { value: job.MAX単価 },
-        案件期間: { value: job.案件期間 },
-        日付: { value: job.参画時期 },
-        面談回数: { value: job.面談回数 },
+          概要: { value: job.概要 },
+          環境: { value: job.環境 },
+          必須スキル: { value: job.必須スキル },
+          尚可スキル: { value: job.尚可スキル },
+          勤務地エリア: { value: job.勤務地エリア },
+          最寄駅: { value: job.最寄駅 },
+          下限h: { value: job.下限h },
+          上限h: { value: job.上限h },
+          掲載単価: { value: job.掲載単価 },
+          数値_0: { value: job.MAX単価 },
+          案件期間: { value: job.案件期間 },
+          日付: { value: job.参画時期 },
+          面談回数: { value: job.面談回数 },
         案件特徴: { value: validFeatures },
-        ラジオボタン: { value: job.ラジオボタン },
-        ラジオボタン_0: { value: job.ラジオボタン_0 },
-        ドロップダウン: { value: job.商流 },
-        ドロップダウン_2: { value: job.契約形態 },
-        ドロップダウン_3: { value: job.リモート },
-        ドロップダウン_0: { value: job.外国籍 },
-        数値: { value: job.募集人数 },
+          ラジオボタン: { value: job.ラジオボタン },
+          ラジオボタン_0: { value: job.ラジオボタン_0 },
+          ドロップダウン: { value: job.商流 },
+          ドロップダウン_2: { value: job.契約形態 },
+          ドロップダウン_3: { value: job.リモート },
+          ドロップダウン_0: { value: job.外国籍 },
+          数値: { value: job.募集人数 },
       };
-    });
+      });
 
     const jobCreateResult = await jobClient.record.addRecords({
       app: appIds.job,
@@ -1151,33 +1133,6 @@ export const createSeedData = async () => {
       console.log("✅ 応募履歴: 作成対象なし");
     }
 
-    // 5. 推薦DBにレコード作成（存在する場合のみ）
-    if (recommendationClient && appIds.recommendation) {
-      console.log("\n" + "=".repeat(80));
-      console.log("🎯 Step 5: 推薦DBにレコードを作成");
-      console.log("=".repeat(80));
-
-      for (const rec of seedData.recommendations) {
-        const talentId = talentRecordIds[rec.talentIndex];
-        const jobId = jobIds[rec.jobIndex];
-        const talentName = seedData.talents[rec.talentIndex].氏名;
-        const jobTitle = seedData.jobs[rec.jobIndex].案件名;
-
-        const recRecord = await recommendationClient.record.addRecord({
-          app: appIds.recommendation,
-          record: {
-            [RECOMMENDATION_FIELDS.TALENT_ID]: { value: talentId },
-            [RECOMMENDATION_FIELDS.JOB_ID]: { value: jobId },
-            [RECOMMENDATION_FIELDS.SCORE]: { value: rec.score },
-          },
-        });
-
-        console.log(`✅ 推薦レコード作成: ${talentName} → ${jobTitle} (スコア: ${rec.score})`);
-      }
-    } else {
-      console.log("\n⚠️ 推薦DBが設定されていないため、推薦データの作成をスキップしました");
-    }
-
     // 完了メッセージ
     console.log("\n" + "=".repeat(80));
     console.log("🎉 シードデータの作成が完了しました！");
@@ -1187,11 +1142,10 @@ export const createSeedData = async () => {
     console.log(`  👨‍💼 人材: ${seedData.talents.length}件`);
     console.log(`  💼 案件: ${seedData.jobs.length}件`);
     console.log(`  📝 応募履歴: ${seedData.applications.length}件`);
-    if (appIds.recommendation) {
-      console.log(`  🎯 推薦データ: ${seedData.recommendations.length}件`);
-    }
+    console.log(`  🎯 推薦データ: 管理画面から「候補者抽出」で作成`);
+    
     console.log("\n📝 ログイン情報:");
-    // セット3の場合は最初の5人だけ表示
+    // 最初の5人だけ表示
     const usersToShow = seedData.authUsers.slice(0, 5);
     for (const user of usersToShow) {
       console.log(`  - ${user.name}: ${user.email} / ${user.password}`);
@@ -1200,24 +1154,11 @@ export const createSeedData = async () => {
       console.log(`  ... 他 ${seedData.authUsers.length - 5}人（パスワードはすべて password123）`);
     }
     
-    if (datasetVersion === "3") {
-      console.log("\n💡 人材と案件の適合度:");
-      console.log("  カテゴリ別にマッチング度合いが変わります:");
-      console.log("  - フロントエンド人材 × フロントエンド案件 → 高マッチ");
-      console.log("  - バックエンド人材 × バックエンド案件 → 高マッチ");
-      console.log("  - インフラ人材 × インフラ案件 → 高マッチ");
-      console.log("  - モバイル人材 × モバイル案件 → 高マッチ");
-      console.log("  - データ/AI人材 × データ/AI案件 → 高マッチ");
-      console.log("\n⚡ マッチングスコアを計算するには:");
-      console.log("  npm run recommend:create");
-    } else {
-      console.log("\n💡 人材と案件の適合度:");
-      console.log("  - 人材1（田中 一郎）: フロントエンド特化 → 案件1に最適合");
-      console.log("  - 人材2（佐藤 次郎）: バックエンド特化 → 案件2に最適合");
-      console.log("  - 人材3（鈴木 三郎）: フルスタック → 案件3に最適合");
-      console.log("  - 人材4（高橋 四郎）: モバイル特化 → 案件4に最適合");
-      console.log("  - 人材5（伊藤 五郎）: データエンジニア → 案件5に最適合");
-    }
+    console.log("\n💡 推薦データの作成方法:");
+    console.log("  1. 管理画面にログイン: /admin/login");
+    console.log("  2. 案件を選択");
+    console.log("  3. 「候補者抽出」ボタンをクリック");
+    console.log("  4. 上位10人の候補者が表示されます");
     console.log("\n");
 
   } catch (error) {
@@ -1257,16 +1198,21 @@ export const deleteSeedData = async () => {
       console.log("🎯 Step 1: 推薦データを全件削除");
       console.log("=".repeat(80));
 
-      const recommendations = await recommendationClient.record.getRecords({
+      const recommendations = await recommendationClient.record.getAllRecords({
         app: appIds.recommendation,
+        fields: ["$id"],
       });
 
-      if (recommendations.records.length > 0) {
-        const recIds = recommendations.records.map((record: any) => record.$id.value);
-        await recommendationClient.record.deleteRecords({
-          app: appIds.recommendation,
-          ids: recIds,
-        });
+      if (recommendations.length > 0) {
+        const recIds = recommendations.map((record: any) => record.$id.value);
+        // 100件ずつ削除
+        for (let i = 0; i < recIds.length; i += 100) {
+          const batch = recIds.slice(i, i + 100);
+          await recommendationClient.record.deleteRecords({
+            app: appIds.recommendation,
+            ids: batch,
+          });
+        }
         console.log(`✅ 推薦データを削除: ${recIds.length}件`);
       } else {
         console.log("✅ 推薦データ: 削除対象なし");
@@ -1278,16 +1224,21 @@ export const deleteSeedData = async () => {
     console.log("📝 Step 2: 応募履歴を全件削除");
     console.log("=".repeat(80));
 
-    const applications = await applicationClient.record.getRecords({
+    const applications = await applicationClient.record.getAllRecords({
       app: appIds.application,
+      fields: ["$id"],
     });
 
-    if (applications.records.length > 0) {
-      const applicationIds = applications.records.map((record: any) => record.$id.value);
-      await applicationClient.record.deleteRecords({
-        app: appIds.application,
-        ids: applicationIds,
-      });
+    if (applications.length > 0) {
+      const applicationIds = applications.map((record: any) => record.$id.value);
+      // 100件ずつ削除
+      for (let i = 0; i < applicationIds.length; i += 100) {
+        const batch = applicationIds.slice(i, i + 100);
+        await applicationClient.record.deleteRecords({
+          app: appIds.application,
+          ids: batch,
+        });
+      }
       console.log(`✅ 応募履歴を削除: ${applicationIds.length}件`);
     } else {
       console.log("✅ 応募履歴: 削除対象なし");
@@ -1298,16 +1249,21 @@ export const deleteSeedData = async () => {
     console.log("💼 Step 3: 案件を全件削除");
     console.log("=".repeat(80));
 
-    const jobs = await jobClient.record.getRecords({
+    const jobs = await jobClient.record.getAllRecords({
       app: appIds.job,
+      fields: ["$id"],
     });
 
-    if (jobs.records.length > 0) {
-      const jobIds = jobs.records.map((record: any) => record.$id.value);
-      await jobClient.record.deleteRecords({
-        app: appIds.job,
-        ids: jobIds,
-      });
+    if (jobs.length > 0) {
+      const jobIds = jobs.map((record: any) => record.$id.value);
+      // 100件ずつ削除
+      for (let i = 0; i < jobIds.length; i += 100) {
+        const batch = jobIds.slice(i, i + 100);
+        await jobClient.record.deleteRecords({
+          app: appIds.job,
+          ids: batch,
+        });
+      }
       console.log(`✅ 案件を削除: ${jobIds.length}件`);
     } else {
       console.log("✅ 案件: 削除対象なし");
@@ -1318,16 +1274,21 @@ export const deleteSeedData = async () => {
     console.log("👨‍💼 Step 4: 人材を全件削除");
     console.log("=".repeat(80));
 
-    const talents = await talentClient.record.getRecords({
+    const talents = await talentClient.record.getAllRecords({
       app: appIds.talent,
+      fields: ["$id"],
     });
 
-    if (talents.records.length > 0) {
-      const talentIds = talents.records.map((record: any) => record.$id.value);
-      await talentClient.record.deleteRecords({
-        app: appIds.talent,
-        ids: talentIds,
-      });
+    if (talents.length > 0) {
+      const talentIds = talents.map((record: any) => record.$id.value);
+      // 100件ずつ削除
+      for (let i = 0; i < talentIds.length; i += 100) {
+        const batch = talentIds.slice(i, i + 100);
+        await talentClient.record.deleteRecords({
+          app: appIds.talent,
+          ids: batch,
+        });
+      }
       console.log(`✅ 人材を削除: ${talentIds.length}件`);
     } else {
       console.log("✅ 人材: 削除対象なし");

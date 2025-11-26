@@ -11,12 +11,8 @@
     "delete-user": "npx tsx scripts/delete-test-user.ts",
     "test-signup": "npx tsx scripts/test-signup.ts",
     "get-fields": "npx tsx scripts/get-kintone-fields.ts",
-    "seed:create": "npx tsx scripts/seed-data.ts create 2",
-    "seed:create:1": "npm run seed:delete && npx tsx scripts/seed-data.ts create:1",
-    "seed:create:2": "npm run seed:delete && npx tsx scripts/seed-data.ts create:2 && npm run recommend:create",
-    "seed:create:3": "npm run seed:delete && npx tsx scripts/seed-data.ts create:3 && npm run recommend:create",
+    "seed:create": "npm run seed:delete && npx tsx scripts/seed-data.ts create",
     "seed:delete": "npx tsx scripts/seed-data.ts delete",
-    "recommend:create": "npx tsx scripts/create-recommendations.ts",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage"

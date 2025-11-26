@@ -5,10 +5,11 @@
  * /admin/dashboard
  * 
  * 左側: 案件一覧
- * 右側: 選択した案件にマッチする人材一覧（スコア降順）
+ * 右側: 選択した案件に対して「候補者抽出」ボタンで人材を抽出
+ *       上位10人を表示し、3〜5人を選択して「AIマッチ実行」
  */
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 
 // 型定義
@@ -42,8 +43,10 @@ const AdminDashboardPage = () => {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const [talents, setTalents] = useState<Talent[]>([]);
+  const [selectedTalentIds, setSelectedTalentIds] = useState<Set<string>>(new Set());
   const [isLoadingJobs, setIsLoadingJobs] = useState(true);
-  const [isLoadingTalents, setIsLoadingTalents] = useState(false);
+  const [isExtracting, setIsExtracting] = useState(false);
+  const [hasExtracted, setHasExtracted] = useState(false);
   const [error, setError] = useState("");
 
   // 認証チェック
@@ -92,13 +95,16 @@ const AdminDashboardPage = () => {
     fetchJobs();
   }, [router]);
 
-  // マッチング人材を取得
-  const fetchTalents = useCallback(async (jobId: string) => {
+  // 案件選択時の処理（推薦DB確認）
+  const handleSelectJob = async (job: Job) => {
+    setSelectedJob(job);
+    setSelectedTalentIds(new Set());
+    setError("");
+    
+    // 推薦DBに既存データがあるか確認
     try {
-      setIsLoadingTalents(true);
-      setTalents([]);
-      
-      const response = await fetch(`/api/admin/recommendations/${jobId}`);
+      setIsExtracting(true);
+      const response = await fetch(`/api/admin/recommendations/${job.jobId}`);
       
       if (response.status === 401) {
         router.push("/admin/login");
@@ -107,24 +113,96 @@ const AdminDashboardPage = () => {
 
       const data = await response.json();
       
-      if (!response.ok) {
-        setError(data.error || "人材の取得に失敗しました");
+      if (response.ok && data.talents && data.talents.length > 0) {
+        // 既存データがある場合は表示
+        setTalents(data.talents);
+        setHasExtracted(true);
+      } else {
+        // 既存データがない場合は未抽出状態
+        setTalents([]);
+        setHasExtracted(false);
+      }
+    } catch (error) {
+      console.error("推薦データ確認エラー:", error);
+      setTalents([]);
+      setHasExtracted(false);
+    } finally {
+      setIsExtracting(false);
+    }
+  };
+
+  // マッチングスコア計算＆推薦DB保存処理
+  const handleExtractCandidates = async () => {
+    if (!selectedJob) return;
+
+    try {
+      setIsExtracting(true);
+      setError("");
+      
+      // ステップ1: マッチングスコア計算＆推薦DB保存
+      const extractResponse = await fetch(`/api/admin/extract/${selectedJob.jobId}`, {
+        method: "POST",
+      });
+      
+      if (extractResponse.status === 401) {
+        router.push("/admin/login");
         return;
       }
 
-      setTalents(data.talents);
-    } catch {
+      const extractData = await extractResponse.json();
+      
+      if (!extractResponse.ok) {
+        setError(extractData.error || "候補者抽出に失敗しました");
+        return;
+      }
+
+      // ステップ2: 推薦DBから候補者データを取得
+      const recsResponse = await fetch(`/api/admin/recommendations/${selectedJob.jobId}`);
+      
+      if (recsResponse.status === 401) {
+        router.push("/admin/login");
+        return;
+      }
+
+      const recsData = await recsResponse.json();
+      
+      if (!recsResponse.ok) {
+        setError(recsData.error || "候補者データの取得に失敗しました");
+        return;
+      }
+
+      setTalents(recsData.talents);
+      setHasExtracted(true);
+      setSelectedTalentIds(new Set());
+    } catch (error) {
+      console.error("候補者抽出エラー:", error);
       setError("通信エラーが発生しました");
     } finally {
-      setIsLoadingTalents(false);
+      setIsExtracting(false);
     }
-  }, [router]);
+  };
 
-  // 案件選択時の処理
-  const handleSelectJob = (job: Job) => {
-    setSelectedJob(job);
-    setError("");
-    fetchTalents(job.jobId);
+  // 人材選択のトグル
+  const handleToggleTalent = (talentId: string) => {
+    setSelectedTalentIds(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(talentId)) {
+        newSet.delete(talentId);
+      } else {
+        newSet.add(talentId);
+      }
+      return newSet;
+    });
+  };
+
+  // AIマッチ実行（未実装 - UIのみ）
+  const handleAIMatch = () => {
+    // TODO: AIマッチ実行処理を実装
+    console.log("AIマッチ実行:", {
+      jobId: selectedJob?.jobId,
+      selectedTalentIds: Array.from(selectedTalentIds),
+    });
+    alert(`AIマッチ実行機能は現在開発中です\n\n選択された人材: ${selectedTalentIds.size}名`);
   };
 
   // ログアウト処理
@@ -152,6 +230,9 @@ const AdminDashboardPage = () => {
     if (score >= 1) return "低マッチ";
     return "参考";
   };
+
+  // 選択数のバリデーション
+  const isValidSelection = selectedTalentIds.size >= 3 && selectedTalentIds.size <= 5;
 
   return (
     <div className="min-h-screen bg-[var(--pw-bg-body)]">
@@ -316,21 +397,49 @@ const AdminDashboardPage = () => {
             </div>
           </div>
 
-          {/* 右側: マッチング人材一覧 */}
+          {/* 右側: 候補者抽出エリア */}
           <div className="w-[65%] flex flex-col">
             <div className="bg-white rounded-xl shadow-sm border border-[var(--pw-border-lighter)] flex flex-col h-full">
               <div className="p-4 border-b border-[var(--pw-border-lighter)]">
-                <div className="flex items-center gap-2">
-                  <svg className="w-5 h-5 text-[var(--pw-button-primary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                  </svg>
-                  <h2 className="font-bold text-[var(--pw-text-primary)]">
-                    マッチング人材
-                  </h2>
-                  {selectedJob && (
-                    <span className="ml-auto text-sm text-[var(--pw-text-light-gray)]">
-                      {talents.length}名
-                    </span>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <svg className="w-5 h-5 text-[var(--pw-button-primary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                    </svg>
+                    <h2 className="font-bold text-[var(--pw-text-primary)]">
+                      候補者一覧
+                    </h2>
+                    {hasExtracted && talents.length > 0 && (
+                      <span className="ml-2 text-sm text-[var(--pw-text-light-gray)]">
+                        上位{talents.length}名
+                      </span>
+                    )}
+                  </div>
+                  
+                  {/* 選択状態とAIマッチボタン */}
+                  {hasExtracted && talents.length > 0 && (
+                    <div className="flex items-center gap-3">
+                      <span className={`text-sm ${isValidSelection ? "text-[var(--pw-button-primary)]" : "text-[var(--pw-text-gray)]"}`}>
+                        {selectedTalentIds.size}名選択中
+                        {!isValidSelection && selectedTalentIds.size > 0 && (
+                          <span className="text-xs ml-1">(3〜5名を選択)</span>
+                        )}
+                      </span>
+                      <button
+                        onClick={handleAIMatch}
+                        disabled={!isValidSelection}
+                        className={`px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition-all ${
+                          isValidSelection
+                            ? "bg-gradient-to-r from-purple-600 to-indigo-600 text-white hover:from-purple-700 hover:to-indigo-700 shadow-md"
+                            : "bg-gray-200 text-gray-400 cursor-not-allowed"
+                        }`}
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                        </svg>
+                        AIマッチ実行
+                      </button>
+                    </div>
                   )}
                 </div>
                 {selectedJob && (
@@ -348,13 +457,57 @@ const AdminDashboardPage = () => {
                     </svg>
                     <p className="text-lg font-medium">案件を選択してください</p>
                     <p className="text-sm mt-1">左側の案件一覧から案件をクリックすると</p>
-                    <p className="text-sm">マッチする人材が表示されます</p>
+                    <p className="text-sm">候補者を抽出できます</p>
                   </div>
-                ) : isLoadingTalents ? (
+                ) : isExtracting && !hasExtracted ? (
+                  // 案件選択時のローディング（候補者がまだ抽出されていない）
                   <div className="flex items-center justify-center h-full">
                     <div className="text-center">
-                      <div className="animate-spin h-10 w-10 border-4 border-[var(--pw-button-primary)] border-t-transparent rounded-full mx-auto" />
-                      <p className="mt-4 text-[var(--pw-text-gray)]">マッチング人材を検索中...</p>
+                      <div className="animate-spin h-12 w-12 border-4 border-[var(--pw-button-primary)] border-t-transparent rounded-full mx-auto mb-4" />
+                      <p className="text-[var(--pw-text-primary)] font-medium mb-2">候補者データを確認中...</p>
+                      <p className="text-sm text-[var(--pw-text-gray)]">推薦DBからデータを取得しています</p>
+                    </div>
+                  </div>
+                ) : !hasExtracted ? (
+                  <div className="flex flex-col items-center justify-center h-full">
+                    <div className="text-center">
+                      <svg className="w-20 h-20 mx-auto mb-4 text-[var(--pw-button-primary)] opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                      </svg>
+                      <p className="text-lg font-medium text-[var(--pw-text-primary)] mb-2">
+                        候補者を抽出する
+                      </p>
+                      <p className="text-sm text-[var(--pw-text-gray)] mb-6">
+                        案件の要件に基づいて、マッチする人材を検索します
+                      </p>
+                      <button
+                        onClick={handleExtractCandidates}
+                        disabled={isExtracting}
+                        className="px-6 py-3 bg-[var(--pw-button-primary)] text-white rounded-xl font-medium hover:bg-[var(--pw-button-primary-hover)] transition-colors flex items-center gap-2 mx-auto disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {isExtracting ? (
+                          <>
+                            <div className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full" />
+                            抽出中...
+                          </>
+                        ) : (
+                          <>
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                            </svg>
+                            候補者抽出
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                ) : isExtracting && hasExtracted ? (
+                  // 候補者抽出ボタン押下時のローディング（候補者を再抽出中）
+                  <div className="flex items-center justify-center h-full">
+                    <div className="text-center">
+                      <div className="animate-spin h-12 w-12 border-4 border-[var(--pw-button-primary)] border-t-transparent rounded-full mx-auto mb-4" />
+                      <p className="text-[var(--pw-text-primary)] font-medium mb-2">候補者を抽出中...</p>
+                      <p className="text-sm text-[var(--pw-text-gray)]">マッチングスコアを計算して推薦DBに保存しています</p>
                     </div>
                   </div>
                 ) : talents.length === 0 ? (
@@ -367,79 +520,108 @@ const AdminDashboardPage = () => {
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {talents.map((talent, index) => (
-                      <div
-                        key={talent.id}
-                        className="p-5 rounded-xl border border-[var(--pw-border-lighter)] bg-[var(--pw-bg-body)] hover:shadow-md transition-shadow"
-                      >
-                        <div className="flex items-start gap-4">
-                          {/* ランキング表示 */}
-                          <div className="flex-shrink-0 w-10 h-10 rounded-full bg-[var(--pw-bg-sidebar)] text-white flex items-center justify-center font-bold">
-                            {index + 1}
-                          </div>
-
-                          {/* メイン情報 */}
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-3 flex-wrap">
-                              <h3 className="font-bold text-lg text-[var(--pw-text-primary)]">
-                                {talent.name}
-                              </h3>
-                              <div className={`px-3 py-1 rounded-full text-xs font-bold text-white ${getScoreColor(talent.score)}`}>
-                                スコア: {talent.score} ({getScoreLabel(talent.score)})
+                    {/* 選択ガイド */}
+                    <div className="bg-[var(--pw-bg-light-blue)] rounded-lg p-3 text-sm text-[var(--pw-text-gray)]">
+                      <span className="font-medium">💡 ヒント:</span> 3〜5名を選択して「AIマッチ実行」をクリックしてください
+                    </div>
+                    
+                    {talents.map((talent, index) => {
+                      const isSelected = selectedTalentIds.has(talent.authUserId);
+                      
+                      return (
+                        <div
+                          key={talent.id}
+                          onClick={() => handleToggleTalent(talent.authUserId)}
+                          className={`p-5 rounded-xl border-2 cursor-pointer transition-all duration-200 ${
+                            isSelected
+                              ? "border-[var(--pw-button-primary)] bg-[var(--pw-bg-light-blue)]"
+                              : "border-[var(--pw-border-lighter)] bg-[var(--pw-bg-body)] hover:border-[var(--pw-button-primary)]/50"
+                          }`}
+                        >
+                          <div className="flex items-start gap-4">
+                            {/* チェックボックス */}
+                            <div className="flex-shrink-0 mt-1">
+                              <div className={`w-6 h-6 rounded-md border-2 flex items-center justify-center transition-colors ${
+                                isSelected
+                                  ? "bg-[var(--pw-button-primary)] border-[var(--pw-button-primary)]"
+                                  : "border-gray-300 bg-white"
+                              }`}>
+                                {isSelected && (
+                                  <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                  </svg>
+                                )}
                               </div>
                             </div>
 
-                            {/* 職種 */}
-                            {talent.positions.length > 0 && (
-                              <div className="mt-2 flex flex-wrap gap-1">
-                                {talent.positions.map((pos, i) => (
-                                  <span
-                                    key={i}
-                                    className="text-xs px-2 py-0.5 bg-[var(--pw-bg-sidebar)] text-white rounded"
-                                  >
-                                    {pos}
+                            {/* ランキング表示 */}
+                            <div className="flex-shrink-0 w-10 h-10 rounded-full bg-[var(--pw-bg-sidebar)] text-white flex items-center justify-center font-bold">
+                              {index + 1}
+                            </div>
+
+                            {/* メイン情報 */}
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-3 flex-wrap">
+                                <h3 className="font-bold text-lg text-[var(--pw-text-primary)]">
+                                  {talent.name}
+                                </h3>
+                                <div className={`px-3 py-1 rounded-full text-xs font-bold text-white ${getScoreColor(talent.score)}`}>
+                                  スコア: {talent.score} ({getScoreLabel(talent.score)})
+                                </div>
+                              </div>
+
+                              {/* 職種 */}
+                              {talent.positions.length > 0 && (
+                                <div className="mt-2 flex flex-wrap gap-1">
+                                  {talent.positions.map((pos, i) => (
+                                    <span
+                                      key={i}
+                                      className="text-xs px-2 py-0.5 bg-[var(--pw-bg-sidebar)] text-white rounded"
+                                    >
+                                      {pos}
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+
+                              {/* スキル */}
+                              {talent.skills && (
+                                <div className="mt-3">
+                                  <p className="text-xs font-medium text-[var(--pw-text-gray)] mb-1">
+                                    スキル・言語
+                                  </p>
+                                  <p className="text-sm text-[var(--pw-text-primary)] line-clamp-2">
+                                    {talent.skills}
+                                  </p>
+                                </div>
+                              )}
+
+                              {/* 経歴 */}
+                              {talent.experience && (
+                                <div className="mt-3">
+                                  <p className="text-xs font-medium text-[var(--pw-text-gray)] mb-1">
+                                    主な実績・経歴
+                                  </p>
+                                  <p className="text-sm text-[var(--pw-text-primary)] line-clamp-3">
+                                    {talent.experience}
+                                  </p>
+                                </div>
+                              )}
+
+                              {/* 希望単価 */}
+                              {talent.desiredRate && (
+                                <div className="mt-3 flex items-center gap-2 text-sm">
+                                  <span className="text-[var(--pw-text-gray)]">希望単価:</span>
+                                  <span className="font-semibold text-[var(--pw-button-primary)]">
+                                    {talent.desiredRate}
                                   </span>
-                                ))}
-                              </div>
-                            )}
-
-                            {/* スキル */}
-                            {talent.skills && (
-                              <div className="mt-3">
-                                <p className="text-xs font-medium text-[var(--pw-text-gray)] mb-1">
-                                  スキル・言語
-                                </p>
-                                <p className="text-sm text-[var(--pw-text-primary)] line-clamp-2">
-                                  {talent.skills}
-                                </p>
-                              </div>
-                            )}
-
-                            {/* 経歴 */}
-                            {talent.experience && (
-                              <div className="mt-3">
-                                <p className="text-xs font-medium text-[var(--pw-text-gray)] mb-1">
-                                  主な実績・経歴
-                                </p>
-                                <p className="text-sm text-[var(--pw-text-primary)] line-clamp-3">
-                                  {talent.experience}
-                                </p>
-                              </div>
-                            )}
-
-                            {/* 希望単価 */}
-                            {talent.desiredRate && (
-                              <div className="mt-3 flex items-center gap-2 text-sm">
-                                <span className="text-[var(--pw-text-gray)]">希望単価:</span>
-                                <span className="font-semibold text-[var(--pw-button-primary)]">
-                                  {talent.desiredRate}
-                                </span>
-                              </div>
-                            )}
+                                </div>
+                              )}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
               </div>
@@ -452,4 +634,3 @@ const AdminDashboardPage = () => {
 };
 
 export default AdminDashboardPage;
-
