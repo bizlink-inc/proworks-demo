@@ -1,4 +1,5 @@
 import { betterAuth } from "better-auth";
+import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import crypto from "crypto";
 
 // Vercel 環境かどうかを判定
@@ -26,19 +27,64 @@ export const DEMO_USER = {
 let auth: ReturnType<typeof betterAuth>;
 
 if (!isVercel) {
-  // ローカル環境では通常通り better-auth を初期化
+  // ローカル環境では SQLite + drizzle を使用
+  const Database = require("better-sqlite3");
+  const { drizzle } = require("drizzle-orm/better-sqlite3");
+  const path = require("path");
+  const schema = require("./db/schema");
+
+  const dbPath = path.join(process.cwd(), "auth.db");
+  const sqlite = new Database(dbPath);
+  sqlite.pragma("journal_mode = WAL");
+  const db = drizzle(sqlite, { schema });
+
   auth = betterAuth({
-    database: {
-      provider: "sqlite",
-      url: ":memory:",
-    },
+    database: drizzleAdapter(db, {
+      provider: "better-sqlite3",
+    }),
     secret: process.env.BETTER_AUTH_SECRET || "demo-secret-key-for-development",
     baseURL: process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
     basePath: "/api/auth",
     emailAndPassword: {
       enabled: true,
       minPasswordLength: 6,
-      requireEmailVerification: false,
+      requireEmailVerification: true,
+      sendResetPassword: async ({ user, url }) => {
+        if (process.env.NODE_ENV === "development") {
+          console.log("\n" + "=".repeat(80));
+          console.log("🔑 パスワードリセットリンク");
+          console.log("=".repeat(80));
+          console.log(`宛先: ${user.email}`);
+          console.log(`リンク: ${url}`);
+          console.log("=".repeat(80) + "\n");
+          return;
+        }
+      },
+    },
+    emailVerification: {
+      sendOnSignUp: true,
+      autoSignInAfterVerification: true,
+      sendVerificationEmail: async ({ user, url }) => {
+        const callbackUrl = `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/callback`;
+        const verificationUrl = url.includes("callbackURL")
+          ? url.replace(/callbackURL=[^&]*/, `callbackURL=${encodeURIComponent(callbackUrl)}`)
+          : `${url}&callbackURL=${encodeURIComponent(callbackUrl)}`;
+
+        if (process.env.NODE_ENV === "development") {
+          console.log("\n" + "=".repeat(80));
+          console.log("📧 【PRO WORKS】メールアドレスの確認");
+          console.log("=".repeat(80));
+          console.log(`宛先: ${user.email}`);
+          console.log("");
+          console.log("以下のリンクをクリックして、メールアドレスの確認を完了してください。");
+          console.log("");
+          console.log(`▶ ${verificationUrl}`);
+          console.log("");
+          console.log("※ このリンクの有効期限は1時間です。");
+          console.log("=".repeat(80) + "\n");
+          return;
+        }
+      },
     },
     session: {
       cookieCache: {

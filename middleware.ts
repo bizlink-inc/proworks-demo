@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 
+// Vercel 環境かどうかを判定
+const isVercel = process.env.VERCEL === "1" || process.env.VERCEL === "true";
+
 const BASIC_AUTH_USERNAME = process.env.BASIC_AUTH_USERNAME || "admin";
 const BASIC_AUTH_PASSWORD = process.env.BASIC_AUTH_PASSWORD || "proworks2025";
 
@@ -17,6 +20,11 @@ const validateBasicAuth = (authHeader: string | null): boolean => {
 
 export const middleware = (request: NextRequest) => {
   const { pathname } = request.nextUrl;
+
+  // ローカル環境では Basic 認証をスキップ
+  if (!isVercel) {
+    return NextResponse.next();
+  }
 
   // API ルート以下は認証をスキップ
   if (pathname.startsWith("/api")) {
@@ -46,4 +54,3 @@ export const config = {
     "/((?!_next/static|_next/image|favicon.ico).*)",
   ],
 };
-
