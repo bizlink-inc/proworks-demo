@@ -371,9 +371,10 @@ const generatePreferredSkills = (skillSet: typeof SKILL_SETS.frontend): string =
 };
 
 // Better Authユーザー生成
+// seed_user_001 は yamada 用に予約されているため、002 から開始
 const generateAuthUsers = (talents: any[]) => {
   return talents.map((talent, index) => ({
-    id: `seed_user_${String(index + 1).padStart(3, "0")}`,
+    id: `seed_user_${String(index + 2).padStart(3, "0")}`,
     name: talent.氏名,
     email: talent.メールアドレス,
     password: "password123",
@@ -391,12 +392,13 @@ export const seedData3 = (() => {
   const jobs = generateJobs();
   
   // 応募履歴（各カテゴリの最初の人材が最初の案件に応募）
+  // IDは002から開始（001はyamada用）
   const applications = [
-    { auth_user_id: "seed_user_001", jobIndex: 0, 対応状況: "応募済み" },
-    { auth_user_id: "seed_user_011", jobIndex: 10, 対応状況: "面談調整中" },
-    { auth_user_id: "seed_user_021", jobIndex: 20, 対応状況: "案件参画" },
-    { auth_user_id: "seed_user_031", jobIndex: 30, 対応状況: "応募済み" },
-    { auth_user_id: "seed_user_041", jobIndex: 40, 対応状況: "面談調整中" },
+    { auth_user_id: "seed_user_002", jobIndex: 0, 対応状況: "応募済み" },
+    { auth_user_id: "seed_user_012", jobIndex: 10, 対応状況: "面談調整中" },
+    { auth_user_id: "seed_user_022", jobIndex: 20, 対応状況: "案件参画" },
+    { auth_user_id: "seed_user_032", jobIndex: 30, 対応状況: "応募済み" },
+    { auth_user_id: "seed_user_042", jobIndex: 40, 対応状況: "面談調整中" },
   ];
   
   // 推薦データは recommend:create で自動生成するので空

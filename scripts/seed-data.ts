@@ -1007,7 +1007,9 @@ export const createSeedData = async () => {
 
         const transaction = sqlite.transaction(() => {
           for (const user of newUsers) {
-            const userId = generateId(32);
+            // seedData に id が定義されている場合はそれを使用（Vercel との整合性のため）
+            // 定義されていない場合はランダム生成
+            const userId = user.id || generateId(32);
             const accountId = generateId(32);
 
             insertUser.run(userId, user.name, user.email, now, now);
