@@ -8,8 +8,12 @@ const handleDemoAuth = async (request: NextRequest): Promise<Response> => {
   const url = new URL(request.url);
   const pathname = url.pathname;
 
+  console.log(`🔐 Auth Handler: ${request.method} ${pathname}`);
+  console.log(`   isVercel: ${isVercel}, process.env.VERCEL: ${process.env.VERCEL}`);
+
   // サインイン処理
   if (pathname.endsWith("/sign-in/email") && request.method === "POST") {
+    console.log("📝 Sign-in email 処理開始");
     try {
       const body = await request.json();
       const { email, password } = body;
@@ -99,9 +103,15 @@ export const GET = async (request: NextRequest) => {
 };
 
 export const POST = async (request: NextRequest) => {
+  console.log("🔴 POST handler called");
+  console.log(`   isVercel: ${isVercel}`);
+  console.log(`   URL: ${request.url}`);
+  
   if (isVercel) {
+    console.log("   → Calling handleDemoAuth");
     return handleDemoAuth(request);
   }
+  console.log("   → Calling better-auth handler");
   const handler = toNextJsHandler(auth);
   return handler.POST(request);
 };

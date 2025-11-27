@@ -22,7 +22,8 @@ export default function SignInPage() {
     setLoading(true)
 
     try {
-      const response = await fetch("/api/auth/sign-in/email", {
+      // ローカル環境用のカスタム認証エンドポイントを使用
+      const response = await fetch("/api/auth/sign-in-local", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
