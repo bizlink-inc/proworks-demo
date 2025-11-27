@@ -29,10 +29,27 @@ export const createTalentClient = () => {
 
 // kintone クライアントの作成（案件DB用）
 export const createJobClient = () => {
+  const baseUrl = process.env.KINTONE_BASE_URL;
+  const apiToken = process.env.KINTONE_JOB_API_TOKEN;
+
+  if (!baseUrl) {
+    console.error("❌ KINTONE_BASE_URL が設定されていません");
+    throw new Error("KINTONE_BASE_URL is not defined");
+  }
+
+  if (!apiToken) {
+    console.error("❌ KINTONE_JOB_API_TOKEN が設定されていません");
+    throw new Error("KINTONE_JOB_API_TOKEN is not defined");
+  }
+
+  console.log("✅ kintone Job Client 初期化成功");
+  console.log("   Base URL:", baseUrl);
+  console.log("   API Token:", apiToken.substring(0, 10) + "...");
+
   return new KintoneRestAPIClient({
-    baseUrl: process.env.KINTONE_BASE_URL!,
+    baseUrl,
     auth: {
-      apiToken: process.env.KINTONE_JOB_API_TOKEN!,
+      apiToken,
     },
   });
 };
