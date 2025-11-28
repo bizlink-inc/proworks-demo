@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { useToast } from "@/hooks/use-toast"
@@ -12,6 +12,24 @@ import type { Talent } from "@/lib/kintone/types"
 
 interface SettingsFormProps {
   user: Talent | null
+}
+
+// パスワードバリデーション関数
+const validatePassword = (password: string) => {
+  const hasUpperCase = /[A-Z]/.test(password)
+  const hasLowerCase = /[a-z]/.test(password)
+  const hasNumber = /[0-9]/.test(password)
+  const hasSymbol = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)
+  const typeCount = [hasUpperCase, hasLowerCase, hasNumber, hasSymbol].filter(Boolean).length
+  const isLengthValid = password.length >= 12
+  const isTypeValid = typeCount >= 3
+
+  return {
+    isValid: isLengthValid && isTypeValid,
+    isLengthValid,
+    isTypeValid,
+    typeCount,
+  }
 }
 
 // 水平線コンポーネント
@@ -40,6 +58,17 @@ export const SettingsForm = ({ user }: SettingsFormProps) => {
   const [passwordLoading, setPasswordLoading] = useState(false)
   const [showCurrentPassword, setShowCurrentPassword] = useState(false)
   const [showNewPassword, setShowNewPassword] = useState(false)
+
+  // 新しいパスワードのリアルタイムバリデーション
+  const passwordValidation = useMemo(() => {
+    if (!passwordData.newPassword) {
+      return { isValid: true, isLengthValid: true, isTypeValid: true, typeCount: 0 }
+    }
+    return validatePassword(passwordData.newPassword)
+  }, [passwordData.newPassword])
+
+  // パスワードが入力されていて、かつ無効な場合にエラー表示
+  const showPasswordError = passwordData.newPassword.length > 0 && !passwordValidation.isValid
 
   // メールアドレス変更
   const handleEmailSubmit = async (e: React.FormEvent) => {
@@ -296,12 +325,15 @@ export const SettingsForm = ({ user }: SettingsFormProps) => {
                     value={passwordData.newPassword}
                     onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
                     className="pr-10"
+                    style={{
+                      borderColor: showPasswordError ? "#dc2626" : undefined,
+                    }}
                   />
                   <button
                     type="button"
                     onClick={() => setShowNewPassword(!showNewPassword)}
                     className="absolute right-3 top-1/2 -translate-y-1/2"
-                    style={{ color: "var(--pw-button-primary)" }}
+                    style={{ color: showPasswordError ? "#dc2626" : "var(--pw-button-primary)" }}
                   >
                     {showNewPassword ? (
                       <Eye className="w-5 h-5" />
@@ -312,7 +344,10 @@ export const SettingsForm = ({ user }: SettingsFormProps) => {
                 </div>
                 <p
                   className="mt-2"
-                  style={{ fontSize: "var(--pw-text-xs)", color: "var(--pw-text-gray)" }}
+                  style={{ 
+                    fontSize: "var(--pw-text-xs)", 
+                    color: showPasswordError ? "#dc2626" : "var(--pw-text-gray)" 
+                  }}
                 >
                   ※12文字以上で、英大文字・小文字・数字・記号のうち3種類以上を含めてください。
                 </p>

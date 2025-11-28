@@ -12,7 +12,23 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { CenteredLayout } from "@/components/layouts"
 import { PWAlert } from "@/components/ui/pw-alert"
 import { useToast } from "@/hooks/use-toast"
-import { Mail } from "lucide-react"
+import { Mail, Eye, EyeOff } from "lucide-react"
+
+// パスワードバリデーション関数
+const validatePassword = (password: string) => {
+  const hasUpperCase = /[A-Z]/.test(password)
+  const hasLowerCase = /[a-z]/.test(password)
+  const hasNumber = /[0-9]/.test(password)
+  const hasSymbol = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)
+  const typeCount = [hasUpperCase, hasLowerCase, hasNumber, hasSymbol].filter(Boolean).length
+  const isLengthValid = password.length >= 8
+  const isTypeValid = typeCount >= 1  // サインアップでは8文字以上で半角英数字記号
+
+  return {
+    isValid: isLengthValid,
+    isLengthValid,
+  }
+}
 
 // 生年月日用の選択肢を生成するユーティリティ
 const generateYears = () => {
@@ -50,8 +66,21 @@ export default function SignUpPage() {
   const [birthYear, setBirthYear] = useState("")
   const [birthMonth, setBirthMonth] = useState("")
   const [birthDay, setBirthDay] = useState("")
+  const [password, setPassword] = useState("")
+  const [showPassword, setShowPassword] = useState(false)
   const [receiveEmailDelivery, setReceiveEmailDelivery] = useState(true)
   const [termsAgreed, setTermsAgreed] = useState(false)
+
+  // パスワードのリアルタイムバリデーション
+  const passwordValidation = useMemo(() => {
+    if (!password) {
+      return { isValid: true, isLengthValid: true }
+    }
+    return validatePassword(password)
+  }, [password])
+
+  // パスワードが入力されていて、かつ無効な場合にエラー表示
+  const showPasswordError = password.length > 0 && !passwordValidation.isValid
 
   // 生年月日の選択肢
   const years = useMemo(() => generateYears(), [])
@@ -59,7 +88,7 @@ export default function SignUpPage() {
   const days = useMemo(() => generateDays(birthYear, birthMonth), [birthYear, birthMonth])
 
   // バリデーション
-  const isFormValid = lastName && firstName && email && phone && birthYear && birthMonth && birthDay && termsAgreed
+  const isFormValid = lastName && firstName && email && password && passwordValidation.isValid && phone && birthYear && birthMonth && birthDay && termsAgreed
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -85,6 +114,7 @@ export default function SignUpPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           email,
+          password,
           lastName,
           firstName,
           phone,
@@ -243,11 +273,57 @@ export default function SignUpPage() {
           <PWInput
             id="email"
             type="email"
-            placeholder="your@email.com"
+            placeholder="メールアドレスを入力"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
           />
+        </div>
+
+        {/* パスワード */}
+        <div>
+          <Label
+            htmlFor="password"
+            className="text-[var(--pw-text-primary)] mb-2 block"
+            style={{ fontSize: "var(--pw-text-sm)" }}
+          >
+            パスワード
+          </Label>
+          <div className="relative">
+            <PWInput
+              id="password"
+              type={showPassword ? "text" : "password"}
+              placeholder="パスワードを入力"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              className="pr-10"
+              style={{
+                borderColor: showPasswordError ? "#dc2626" : undefined,
+              }}
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3 top-1/2 -translate-y-1/2"
+              style={{ color: showPasswordError ? "#dc2626" : "var(--pw-button-primary)" }}
+            >
+              {showPassword ? (
+                <Eye className="w-5 h-5" />
+              ) : (
+                <EyeOff className="w-5 h-5" />
+              )}
+            </button>
+          </div>
+          <p
+            className="mt-1"
+            style={{ 
+              fontSize: "var(--pw-text-xs)", 
+              color: showPasswordError ? "#dc2626" : "var(--pw-text-gray)" 
+            }}
+          >
+            8文字以上、半角英数字・ハイフン・アンダーバーが使えます
+          </p>
         </div>
 
         {/* 電話番号 */}
