@@ -8,9 +8,10 @@
 import { useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Menu, X } from "lucide-react"
+import { Menu, X, HelpCircle, LogOut } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
+import { NotificationDropdown } from "@/components/notification-dropdown"
 
 interface MobileMenuProps {
   user?: {
@@ -33,18 +34,35 @@ export const MobileMenu = ({ user, onSignOut }: MobileMenuProps) => {
 
   return (
     <>
-      {/* ハンバーガーボタン */}
-      <button
-        onClick={toggleMenu}
-        className="md:hidden p-2"
-        aria-label="メニューを開く"
-      >
-        {isOpen ? (
-          <X className="w-6 h-6" style={{ color: "var(--pw-text-primary)" }} />
-        ) : (
-          <Menu className="w-6 h-6" style={{ color: "var(--pw-text-primary)" }} />
+      {/* モバイルヘッダー右側のアイコン群 */}
+      <div className="flex md:hidden items-center gap-2">
+        {user && (
+          <>
+            <button
+              className="p-2 transition-colors hover:opacity-70"
+              style={{ color: "var(--pw-text-navy)" }}
+              title="ヘルプ"
+            >
+              <HelpCircle className="w-5 h-5" />
+            </button>
+
+            <NotificationDropdown />
+          </>
         )}
-      </button>
+
+        {/* ハンバーガーボタン */}
+        <button
+          onClick={toggleMenu}
+          className="p-2"
+          aria-label="メニューを開く"
+        >
+          {isOpen ? (
+            <X className="w-6 h-6" style={{ color: "var(--pw-text-primary)" }} />
+          ) : (
+            <Menu className="w-6 h-6" style={{ color: "var(--pw-text-primary)" }} />
+          )}
+        </button>
+      </div>
 
       {/* オーバーレイ */}
       {isOpen && (
@@ -89,20 +107,6 @@ export const MobileMenu = ({ user, onSignOut }: MobileMenuProps) => {
 
               {/* ナビゲーションリンク */}
               <Link
-                href="/"
-                onClick={closeMenu}
-                className={cn(
-                  "px-4 py-3 rounded-md transition-colors",
-                  pathname === "/"
-                    ? "bg-[var(--pw-bg-light-blue)] text-[var(--pw-border-dark)] font-medium"
-                    : "text-[var(--pw-text-gray)] hover:bg-[var(--pw-bg-light-blue)]"
-                )}
-                style={{ fontSize: "var(--pw-text-md)" }}
-              >
-                案件ダッシュボード
-              </Link>
-
-              <Link
                 href="/me"
                 onClick={closeMenu}
                 className={cn(
@@ -117,48 +121,63 @@ export const MobileMenu = ({ user, onSignOut }: MobileMenuProps) => {
               </Link>
 
               <Link
-                href="/media/career"
+                href="/"
                 onClick={closeMenu}
                 className={cn(
                   "px-4 py-3 rounded-md transition-colors",
-                  pathname.startsWith("/media")
+                  pathname === "/"
                     ? "bg-[var(--pw-bg-light-blue)] text-[var(--pw-border-dark)] font-medium"
                     : "text-[var(--pw-text-gray)] hover:bg-[var(--pw-bg-light-blue)]"
                 )}
                 style={{ fontSize: "var(--pw-text-md)" }}
               >
-                メディア
+                案件一覧
               </Link>
 
               <Link
-                href="/company"
+                href="/applications"
                 onClick={closeMenu}
                 className={cn(
                   "px-4 py-3 rounded-md transition-colors",
-                  pathname.startsWith("/company")
+                  pathname === "/applications"
                     ? "bg-[var(--pw-bg-light-blue)] text-[var(--pw-border-dark)] font-medium"
                     : "text-[var(--pw-text-gray)] hover:bg-[var(--pw-bg-light-blue)]"
                 )}
                 style={{ fontSize: "var(--pw-text-md)" }}
               >
-                企業情報
+                応募済み案件
               </Link>
+
+              <button
+                disabled
+                className="px-4 py-3 rounded-md text-left opacity-50 cursor-not-allowed"
+                style={{
+                  fontSize: "var(--pw-text-md)",
+                  color: "var(--pw-text-gray)"
+                }}
+              >
+                お役立ち情報
+              </button>
 
               <div
                 className="my-4"
                 style={{ borderTop: "1px solid var(--pw-border-lighter)" }}
               />
 
-              <Button
-                variant="pw-outline"
-                className="w-full"
+              <button
+                className="px-4 py-3 rounded-md transition-colors flex items-center gap-2 text-left hover:bg-white/50"
+                style={{
+                  fontSize: "var(--pw-text-md)",
+                  color: "var(--pw-text-gray)"
+                }}
                 onClick={() => {
                   onSignOut?.()
                   closeMenu()
                 }}
               >
+                <LogOut className="w-5 h-5" />
                 ログアウト
-              </Button>
+              </button>
             </>
           ) : (
             <>
@@ -168,16 +187,7 @@ export const MobileMenu = ({ user, onSignOut }: MobileMenuProps) => {
                 className="px-4 py-3 text-[var(--pw-text-gray)] hover:bg-[var(--pw-bg-light-blue)] rounded-md transition-colors"
                 style={{ fontSize: "var(--pw-text-md)" }}
               >
-                メディア
-              </Link>
-
-              <Link
-                href="/company"
-                onClick={closeMenu}
-                className="px-4 py-3 text-[var(--pw-text-gray)] hover:bg-[var(--pw-bg-light-blue)] rounded-md transition-colors"
-                style={{ fontSize: "var(--pw-text-md)" }}
-              >
-                企業情報
+                お役立ち情報
               </Link>
 
               <div
@@ -203,4 +213,3 @@ export const MobileMenu = ({ user, onSignOut }: MobileMenuProps) => {
     </>
   )
 }
-
