@@ -7,7 +7,7 @@
 import type React from "react"
 import { cn } from "@/lib/utils"
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faAddressCard, faFileLines, faCircleCheck, faEnvelope, faLock, faAt } from '@fortawesome/free-solid-svg-icons'
+import { faAddressCard, faFileLines, faCircleCheck, faEnvelope } from '@fortawesome/free-solid-svg-icons'
 
 interface SidebarLayoutProps {
   children: React.ReactNode
@@ -26,9 +26,7 @@ const defaultMenuItems: MenuItem[] = [
   { id: "profile", label: "プロフィール", icon: faAddressCard },
   { id: "work-history", label: "職歴・資格", icon: faFileLines },
   { id: "preferences", label: "希望条件", icon: faCircleCheck },
-  { id: "applications", label: "応募済み案件", icon: faEnvelope },
-  { id: "password", label: "パスワード変更", icon: faLock },
-  { id: "email", label: "メールアドレス変更", icon: faAt },
+  { id: "settings", label: "登録情報", icon: faEnvelope },
 ]
 
 export const SidebarLayout = ({
