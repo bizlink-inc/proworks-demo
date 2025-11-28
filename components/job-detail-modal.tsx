@@ -3,15 +3,16 @@
 import { useEffect, useState } from "react"
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
-import { MapPin } from "lucide-react"
 import type { Job } from "@/lib/kintone/types"
-import { formatCurrency } from "@/lib/utils"
 
 type JobDetailModalProps = {
   jobId: string | null
   onClose: () => void
   onApply: (jobId: string, jobTitle: string) => void
 }
+
+// 青色（案件タイトル等と同じ色）
+const blueColor = "#3d8ab8"
 
 export function JobDetailModal({ jobId, onClose, onApply }: JobDetailModalProps) {
   const [job, setJob] = useState<Job | null>(null)
@@ -61,7 +62,41 @@ export function JobDetailModal({ jobId, onClose, onApply }: JobDetailModalProps)
     }
   }
 
-  const renderRow = (label: string, value?: React.ReactNode) => {
+  // 通常の行（黒文字）
+  const renderRow = (label: string, value?: React.ReactNode, isFirst: boolean = false) => {
+    if (!value) return null
+    return (
+      <div
+        className="flex"
+        style={{ borderTop: isFirst ? "none" : "1px solid #d5e5f0" }}
+      >
+        <div
+          className="py-3 pr-4"
+          style={{
+            width: "140px",
+            fontSize: "13px",
+            fontWeight: 700,
+            color: "#30373f",
+          }}
+        >
+          {label}
+        </div>
+        <div
+          className="flex-1 py-3"
+          style={{
+            fontSize: "13px",
+            color: "#000000",
+            lineHeight: 1.6,
+          }}
+        >
+          {value}
+        </div>
+      </div>
+    )
+  }
+
+  // 青文字の行（職種ポジション、必須スキル、歓迎スキル用）
+  const renderBlueRow = (label: string, value?: React.ReactNode) => {
     if (!value) return null
     return (
       <div
@@ -73,7 +108,7 @@ export function JobDetailModal({ jobId, onClose, onApply }: JobDetailModalProps)
           style={{
             width: "140px",
             fontSize: "13px",
-            fontWeight: 600,
+            fontWeight: 700,
             color: "#30373f",
           }}
         >
@@ -83,7 +118,7 @@ export function JobDetailModal({ jobId, onClose, onApply }: JobDetailModalProps)
           className="flex-1 py-3"
           style={{
             fontSize: "13px",
-            color: "#000000",
+            color: blueColor,
             lineHeight: 1.6,
           }}
         >
@@ -106,7 +141,7 @@ export function JobDetailModal({ jobId, onClose, onApply }: JobDetailModalProps)
         ) : job ? (
           <div>
             <div className="px-8 pt-6 pb-4">
-            {job.features.length > 0 && (
+              {job.features.length > 0 && (
                 <div className="flex flex-wrap gap-2 mb-4 justify-end">
                   {job.features.slice(0, 3).map((feature, index) => (
                     <span
@@ -128,18 +163,35 @@ export function JobDetailModal({ jobId, onClose, onApply }: JobDetailModalProps)
                 style={{
                   fontSize: "18px",
                   fontWeight: 700,
-                  color: "#1f3151",
+                  color: blueColor,
                 }}
               >
                 {job.title}
               </h2>
-              </div>
+            </div>
 
             <div className="px-8 pb-4">
-              {renderRow(
-                "報酬単価（税抜）",
-                job.rate && (
-                  <span>
+              {/* 報酬単価（税抜）- 最初の行なので上線なし */}
+              {job.rate && (
+                <div className="flex">
+                  <div
+                    className="py-3 pr-4"
+                    style={{
+                      width: "140px",
+                      fontSize: "13px",
+                      fontWeight: 700,
+                      color: "#30373f",
+                    }}
+                  >
+                    報酬単価（税抜）
+                  </div>
+                  <div
+                    className="flex-1 py-3"
+                    style={{
+                      fontSize: "13px",
+                      lineHeight: 1.6,
+                    }}
+                  >
                     <span
                       style={{
                         fontSize: "20px",
@@ -147,47 +199,47 @@ export function JobDetailModal({ jobId, onClose, onApply }: JobDetailModalProps)
                         color: "#ea8737",
                       }}
                     >
-                      {formatCurrency(job.rate)}
+                      {job.rate}
                     </span>
-                    <span style={{ marginLeft: 4 }}>万円/月</span>
-                  </span>
+                    <span style={{ fontWeight: 700, marginLeft: 4 }}>万円／月</span>
+                  </div>
+                </div>
+              )}
+
+              {renderBlueRow(
+                "職種ポジション",
+                job.position.length > 0 &&
+                  job.position.map((pos, index) => (
+                    <span
+                      key={pos}
+                      style={{ fontWeight: 500 }}
+                    >
+                      {pos}
+                      {index < job.position.length - 1 && "　"}
+                    </span>
+                  )),
+              )}
+
+              {renderBlueRow(
+                "必須スキル",
+                job.requiredSkills && (
+                  <span>{job.requiredSkills}</span>
                 ),
               )}
 
-            {renderRow(
-                "職種ポジション",
-                job.position.length > 0 &&
-                  job.position.map((pos) => (
-                    <span
-                      key={pos}
-                      className="mr-3"
-                      style={{ color: "#1f3151", fontWeight: 500 }}
-                    >
-                      {pos}
-                    </span>
-                  )),
-            )}
-
-              {renderRow(
-                "必須スキル",
-                job.requiredSkills && (
-                  <span style={{ color: "#1f3151" }}>{job.requiredSkills}</span>
-                ),
-            )}
-
-              {renderRow(
+              {renderBlueRow(
                 "歓迎スキル",
                 job.preferredSkills && (
-                  <span style={{ color: "#1f3151" }}>{job.preferredSkills}</span>
+                  <span>{job.preferredSkills}</span>
                 ),
-            )}
+              )}
 
               {renderRow(
                 "作業内容",
                 job.description && (
                   <p className="whitespace-pre-wrap">{job.description}</p>
                 ),
-            )}
+              )}
 
               {renderRow(
                 "環境",
@@ -205,62 +257,69 @@ export function JobDetailModal({ jobId, onClose, onApply }: JobDetailModalProps)
                 "精算基準時間",
                 (job.minHours || job.maxHours) && (
                   <span>
-                  {job.minHours && `下限: ${job.minHours}h`}
-                  {job.minHours && job.maxHours && " / "}
-                  {job.maxHours && `上限: ${job.maxHours}h`}
+                    {job.minHours && job.maxHours 
+                      ? `${job.minHours}〜${job.maxHours}時間`
+                      : job.minHours 
+                        ? `${job.minHours}時間〜`
+                        : `〜${job.maxHours}時間`
+                    }
                   </span>
                 ),
-            )}
+              )}
 
               {renderRow(
                 "面談回数",
                 job.interviewCount && <span>{job.interviewCount}</span>,
-            )}
+              )}
 
               {renderRow(
                 "勤務地",
-                <span className="flex items-center gap-2">
-                  <MapPin className="w-4 h-4" />
-                  <span>{job.location || "リモート"}</span>
-                </span>,
-            )}
+                <span>{job.location || "リモート"}</span>,
+              )}
 
               {renderRow(
-                "最寄り",
+                "最寄り駅",
                 job.nearestStation && <span>{job.nearestStation}</span>,
-            )}
+              )}
 
               {renderRow(
                 "備考",
-                job.notes && (
+                job.notes ? (
                   <p className="whitespace-pre-wrap">{job.notes}</p>
+                ) : (
+                  <span></span>
                 ),
               )}
+
+              {/* 備考とボタンの間の区切り線 */}
+              <div style={{ borderTop: "1px solid #d5e5f0" }} />
             </div>
 
-            <div
-              className="px-8 py-6 flex justify-center"
-              style={{ borderTop: "1px solid #d5e5f0" }}
-            >
-            {isAlreadyApplied ? (
+            <div className="px-8 py-6 flex justify-center">
+              {isAlreadyApplied ? (
                 <Button
                   disabled
                   variant="pw-outline"
                   className="w-full max-w-[260px]"
-                  style={{ fontSize: "15px" }}
+                  style={{ 
+                    fontSize: "15px",
+                    backgroundColor: "#9ca3af",
+                    borderColor: "#9ca3af",
+                    color: "#ffffff",
+                  }}
                 >
-                応募済み
-              </Button>
-            ) : (
+                  応募済み
+                </Button>
+              ) : (
                 <Button
                   variant="pw-primary"
                   onClick={handleApply}
                   className="w-full max-w-[260px]"
                   style={{ fontSize: "15px" }}
                 >
-                この案件に応募する
-              </Button>
-            )}
+                  この案件に応募する
+                </Button>
+              )}
             </div>
           </div>
         ) : null}
