@@ -7,6 +7,7 @@ type JobCardProps = {
   job: Job
   onViewDetail: (jobId: string) => void
   showApplicationStatus?: boolean // 応募ステータスの枠線を表示するかどうか（デフォルト: false）
+  isEnded?: boolean // 応募終了かどうか（デフォルト: false）
 }
 
 // 仕様書: 案件カード > フォント・カラー
@@ -21,8 +22,18 @@ const formatRateValue = (rate?: string) => {
   return numeric || rate
 }
 
-// 応募ステータスの色とラベルを取得
-const getStatusStyle = (status?: string | null) => {
+// 応募ステータスの色とラベルを取得（kintoneの値をそのまま表示）
+const getStatusStyle = (status?: string | null, isEnded?: boolean) => {
+  // 応募終了（見送り）の場合
+  if (isEnded || status === "見送り") {
+    return {
+      label: "見送り",
+      bgColor: "#9ca3af",
+      borderColor: "#9ca3af",
+      textColor: "#ffffff"
+    }
+  }
+
   if (!status) return null
 
   switch (status) {
@@ -33,12 +44,18 @@ const getStatusStyle = (status?: string | null) => {
         borderColor: "#d22852",
         textColor: "#ffffff"
       }
-    case "面談予定":
     case "面談調整中":
       return {
-        label: status,
+        label: "面談調整中",
         bgColor: "#fa8212",
         borderColor: "#fa8212",
+        textColor: "#ffffff"
+      }
+    case "面談予定":
+      return {
+        label: "面談予定",
+        bgColor: "#2196f3",
+        borderColor: "#2196f3",
         textColor: "#ffffff"
       }
     case "応募済み":
@@ -53,7 +70,7 @@ const getStatusStyle = (status?: string | null) => {
   }
 }
 
-export function JobCard({ job, onViewDetail, showApplicationStatus = false }: JobCardProps) {
+export function JobCard({ job, onViewDetail, showApplicationStatus = false, isEnded = false }: JobCardProps) {
   const rateValue = formatRateValue(job.rate)
   const features = job.features?.slice(0, 3) ?? []
   const positions = job.position ?? []
@@ -66,7 +83,7 @@ export function JobCard({ job, onViewDetail, showApplicationStatus = false }: Jo
     : ""
   
   // 応募ステータスの枠線表示を制御（showApplicationStatusがfalseの場合は非表示）
-  const statusStyle = showApplicationStatus ? getStatusStyle(job.applicationStatus) : null
+  const statusStyle = showApplicationStatus ? getStatusStyle(job.applicationStatus, isEnded) : null
 
   return (
     <div
@@ -79,8 +96,8 @@ export function JobCard({ job, onViewDetail, showApplicationStatus = false }: Jo
     >
       {/* 上部エリア：リボン（左上）+ バッジ（右上） */}
       <div className="p-4 pb-2 relative">
-        {/* 新着バッジ（リボン風・左上） */}
-        {job.isNew && (
+        {/* 新着バッジ（リボン風・左上）- 応募ステータス表示時は非表示 */}
+        {job.isNew && !showApplicationStatus && (
           <div className="absolute top-0 left-2">
             <svg width="58" height="40" style={{ display: "block" }}>
               <path
@@ -102,33 +119,33 @@ export function JobCard({ job, onViewDetail, showApplicationStatus = false }: Jo
           </div>
         )}
 
-        {/* 応募ステータスラベル（リボン風・左上）- 新着バッジがない場合のみ表示 */}
-        {!job.isNew && statusStyle && (
+        {/* 応募ステータスラベル（リボン風・左上） */}
+      {statusStyle && (
           <div className="absolute top-0 left-2">
-            <svg width="80" height="40" style={{ display: "block" }}>
-              <path
-                d="M 0 0 L 80 0 L 80 32 Q 40 22, 0 32 Z"
-                fill={statusStyle.bgColor}
-              />
-              <text
-                x="40"
-                y="16"
-                textAnchor="middle"
-                fill={statusStyle.textColor}
-                fontSize="13"
-                fontWeight="600"
-                style={{ fontFamily: "Noto Sans JP" }}
-              >
-                {statusStyle.label}
-              </text>
-            </svg>
-          </div>
-        )}
+          <svg width="80" height="40" style={{ display: "block" }}>
+            <path
+              d="M 0 0 L 80 0 L 80 32 Q 40 22, 0 32 Z"
+              fill={statusStyle.bgColor}
+            />
+            <text
+              x="40"
+              y="16"
+              textAnchor="middle"
+              fill={statusStyle.textColor}
+                fontSize="11"
+              fontWeight="600"
+              style={{ fontFamily: "Noto Sans JP" }}
+            >
+              {statusStyle.label}
+            </text>
+          </svg>
+        </div>
+      )}
 
         {/* 案件特徴バッジ（右上に配置） */}
         <div 
           className="flex flex-wrap gap-2 justify-end mb-3 pt-1"
-          style={{ paddingLeft: (job.isNew || statusStyle) ? "70px" : "0" }}
+          style={{ paddingLeft: (job.isNew && !showApplicationStatus) || statusStyle ? "70px" : "0" }}
         >
           {features.map((feature, index) => (
             <span
@@ -180,50 +197,50 @@ export function JobCard({ job, onViewDetail, showApplicationStatus = false }: Jo
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
           {/* 勤務地 */}
           <div className="flex items-center gap-2">
-            <span
+          <span
               className="inline-flex items-center h-6 px-3 text-xs font-bold rounded-[2px]"
+            style={{
+              backgroundColor: "#ececec",
+              color: primaryTextColor,
+            }}
+          >
+            勤務地
+          </span>
+          <span
+              className="font-bold"
+            style={{
+              fontSize: "13px",
+              color: bodyTextColor,
+            }}
+          >
+              {locationValue}
+          </span>
+        </div>
+
+          {/* 最寄り */}
+          {nearestValue && (
+            <div className="flex items-center gap-2">
+            <span
+                className="inline-flex items-center h-6 px-3 text-xs font-bold rounded-[2px]"
               style={{
                 backgroundColor: "#ececec",
                 color: primaryTextColor,
               }}
             >
-              勤務地
+              最寄り
             </span>
             <span
-              className="font-bold"
+                className="font-bold"
               style={{
                 fontSize: "13px",
                 color: bodyTextColor,
               }}
             >
-              {locationValue}
+                {nearestValue}
             </span>
           </div>
-
-          {/* 最寄り */}
-          {nearestValue && (
-            <div className="flex items-center gap-2">
-              <span
-                className="inline-flex items-center h-6 px-3 text-xs font-bold rounded-[2px]"
-                style={{
-                  backgroundColor: "#ececec",
-                  color: primaryTextColor,
-                }}
-              >
-                最寄り
-              </span>
-              <span
-                className="font-bold"
-                style={{
-                  fontSize: "13px",
-                  color: bodyTextColor,
-                }}
-              >
-                {nearestValue}
-              </span>
-            </div>
-          )}
-        </div>
+        )}
+      </div>
       </div>
 
       {/* 区切り線 */}
@@ -306,10 +323,20 @@ export function JobCard({ job, onViewDetail, showApplicationStatus = false }: Jo
       {/* 詳細を見るボタン */}
       <div className="px-4 pb-4 pt-3 flex justify-center">
         <Button
-          variant="pw-primary"
+          variant={isEnded ? "pw-outline" : "pw-primary"}
           className="w-full max-w-[180px]"
-          onClick={() => onViewDetail(job.id)}
-          style={{ fontSize: "14px", borderRadius: "4px" }}
+          onClick={() => !isEnded && onViewDetail(job.id)}
+          disabled={isEnded}
+          style={{ 
+            fontSize: "14px", 
+            borderRadius: "4px",
+            ...(isEnded ? {
+              backgroundColor: "#9ca3af",
+              borderColor: "#9ca3af",
+              color: "#ffffff",
+              cursor: "not-allowed",
+            } : {})
+          }}
         >
           詳細を見る
         </Button>

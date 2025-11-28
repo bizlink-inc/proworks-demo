@@ -5,7 +5,6 @@ import { useSearchParams } from "next/navigation"
 import { Header } from "@/components/header"
 import { SidebarLayout } from "@/components/layouts"
 import { ProfileForm } from "@/components/profile-form"
-import { ApplicationsTable } from "@/components/applications-table"
 import { WorkHistoryForm } from "@/components/work-history-form"
 import { PreferencesForm } from "@/components/preferences-form"
 import { PasswordChangeForm } from "@/components/password-change-form"
@@ -13,7 +12,7 @@ import { EmailChangeForm } from "@/components/email-change-form"
 import { useApplicationStatusMonitor } from "@/hooks/use-application-status-monitor"
 import type { Talent } from "@/lib/kintone/types"
 
-type MenuItem = "profile" | "work-history" | "preferences" | "applications" | "password" | "email"
+type MenuItem = "profile" | "work-history" | "preferences" | "password" | "email"
 
 interface MyPageClientProps {
   user: {
@@ -97,7 +96,6 @@ export function MyPageClient({ user: sessionUser }: MyPageClientProps) {
     { id: "profile", label: "プロフィール" },
     { id: "work-history", label: "職歴・資格" },
     { id: "preferences", label: "希望条件" },
-    { id: "applications", label: "応募済み案件" },
     { id: "password", label: "パスワード変更" },
     { id: "email", label: "メールアドレス変更" },
   ]
@@ -172,21 +170,6 @@ export function MyPageClient({ user: sessionUser }: MyPageClientProps) {
                   <p style={{ color: "var(--pw-text-gray)" }}>データを読み込んでいます...</p>
                 </div>
               )}
-            </div>
-          )}
-
-          {activeMenu === "applications" && (
-            <div>
-              <h2
-                className="font-bold mb-6"
-                style={{
-                  fontSize: "var(--pw-text-xl)",
-                  color: "var(--pw-text-navy)"
-                }}
-              >
-                応募済み案件
-              </h2>
-              <ApplicationsTable />
             </div>
           )}
 

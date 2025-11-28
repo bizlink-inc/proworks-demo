@@ -97,5 +97,5 @@ export const GET = async (request: NextRequest) => {
       { error: "案件一覧の取得に失敗しました" },
       { status: 500 }
     );
-  }
+}
 };

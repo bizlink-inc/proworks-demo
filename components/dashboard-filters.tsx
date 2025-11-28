@@ -106,12 +106,12 @@ export const DashboardFilters = ({ onSearch, currentSort = "new" }: DashboardFil
           <div className="relative">
             <input
               type="text"
-              placeholder="フリーワードで探す"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+          placeholder="フリーワードで探す"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && handleSearch()}
               className="flex h-10 w-full py-2 text-sm transition-colors px-3 pr-10 placeholder:text-[var(--pw-text-light-gray)] focus-visible:outline-none rounded-[var(--pw-radius-sm)] border border-[var(--pw-input-border)] bg-white focus:bg-[var(--pw-input-error-bg)] focus:border-[var(--pw-input-focus)]"
-            />
+        />
             <button
               type="button"
               onClick={handleClearQuery}

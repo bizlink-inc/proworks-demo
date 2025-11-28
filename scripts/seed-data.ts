@@ -348,6 +348,8 @@ iOS/Android両方のアプリ開発経験がある方を歓迎します。`,
     { auth_user_id: "seed_user_001", jobIndex: 0, 対応状況: "応募済み" },
     { auth_user_id: "seed_user_001", jobIndex: 1, 対応状況: "面談調整中" },
     { auth_user_id: "seed_user_001", jobIndex: 2, 対応状況: "案件参画" },
+    { auth_user_id: "seed_user_001", jobIndex: 3, 対応状況: "面談予定" },
+    { auth_user_id: "seed_user_001", jobIndex: 4, 対応状況: "見送り" },
   ],
 
   recommendations: [

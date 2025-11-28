@@ -93,43 +93,43 @@ export default function SignInPage() {
               boxShadow: '0 2px 8px var(--pw-shadow)',
             }}
           >
-            <div className="text-center mb-8">
-              <h1
-                className="font-semibold"
-                style={{
-                  fontSize: "var(--pw-text-2xl)",
-                  color: "var(--pw-text-primary)"
-                }}
-              >
-                ログイン
-              </h1>
-            </div>
+        <div className="text-center mb-8">
+          <h1
+            className="font-semibold"
+            style={{
+              fontSize: "var(--pw-text-2xl)",
+              color: "var(--pw-text-primary)"
+            }}
+          >
+            ログイン
+          </h1>
+        </div>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4">
               {/* メールアドレス */}
-              <div>
-                <PWInput
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  placeholder="s_aieda@wag-wag.net"
-                  leftIcon={<Mail className="w-5 h-5" />}
-                />
-              </div>
+          <div>
+            <PWInput
+              id="email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              placeholder="s_aieda@wag-wag.net"
+              leftIcon={<Mail className="w-5 h-5" />}
+            />
+          </div>
 
               {/* パスワード */}
-              <div>
-                <PWInput
-                  id="password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  placeholder="••••••••••••"
-                  leftIcon={<Lock className="w-5 h-5" />}
-                />
+          <div>
+            <PWInput
+              id="password"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              placeholder="••••••••••••"
+              leftIcon={<Lock className="w-5 h-5" />}
+            />
                 <div className="mt-2 flex justify-between items-center">
                   <span
                     style={{
@@ -139,18 +139,18 @@ export default function SignInPage() {
                   >
                     半角英数字記号8文字以上
                   </span>
-                  <Link
-                    href="/auth/forgot-password"
-                    className="hover:underline"
-                    style={{
-                      fontSize: "var(--pw-text-xs)",
-                      color: "var(--pw-button-primary)"
-                    }}
-                  >
-                    パスワードを忘れた方
-                  </Link>
-                </div>
-              </div>
+              <Link
+                href="/auth/forgot-password"
+                className="hover:underline"
+                style={{
+                  fontSize: "var(--pw-text-xs)",
+                  color: "var(--pw-button-primary)"
+                }}
+              >
+                パスワードを忘れた方
+              </Link>
+            </div>
+          </div>
 
               {/* ログイン状態を保持 */}
               <div className="flex items-center gap-2 pt-2">
@@ -170,33 +170,33 @@ export default function SignInPage() {
               </div>
 
               {/* ログインボタン */}
-              <Button
-                type="submit"
-                variant="pw-primary"
+          <Button
+            type="submit"
+            variant="pw-primary"
                 className="w-full mt-4"
-                disabled={loading}
-                style={{ fontSize: "var(--pw-text-md)" }}
-              >
-                {loading ? "ログイン中..." : "ログイン"}
-              </Button>
-            </form>
+            disabled={loading}
+            style={{ fontSize: "var(--pw-text-md)" }}
+          >
+            {loading ? "ログイン中..." : "ログイン"}
+          </Button>
+        </form>
 
             {/* 新規登録リンク */}
-            <div className="mt-6 text-center">
-              <p
-                className="text-[var(--pw-text-gray)]"
-                style={{ fontSize: "var(--pw-text-sm)" }}
-              >
-                PRO WORKSのご利用は初めてですか？
-                <Link
-                  href="/auth/signup"
-                  className="ml-1 font-semibold hover:underline"
-                  style={{ color: "var(--pw-text-black)" }}
-                >
-                  新規登録（無料）
-                </Link>
-              </p>
-            </div>
+        <div className="mt-6 text-center">
+          <p
+            className="text-[var(--pw-text-gray)]"
+            style={{ fontSize: "var(--pw-text-sm)" }}
+          >
+            PRO WORKSのご利用は初めてですか？
+            <Link
+              href="/auth/signup"
+              className="ml-1 font-semibold hover:underline"
+              style={{ color: "var(--pw-text-black)" }}
+            >
+              新規登録（無料）
+            </Link>
+          </p>
+        </div>
           </div>
 
           {/* フッターリンク（カードのすぐ下） */}
@@ -208,20 +208,20 @@ export default function SignInPage() {
                 color: "var(--pw-text-gray)"
               }}
             >
-              <a href="#" className="hover:text-[var(--pw-button-primary)] transition-colors">
-                利用規約
-              </a>
-              <a href="#" className="hover:text-[var(--pw-button-primary)] transition-colors">
-                プライバシーポリシー
-              </a>
-              <a href="#" className="hover:text-[var(--pw-button-primary)] transition-colors">
+          <a href="#" className="hover:text-[var(--pw-button-primary)] transition-colors">
+            利用規約
+          </a>
+          <a href="#" className="hover:text-[var(--pw-button-primary)] transition-colors">
+            プライバシーポリシー
+          </a>
+          <a href="#" className="hover:text-[var(--pw-button-primary)] transition-colors">
                 クッキーポリシー
-              </a>
-              <a href="#" className="hover:text-[var(--pw-button-primary)] transition-colors">
+          </a>
+          <a href="#" className="hover:text-[var(--pw-button-primary)] transition-colors">
                 お知らせ
-              </a>
-            </div>
-          </div>
+          </a>
+        </div>
+      </div>
         </div>
       </main>
     </div>

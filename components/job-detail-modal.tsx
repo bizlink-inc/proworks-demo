@@ -141,7 +141,7 @@ export function JobDetailModal({ jobId, onClose, onApply }: JobDetailModalProps)
         ) : job ? (
           <div>
             <div className="px-8 pt-6 pb-4">
-              {job.features.length > 0 && (
+            {job.features.length > 0 && (
                 <div className="flex flex-wrap gap-2 mb-4 justify-end">
                   {job.features.slice(0, 3).map((feature, index) => (
                     <span
@@ -168,7 +168,7 @@ export function JobDetailModal({ jobId, onClose, onApply }: JobDetailModalProps)
               >
                 {job.title}
               </h2>
-            </div>
+              </div>
 
             <div className="px-8 pb-4">
               {/* 報酬単価（税抜）- 最初の行なので上線なし */}
@@ -218,28 +218,28 @@ export function JobDetailModal({ jobId, onClose, onApply }: JobDetailModalProps)
                       {index < job.position.length - 1 && "　"}
                     </span>
                   )),
-              )}
+            )}
 
               {renderBlueRow(
                 "必須スキル",
                 job.requiredSkills && (
                   <span>{job.requiredSkills}</span>
                 ),
-              )}
+            )}
 
               {renderBlueRow(
                 "歓迎スキル",
                 job.preferredSkills && (
                   <span>{job.preferredSkills}</span>
                 ),
-              )}
+            )}
 
               {renderRow(
                 "作業内容",
                 job.description && (
                   <p className="whitespace-pre-wrap">{job.description}</p>
                 ),
-              )}
+            )}
 
               {renderRow(
                 "環境",
@@ -265,22 +265,22 @@ export function JobDetailModal({ jobId, onClose, onApply }: JobDetailModalProps)
                     }
                   </span>
                 ),
-              )}
+            )}
 
               {renderRow(
                 "面談回数",
                 job.interviewCount && <span>{job.interviewCount}</span>,
-              )}
+            )}
 
               {renderRow(
                 "勤務地",
                 <span>{job.location || "リモート"}</span>,
-              )}
+            )}
 
               {renderRow(
                 "最寄り駅",
                 job.nearestStation && <span>{job.nearestStation}</span>,
-              )}
+            )}
 
               {renderRow(
                 "備考",
@@ -296,7 +296,7 @@ export function JobDetailModal({ jobId, onClose, onApply }: JobDetailModalProps)
             </div>
 
             <div className="px-8 py-6 flex justify-center">
-              {isAlreadyApplied ? (
+            {isAlreadyApplied ? (
                 <Button
                   disabled
                   variant="pw-outline"
@@ -308,18 +308,18 @@ export function JobDetailModal({ jobId, onClose, onApply }: JobDetailModalProps)
                     color: "#ffffff",
                   }}
                 >
-                  応募済み
-                </Button>
-              ) : (
+                応募済み
+              </Button>
+            ) : (
                 <Button
                   variant="pw-primary"
                   onClick={handleApply}
                   className="w-full max-w-[260px]"
                   style={{ fontSize: "15px" }}
                 >
-                  この案件に応募する
-                </Button>
-              )}
+                この案件に応募する
+              </Button>
+            )}
             </div>
           </div>
         ) : null}

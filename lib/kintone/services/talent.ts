@@ -84,13 +84,13 @@ export const createTalent = async (data: {
       : data.email.split("@")[0];
 
     const record: Record<string, { value: string }> = {
-      auth_user_id: { value: data.authUserId },
-      姓: { value: data.lastName },
-      名: { value: data.firstName },
-      氏名: { value: fullName },
-      メールアドレス: { value: data.email },
-      電話番号: { value: data.phone },
-      生年月日: { value: data.birthDate },
+        auth_user_id: { value: data.authUserId },
+        姓: { value: data.lastName },
+        名: { value: data.firstName },
+        氏名: { value: fullName },
+        メールアドレス: { value: data.email },
+        電話番号: { value: data.phone },
+        生年月日: { value: data.birthDate },
     };
 
     // メール配信ステータスフィールドがある場合は追加

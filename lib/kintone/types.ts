@@ -24,9 +24,6 @@ export type TalentRecord = {
   希望案件_作業内容: { value: string };
   NG企業: { value: string };
   その他要望: { value: string };
-  // 新規登録時の同意・設定フィールド
-  メール配信ステータス: { value: string };
-  利用規約同意: { value: string };
 };
 
 // 案件DBの型定義
@@ -48,8 +45,6 @@ export type JobRecord = {
   案件期間: { value: string };
   掲載単価: { value: string };
   面談回数: { value: string };
-  ドロップダウン_3?: { value: string }; // リモート可否（可/不可/条件付き可）
-  新着フラグ?: { value: string }; // 新着案件フラグ
 };
 
 // 応募履歴の型定義
@@ -88,9 +83,6 @@ export type Talent = {
   desiredWork: string;
   ngCompanies: string;
   otherRequests: string;
-  // 新規登録時の同意・設定フィールド
-  emailDeliveryStatus: string;
-  termsAgreed: string;
 };
 
 export type Job = {
@@ -111,8 +103,6 @@ export type Job = {
   period: string;
   rate: string;
   interviewCount: string;
-  remote: string; // リモート可否（可/不可/条件付き可）
-  isNew: boolean; // 新着案件フラグ
   applicationStatus?: string | null; // ログインユーザーの応募ステータス
 };
 
@@ -131,17 +121,6 @@ export type RecommendationRecord = {
   人材ID: { value: string };
   案件ID: { value: string };
   適合スコア: { value: string };
-  // AI評価フィールド
-  AIマッチ実行状況?: { value: string }; // "未実行" | "実行済み" | "スキップ"
-  AI技術スキルスコア?: { value: string };
-  AI開発工程スコア?: { value: string };
-  AIインフラスコア?: { value: string };
-  AI業務知識スコア?: { value: string };
-  AIチーム開発スコア?: { value: string };
-  AIツール環境スコア?: { value: string };
-  AI総合スコア?: { value: string };
-  AI評価結果?: { value: string };
-  AI実行日時?: { value: string };
 };
 
 export type Recommendation = {
@@ -149,16 +128,5 @@ export type Recommendation = {
   talentId: string;
   jobId: string;
   score: number;
-  // AI評価
-  aiExecutionStatus?: string;
-  aiSkillScore?: number;
-  aiProcessScore?: number;
-  aiInfraScore?: number;
-  aiDomainScore?: number;
-  aiTeamScore?: number;
-  aiToolScore?: number;
-  aiOverallScore?: number;
-  aiResult?: string;
-  aiExecutedAt?: string;
 };
 

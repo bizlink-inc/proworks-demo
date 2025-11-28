@@ -106,13 +106,13 @@ export function Header({ user }: HeaderProps) {
                   案件一覧
                 </Link>
                 <Link
-                  href="/me?tab=applications"
+                  href="/applications"
                   className="px-4 py-3 transition-colors flex items-center gap-2"
                   style={{
                     fontSize: "var(--pw-text-md)",
-                    color: "var(--pw-text-navy)",
-                    borderBottom: "none",
-                    fontWeight: 400,
+                    color: pathname === "/applications" ? "#3966a2" : "var(--pw-text-navy)",
+                    borderBottom: pathname === "/applications" ? "4.5px solid #3966a2" : "none",
+                    fontWeight: pathname === "/applications" ? 600 : 400,
                   }}
                 >
                   <FontAwesomeIcon icon={faAddressCard} className="w-5 h-5" />
