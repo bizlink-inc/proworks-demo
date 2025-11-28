@@ -3,12 +3,10 @@
 import { useState, useEffect } from "react"
 import { Header } from "@/components/header"
 import { FullWidthLayout } from "@/components/layouts"
-import { DashboardFilters } from "@/components/dashboard-filters"
+import { DashboardFilters, type JobFilters } from "@/components/dashboard-filters"
 import { JobCard } from "@/components/job-card"
 import { JobDetailModal } from "@/components/job-detail-modal"
 import { ApplySuccessModal } from "@/components/apply-success-modal"
-import { Button } from "@/components/ui/button"
-import { ChevronLeft, ChevronRight } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { useApplicationStatusMonitor } from "@/hooks/use-application-status-monitor"
 import type { Job } from "@/lib/kintone/types"
@@ -21,14 +19,19 @@ interface DashboardClientProps {
   }
 }
 
-export function DashboardClient({ user }: DashboardClientProps) {
+export const DashboardClient = ({ user }: DashboardClientProps) => {
   const { toast } = useToast()
   useApplicationStatusMonitor()
 
   const [jobs, setJobs] = useState<Job[]>([])
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(1)
-  const [filters, setFilters] = useState({ query: "", sort: "new" })
+  const [filters, setFilters] = useState<JobFilters>({ 
+    query: "", 
+    sort: "new",
+    remote: [],
+    nearestStation: "",
+  })
   const [selectedJobId, setSelectedJobId] = useState<string | null>(null)
   const [applySuccess, setApplySuccess] = useState<{
     jobTitle: string
@@ -47,6 +50,16 @@ export function DashboardClient({ user }: DashboardClientProps) {
       query: filters.query,
       sort: filters.sort,
     })
+    
+    // リモートフィルター（複数選択可）
+    if (filters.remote.length > 0) {
+      params.set("remote", filters.remote.join(","))
+    }
+    
+    // 最寄駅フィルター
+    if (filters.nearestStation) {
+      params.set("nearestStation", filters.nearestStation)
+    }
 
     const res = await fetch(`/api/jobs?${params}`)
     const data = await res.json()
@@ -58,7 +71,7 @@ export function DashboardClient({ user }: DashboardClientProps) {
     setTotal(data.total)
   }
 
-  const handleSearch = (newFilters: typeof filters) => {
+  const handleSearch = (newFilters: JobFilters) => {
     setFilters(newFilters)
     setPage(1)
   }

@@ -21,6 +21,7 @@ const convertJobRecord = (record: JobRecord): Job => {
     period: record.案件期間.value,
     rate: record.掲載単価.value,
     interviewCount: record.面談回数.value,
+    remote: record.ドロップダウン_3?.value || '',
   };
 };
 

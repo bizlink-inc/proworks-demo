@@ -9,6 +9,11 @@ export const GET = async (request: NextRequest) => {
     const searchParams = request.nextUrl.searchParams;
     const query = searchParams.get("query") || "";
     const sort = searchParams.get("sort") || "new";
+    const remoteParam = searchParams.get("remote") || "";
+    const nearestStation = searchParams.get("nearestStation") || "";
+
+    // リモートフィルターをパース（カンマ区切り）
+    const remoteFilters = remoteParam ? remoteParam.split(",") : [];
 
     // kintoneからすべての案件を取得
     let jobs = await getAllJobs();
@@ -45,6 +50,26 @@ export const GET = async (request: NextRequest) => {
       });
     }
 
+    // リモート可否フィルター
+    if (remoteFilters.length > 0) {
+      jobs = jobs.filter((job) => {
+        // 案件のリモート値がフィルター条件のいずれかに一致するか
+        return remoteFilters.includes(job.remote);
+      });
+    }
+
+    // 最寄駅フィルター（"駅"を除いた部分一致検索）
+    if (nearestStation) {
+      // 入力から"駅"を除去
+      const stationQuery = nearestStation.replace(/駅$/g, "").toLowerCase();
+      jobs = jobs.filter((job) => {
+        if (!job.nearestStation) return false;
+        // 案件の最寄駅からも"駅"を除去して部分一致検索
+        const jobStation = job.nearestStation.replace(/駅$/g, "").toLowerCase();
+        return jobStation.includes(stationQuery);
+      });
+    }
+
     // ソート処理
     if (sort === "price") {
       // 単価が高い順（数値として比較）
@@ -72,5 +97,5 @@ export const GET = async (request: NextRequest) => {
       { error: "案件一覧の取得に失敗しました" },
       { status: 500 }
     );
-}
+  }
 };

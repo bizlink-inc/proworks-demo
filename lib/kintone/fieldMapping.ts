@@ -55,6 +55,7 @@ export const JOB_FIELDS = {
   PERIOD: '案件期間',
   RATE: '掲載単価',
   INTERVIEW_COUNT: '面談回数',
+  REMOTE: 'ドロップダウン_3', // リモート可否（可/不可/条件付き可）
 } as const;
 
 // 応募履歴DB（Application）のフィールドコード
@@ -118,9 +119,13 @@ export const DROPDOWN_OPTIONS = {
   
   // 利用規約同意の選択肢
   TERMS_AGREED: ['同意済み'] as const,
+  
+  // リモート可否の選択肢
+  REMOTE: ['可', '不可', '条件付き可'] as const,
 } as const;
 
 export type DesiredWorkDays = typeof DROPDOWN_OPTIONS.DESIRED_WORK_DAYS[number];
 export type DesiredCommute = typeof DROPDOWN_OPTIONS.DESIRED_COMMUTE[number];
 export type EmailDeliveryStatus = typeof DROPDOWN_OPTIONS.EMAIL_DELIVERY_STATUS[number];
 export type TermsAgreed = typeof DROPDOWN_OPTIONS.TERMS_AGREED[number];
+export type Remote = typeof DROPDOWN_OPTIONS.REMOTE[number];
