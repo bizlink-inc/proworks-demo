@@ -38,7 +38,7 @@ export const DashboardClient = ({ user }: DashboardClientProps) => {
     appliedAt: string
   } | null>(null)
 
-  const size = 6
+  const size = 21 // 3列×7行
   const totalPages = Math.ceil(total / size)
 
   useEffect(() => {

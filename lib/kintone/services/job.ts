@@ -22,6 +22,7 @@ const convertJobRecord = (record: JobRecord): Job => {
     rate: record.掲載単価.value,
     interviewCount: record.面談回数.value,
     remote: record.ドロップダウン_3?.value || '',
+    isNew: record.新着フラグ?.value === '新着案件',
   };
 };
 

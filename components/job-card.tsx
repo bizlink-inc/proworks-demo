@@ -6,6 +6,7 @@ import type { Job } from "@/lib/kintone/types"
 type JobCardProps = {
   job: Job
   onViewDetail: (jobId: string) => void
+  showApplicationStatus?: boolean // 応募ステータスの枠線を表示するかどうか（デフォルト: false）
 }
 
 // 仕様書: 案件カード > フォント・カラー
@@ -52,7 +53,7 @@ const getStatusStyle = (status?: string | null) => {
   }
 }
 
-export function JobCard({ job, onViewDetail }: JobCardProps) {
+export function JobCard({ job, onViewDetail, showApplicationStatus = false }: JobCardProps) {
   const rateValue = formatRateValue(job.rate)
   const features = job.features?.slice(0, 3) ?? []
   const positions = job.position ?? []
@@ -63,7 +64,8 @@ export function JobCard({ job, onViewDetail }: JobCardProps) {
     ? [job.nearestStation.trim()]
     : []
   
-  const statusStyle = getStatusStyle(job.applicationStatus)
+  // 応募ステータスの枠線表示を制御（showApplicationStatusがfalseの場合は非表示）
+  const statusStyle = showApplicationStatus ? getStatusStyle(job.applicationStatus) : null
 
   return (
     <div
@@ -74,8 +76,31 @@ export function JobCard({ job, onViewDetail }: JobCardProps) {
         overflow: "visible" // リボンが外に出るように
       }}
     >
-      {/* 応募ステータスラベル（左上・リボン風） */}
-      {statusStyle && (
+      {/* 新着バッジ（左上・リボン風） */}
+      {job.isNew && (
+        <div className="absolute top-0 left-2" style={{ zIndex: 10 }}>
+          <svg width="58" height="40" style={{ display: "block" }}>
+            <path
+              d="M 0 0 L 58 0 L 58 32 Q 29 23, 0 32 Z"
+              fill="#d22852"
+            />
+            <text
+              x="29"
+              y="18"
+              textAnchor="middle"
+              fill="#ffffff"
+              fontSize="12"
+              fontWeight="700"
+              style={{ fontFamily: "Noto Sans JP" }}
+            >
+              NEW
+            </text>
+          </svg>
+        </div>
+      )}
+
+      {/* 応募ステータスラベル（左上・リボン風）- 新着バッジがない場合のみ表示 */}
+      {!job.isNew && statusStyle && (
         <div className="absolute top-0 left-2" style={{ zIndex: 10 }}>
           <svg width="80" height="40" style={{ display: "block" }}>
             <path
@@ -97,7 +122,7 @@ export function JobCard({ job, onViewDetail }: JobCardProps) {
         </div>
       )}
 
-      <div className="p-4 pb-2" style={{ paddingTop: statusStyle ? "2.5rem" : "1rem" }}>
+      <div className="p-4 pb-2" style={{ paddingTop: (job.isNew || statusStyle) ? "2.5rem" : "1rem" }}>
         <div className="flex flex-wrap gap-2 mb-3">
           {features.map((feature, index) => (
             <span

@@ -49,6 +49,7 @@ export type JobRecord = {
   掲載単価: { value: string };
   面談回数: { value: string };
   ドロップダウン_3?: { value: string }; // リモート可否（可/不可/条件付き可）
+  新着フラグ?: { value: string }; // 新着案件フラグ
 };
 
 // 応募履歴の型定義
@@ -111,6 +112,7 @@ export type Job = {
   rate: string;
   interviewCount: string;
   remote: string; // リモート可否（可/不可/条件付き可）
+  isNew: boolean; // 新着案件フラグ
   applicationStatus?: string | null; // ログインユーザーの応募ステータス
 };
 

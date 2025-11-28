@@ -56,6 +56,7 @@ export const JOB_FIELDS = {
   RATE: '掲載単価',
   INTERVIEW_COUNT: '面談回数',
   REMOTE: 'ドロップダウン_3', // リモート可否（可/不可/条件付き可）
+  NEW_FLAG: '新着フラグ', // 新着案件フラグ
 } as const;
 
 // 応募履歴DB（Application）のフィールドコード
@@ -122,6 +123,9 @@ export const DROPDOWN_OPTIONS = {
   
   // リモート可否の選択肢
   REMOTE: ['可', '不可', '条件付き可'] as const,
+  
+  // 新着フラグの選択肢
+  NEW_FLAG: ['新着案件', ''] as const,
 } as const;
 
 export type DesiredWorkDays = typeof DROPDOWN_OPTIONS.DESIRED_WORK_DAYS[number];
