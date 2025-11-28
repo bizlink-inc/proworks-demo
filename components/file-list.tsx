@@ -158,13 +158,9 @@ export const FileList: React.FC<FileListProps> = ({
     }
   };
 
+  // ファイルがない場合は何も表示しない
   if (files.length === 0) {
-    return (
-      <div className="text-center py-8 text-gray-500">
-        <FileText className="mx-auto h-12 w-12 text-gray-300 mb-4" />
-        <p>アップロードされたファイルはありません</p>
-      </div>
-    );
+    return null;
   }
 
   return (

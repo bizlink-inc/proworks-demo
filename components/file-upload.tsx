@@ -4,7 +4,7 @@ import React, { useState, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
-import { Upload, X, FileText, AlertCircle } from "lucide-react";
+import { X, FileText, AlertCircle } from "lucide-react";
 
 interface FileUploadProps {
   onUploadSuccess: (file: {
@@ -32,7 +32,6 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   disabled = false,
 }) => {
   const [uploadingFiles, setUploadingFiles] = useState<UploadingFile[]>([]);
-  const [isDragOver, setIsDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
@@ -163,29 +162,6 @@ export const FileUpload: React.FC<FileUploadProps> = ({
     });
   }, [currentFileCount, uploadingFiles.length, maxFiles]);
 
-  // ドラッグ&ドロップ処理
-  const handleDragOver = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragOver(true);
-  }, []);
-
-  const handleDragLeave = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragOver(false);
-  }, []);
-
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragOver(false);
-    
-    if (disabled) return;
-    
-    const files = e.dataTransfer.files;
-    if (files.length > 0) {
-      handleFiles(files);
-    }
-  }, [disabled, handleFiles]);
-
   // ファイル選択ボタンクリック
   const handleFileSelect = () => {
     if (disabled) return;
@@ -198,54 +174,30 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   };
 
   return (
-    <div className="space-y-4">
-      {/* ドラッグ&ドロップエリア */}
-      <div
+    <div className="space-y-3">
+      {/* シンプルなファイル選択エリア */}
+      <div className="flex items-center gap-4">
+        <p className="text-sm" style={{ color: "var(--pw-text-gray)" }}>
+          ※アップロード可能形式：PDF / Word (.doc, .docx)（最大10MB）
+        </p>
+      </div>
+      
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={handleFileSelect}
         className={`
-          border-2 border-dashed rounded-[var(--pw-radius-sm)] p-6 text-center transition-colors
-          ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}
+          inline-flex items-center px-4 py-2 border rounded-[var(--pw-radius-sm)] text-sm transition-colors
+          ${disabled ? "opacity-50 cursor-not-allowed" : "hover:bg-gray-50"}
         `}
         style={{
-          borderColor: "var(--pw-border-light)",
-          backgroundColor: isDragOver ? "#fff" : "var(--pw-bg-light-blue)"
-        }}
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
-        onDrop={handleDrop}
-        onClick={handleFileSelect}
-      >
-        <Upload 
-          className="mx-auto h-12 w-12 mb-4"
-          style={{ color: "var(--pw-border-primary)" }}
-        />
-        <p 
-          className="text-lg font-medium mb-2"
-          style={{ color: "var(--pw-text-primary)" }}
-        >
-          ファイルをドラッグ&ドロップ
-        </p>
-        <p className="text-sm mb-4" style={{ color: "var(--pw-text-gray)" }}>
-          または、クリックしてファイルを選択
-        </p>
-        <div className="text-xs space-y-1" style={{ color: "var(--pw-text-gray)" }}>
-          <p>対応形式: PDF, Word (.doc, .docx)</p>
-          <p>最大サイズ: 10MB</p>
-          <p>最大ファイル数: {maxFiles}個 (現在: {currentFileCount}個)</p>
-        </div>
-        
-        <Button 
-          type="button" 
-          variant="pw-outline" 
-          className="mt-4"
-          disabled={disabled}
-          onClick={(e) => {
-            e.stopPropagation();
-            handleFileSelect();
+          borderColor: "var(--pw-button-primary)",
+          color: "var(--pw-button-primary)",
+          backgroundColor: "transparent",
           }}
         >
           ファイルを選択
-        </Button>
-      </div>
+      </button>
 
       {/* 隠しファイル入力 */}
       <input
