@@ -16,17 +16,6 @@ type RecommendationRecord = {
   人材ID: { value: string };
   案件ID: { value: string };
   適合スコア: { value: string };
-  // AI評価フィールド
-  AIマッチ実行状況?: { value: string };
-  AI技術スキルスコア?: { value: string };
-  AI開発工程スコア?: { value: string };
-  AIインフラスコア?: { value: string };
-  AI業務知識スコア?: { value: string };
-  AIチーム開発スコア?: { value: string };
-  AIツール環境スコア?: { value: string };
-  AI総合スコア?: { value: string };
-  AI評価結果?: { value: string };
-  AI実行日時?: { value: string };
 };
 
 type TalentRecord = {
@@ -66,7 +55,7 @@ export const GET = async (
     const talentClient = createTalentClient();
     const appIds = getAppIds();
 
-    // 1. 推薦DBから該当案件の推薦データを取得（AI評価フィールドも含む）
+    // 1. 推薦DBから該当案件の推薦データを取得
     const recommendationsResponse = await recommendationClient.record.getAllRecords({
       app: appIds.recommendation,
       condition: `${RECOMMENDATION_FIELDS.JOB_ID} = "${jobId}"`,
@@ -75,16 +64,6 @@ export const GET = async (
         RECOMMENDATION_FIELDS.TALENT_ID,
         RECOMMENDATION_FIELDS.JOB_ID,
         RECOMMENDATION_FIELDS.SCORE,
-        "AIマッチ実行状況",
-        "AI技術スキルスコア",
-        "AI開発工程スコア",
-        "AIインフラスコア",
-        "AI業務知識スコア",
-        "AIチーム開発スコア",
-        "AIツール環境スコア",
-        "AI総合スコア",
-        "AI評価結果",
-        "AI実行日時",
       ],
       sortBy: [
         {
@@ -133,7 +112,7 @@ export const GET = async (
       talentMap.set(t.auth_user_id?.value || "", t);
     });
 
-    // 5. 推薦データと人材データを結合（AI評価データも含む）
+    // 5. 推薦データと人材データを結合
     const matchedTalents = recommendations
       .map((rec) => {
         const talent = talentMap.get(rec.人材ID.value);
@@ -148,17 +127,6 @@ export const GET = async (
           desiredRate: talent.希望単価_月額?.value || "",
           positions: talent.複数選択?.value || [],
           score: parseInt(rec.適合スコア.value, 10) || 0,
-          // AI評価データ
-          aiExecutionStatus: rec.AIマッチ実行状況?.value || "",
-          aiSkillScore: parseInt(rec.AI技術スキルスコア?.value || "0", 10),
-          aiProcessScore: parseInt(rec.AI開発工程スコア?.value || "0", 10),
-          aiInfraScore: parseInt(rec.AIインフラスコア?.value || "0", 10),
-          aiDomainScore: parseInt(rec.AI業務知識スコア?.value || "0", 10),
-          aiTeamScore: parseInt(rec.AIチーム開発スコア?.value || "0", 10),
-          aiToolScore: parseInt(rec.AIツール環境スコア?.value || "0", 10),
-          aiOverallScore: parseInt(rec.AI総合スコア?.value || "0", 10),
-          aiResult: rec.AI評価結果?.value || "",
-          aiExecutedAt: rec.AI実行日時?.value || "",
         };
       })
       .filter((t): t is NonNullable<typeof t> => t !== null);
