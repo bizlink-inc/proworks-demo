@@ -70,6 +70,17 @@ export const RECOMMENDATION_FIELDS = {
   TALENT_ID: '人材ID',
   JOB_ID: '案件ID',
   SCORE: '適合スコア',
+  // AI評価フィールド
+  AI_EXECUTION_STATUS: 'AIマッチ実行状況',
+  AI_SKILL_SCORE: 'AI技術スキルスコア',
+  AI_PROCESS_SCORE: 'AI開発工程スコア',
+  AI_INFRA_SCORE: 'AIインフラスコア',
+  AI_DOMAIN_SCORE: 'AI業務知識スコア',
+  AI_TEAM_SCORE: 'AIチーム開発スコア',
+  AI_TOOL_SCORE: 'AIツール環境スコア',
+  AI_OVERALL_SCORE: 'AI総合スコア',
+  AI_RESULT: 'AI評価結果',
+  AI_EXECUTED_AT: 'AI実行日時',
 } as const;
 
 /**
