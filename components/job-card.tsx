@@ -12,7 +12,7 @@ type JobCardProps = {
 // 仕様書: 案件カード > フォント・カラー
 const primaryTextColor = "#30373f" // タイトル
 const bodyTextColor = "#000000"    // 本文
-const linkColor = "#63b2cd"        // リンク (#1f3151/#63b2cd のうちカードは明るい方を採用)
+const titleColor = "#3d8ab8"       // タイトル・職種ポジション・必須スキル用（濃い青）
 const accentColor = "#ea8737"      // 金額
 
 const formatRateValue = (rate?: string) => {
@@ -57,12 +57,13 @@ export function JobCard({ job, onViewDetail, showApplicationStatus = false }: Jo
   const rateValue = formatRateValue(job.rate)
   const features = job.features?.slice(0, 3) ?? []
   const positions = job.position ?? []
-  const locationValues = (job.location && job.location.trim().length > 0)
-    ? [job.location.trim()]
-    : []
-  const nearestValues = (job.nearestStation && job.nearestStation.trim().length > 0)
-    ? [job.nearestStation.trim()]
-    : []
+  const skills = job.skills?.slice(0, 3) ?? []
+  const locationValue = (job.location && job.location.trim().length > 0)
+    ? job.location.trim()
+    : "リモート"
+  const nearestValue = (job.nearestStation && job.nearestStation.trim().length > 0)
+    ? job.nearestStation.trim()
+    : ""
   
   // 応募ステータスの枠線表示を制御（showApplicationStatusがfalseの場合は非表示）
   const statusStyle = showApplicationStatus ? getStatusStyle(job.applicationStatus) : null
@@ -76,54 +77,59 @@ export function JobCard({ job, onViewDetail, showApplicationStatus = false }: Jo
         overflow: "visible" // リボンが外に出るように
       }}
     >
-      {/* 新着バッジ（左上・リボン風） */}
-      {job.isNew && (
-        <div className="absolute top-0 left-2" style={{ zIndex: 10 }}>
-          <svg width="58" height="40" style={{ display: "block" }}>
-            <path
-              d="M 0 0 L 58 0 L 58 32 Q 29 23, 0 32 Z"
-              fill="#d22852"
-            />
-            <text
-              x="29"
-              y="18"
-              textAnchor="middle"
-              fill="#ffffff"
-              fontSize="12"
-              fontWeight="700"
-              style={{ fontFamily: "Noto Sans JP" }}
-            >
-              NEW
-            </text>
-          </svg>
-        </div>
-      )}
+      {/* 上部エリア：リボン（左上）+ バッジ（右上） */}
+      <div className="p-4 pb-2 relative">
+        {/* 新着バッジ（リボン風・左上） */}
+        {job.isNew && (
+          <div className="absolute top-0 left-2">
+            <svg width="58" height="40" style={{ display: "block" }}>
+              <path
+                d="M 0 0 L 58 0 L 58 32 Q 29 23, 0 32 Z"
+                fill="#d22852"
+              />
+              <text
+                x="29"
+                y="18"
+                textAnchor="middle"
+                fill="#ffffff"
+                fontSize="12"
+                fontWeight="700"
+                style={{ fontFamily: "Noto Sans JP" }}
+              >
+                NEW
+              </text>
+            </svg>
+          </div>
+        )}
 
-      {/* 応募ステータスラベル（左上・リボン風）- 新着バッジがない場合のみ表示 */}
-      {!job.isNew && statusStyle && (
-        <div className="absolute top-0 left-2" style={{ zIndex: 10 }}>
-          <svg width="80" height="40" style={{ display: "block" }}>
-            <path
-              d="M 0 0 L 80 0 L 80 32 Q 40 22, 0 32 Z"
-              fill={statusStyle.bgColor}
-            />
-            <text
-              x="40"
-              y="16"
-              textAnchor="middle"
-              fill={statusStyle.textColor}
-              fontSize="13"
-              fontWeight="600"
-              style={{ fontFamily: "Noto Sans JP" }}
-            >
-              {statusStyle.label}
-            </text>
-          </svg>
-        </div>
-      )}
+        {/* 応募ステータスラベル（リボン風・左上）- 新着バッジがない場合のみ表示 */}
+        {!job.isNew && statusStyle && (
+          <div className="absolute top-0 left-2">
+            <svg width="80" height="40" style={{ display: "block" }}>
+              <path
+                d="M 0 0 L 80 0 L 80 32 Q 40 22, 0 32 Z"
+                fill={statusStyle.bgColor}
+              />
+              <text
+                x="40"
+                y="16"
+                textAnchor="middle"
+                fill={statusStyle.textColor}
+                fontSize="13"
+                fontWeight="600"
+                style={{ fontFamily: "Noto Sans JP" }}
+              >
+                {statusStyle.label}
+              </text>
+            </svg>
+          </div>
+        )}
 
-      <div className="p-4 pb-2" style={{ paddingTop: (job.isNew || statusStyle) ? "2.5rem" : "1rem" }}>
-        <div className="flex flex-wrap gap-2 mb-3">
+        {/* 案件特徴バッジ（右上に配置） */}
+        <div 
+          className="flex flex-wrap gap-2 justify-end mb-3 pt-1"
+          style={{ paddingLeft: (job.isNew || statusStyle) ? "70px" : "0" }}
+        >
           {features.map((feature, index) => (
             <span
               key={feature}
@@ -138,21 +144,24 @@ export function JobCard({ job, onViewDetail, showApplicationStatus = false }: Jo
             </span>
           ))}
         </div>
+
+        {/* 案件タイトル */}
         <h3
           className="leading-tight mb-1"
           style={{
             fontSize: "16px",
             fontWeight: 700,
-            color: linkColor,
+            color: titleColor,
           }}
         >
           {job.title}
         </h3>
       </div>
 
-      <div className="px-4 py-3">
+      {/* 報酬単価 */}
+      <div className="px-4 py-2">
         <div style={{ fontSize: "13px", color: bodyTextColor }}>
-          <span className="font-medium">報酬単価（税抜）</span>{" "}
+          <span className="font-bold">報酬単価（税抜）</span>{" "}
           <span
             style={{
               fontSize: "20px",
@@ -162,80 +171,123 @@ export function JobCard({ job, onViewDetail, showApplicationStatus = false }: Jo
           >
             {rateValue || job.rate}
           </span>
-          <span style={{ fontWeight: 500 }}>万円/月</span>
+          <span className="font-bold">万円/月</span>
         </div>
       </div>
 
-      <div className="px-4">
-        <div style={{ borderTop: "1px solid #d5e5f0" }} />
-        </div>
-
-      <div className="px-4 py-3 space-y-2">
-        <div className="flex flex-wrap items-center gap-2">
-          <span
-            className="inline-flex items-center h-6 px-3 text-xs font-semibold rounded-[2px]"
-            style={{
-              backgroundColor: "#ececec",
-              color: primaryTextColor,
-            }}
-          >
-            勤務地
-          </span>
-          <span
-            style={{
-              fontSize: "13px",
-              color: bodyTextColor,
-            }}
-          >
-            {(locationValues.length > 0 ? locationValues : ["リモート"])[0]}
-          </span>
-        </div>
-
-        {nearestValues.length > 0 && (
-          <div className="flex flex-wrap items-center gap-2">
+      {/* 勤務地・最寄り駅（横並び） */}
+      <div className="px-4 py-2">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+          {/* 勤務地 */}
+          <div className="flex items-center gap-2">
             <span
-              className="inline-flex items-center h-6 px-3 text-xs font-semibold rounded-[2px]"
+              className="inline-flex items-center h-6 px-3 text-xs font-bold rounded-[2px]"
               style={{
                 backgroundColor: "#ececec",
                 color: primaryTextColor,
               }}
             >
-              最寄り
+              勤務地
             </span>
             <span
+              className="font-bold"
               style={{
                 fontSize: "13px",
                 color: bodyTextColor,
               }}
             >
-              {nearestValues[0]}
+              {locationValue}
             </span>
           </div>
-        )}
+
+          {/* 最寄り */}
+          {nearestValue && (
+            <div className="flex items-center gap-2">
+              <span
+                className="inline-flex items-center h-6 px-3 text-xs font-bold rounded-[2px]"
+                style={{
+                  backgroundColor: "#ececec",
+                  color: primaryTextColor,
+                }}
+              >
+                最寄り
+              </span>
+              <span
+                className="font-bold"
+                style={{
+                  fontSize: "13px",
+                  color: bodyTextColor,
+                }}
+              >
+                {nearestValue}
+              </span>
+            </div>
+          )}
+        </div>
       </div>
 
+      {/* 区切り線 */}
       <div className="px-4">
         <div style={{ borderTop: "1px solid #d5e5f0" }} />
       </div>
 
-      {positions.length > 0 && (
-        <div className="px-4 py-3 flex items-center gap-4 flex-wrap">
+      {/* 必須スキル */}
+      {skills.length > 0 && (
+        <div className="px-4 py-2 flex items-start gap-4">
           <span
+            className="whitespace-nowrap"
             style={{
               fontSize: "13px",
               color: primaryTextColor,
-              fontWeight: 600,
+              fontWeight: 700,
+            }}
+          >
+            必須スキル
+          </span>
+          <span
+            style={{
+              fontSize: "13px",
+              color: titleColor,
+              fontWeight: 500,
+            }}
+          >
+            {skills.map((skill, index) => (
+              <span key={skill}>
+                {skill}
+                {index < skills.length - 1 && (
+                  <span style={{ color: bodyTextColor }}> ／ </span>
+                )}
+              </span>
+            ))}
+          </span>
+        </div>
+      )}
+
+      {/* 区切り線 */}
+      <div className="px-4">
+        <div style={{ borderTop: "1px solid #d5e5f0" }} />
+      </div>
+
+      {/* 職種ポジション */}
+      {positions.length > 0 && (
+        <div className="px-4 py-2 flex items-start gap-4">
+          <span
+            className="whitespace-nowrap"
+            style={{
+              fontSize: "13px",
+              color: primaryTextColor,
+              fontWeight: 700,
             }}
           >
             職種ポジション
           </span>
-          <div className="flex flex-wrap gap-2 flex-1">
+          <div className="flex flex-col gap-0.5">
             {positions.map((pos) => (
               <span
                 key={pos}
                 style={{
                   fontSize: "13px",
-                  color: linkColor,
+                  color: titleColor,
                   fontWeight: 500,
                 }}
               >
@@ -246,12 +298,18 @@ export function JobCard({ job, onViewDetail, showApplicationStatus = false }: Jo
         </div>
       )}
 
-      <div className="px-4 pb-4 pt-2 flex justify-center">
+      {/* 区切り線 */}
+      <div className="px-4">
+        <div style={{ borderTop: "1px solid #d5e5f0" }} />
+      </div>
+
+      {/* 詳細を見るボタン */}
+      <div className="px-4 pb-4 pt-3 flex justify-center">
         <Button
           variant="pw-primary"
-          className="w-full max-w-[220px]"
+          className="w-full max-w-[180px]"
           onClick={() => onViewDetail(job.id)}
-          style={{ fontSize: "15px", borderRadius: "4px" }}
+          style={{ fontSize: "14px", borderRadius: "4px" }}
         >
           詳細を見る
         </Button>
