@@ -4,7 +4,16 @@ import { createTalent } from "@/lib/kintone/services/talent";
 export const POST = async (request: NextRequest) => {
   try {
     const body = await request.json();
-    const { authUserId, lastName, firstName, email, phone, birthDate } = body;
+    const { 
+      authUserId, 
+      lastName, 
+      firstName, 
+      email, 
+      phone, 
+      birthDate,
+      emailDeliveryStatus,
+      termsAgreed,
+    } = body;
 
     // バリデーション
     if (!authUserId || !lastName || !firstName || !email || !phone || !birthDate) {
@@ -22,6 +31,8 @@ export const POST = async (request: NextRequest) => {
       email,
       phone,
       birthDate,
+      emailDeliveryStatus,
+      termsAgreed,
     });
 
     return NextResponse.json({ id: recordId }, { status: 201 });

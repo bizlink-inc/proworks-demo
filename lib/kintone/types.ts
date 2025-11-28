@@ -24,6 +24,9 @@ export type TalentRecord = {
   希望案件_作業内容: { value: string };
   NG企業: { value: string };
   その他要望: { value: string };
+  // 新規登録時の同意・設定フィールド
+  メール配信ステータス: { value: string };
+  利用規約同意: { value: string };
 };
 
 // 案件DBの型定義
@@ -83,6 +86,9 @@ export type Talent = {
   desiredWork: string;
   ngCompanies: string;
   otherRequests: string;
+  // 新規登録時の同意・設定フィールド
+  emailDeliveryStatus: string;
+  termsAgreed: string;
 };
 
 export type Job = {

@@ -30,6 +30,9 @@ export const TALENT_FIELDS = {
   DESIRED_WORK: '希望案件_作業内容',
   NG_COMPANIES: 'NG企業',
   OTHER_REQUESTS: 'その他要望',
+  // 新規登録時の同意・設定フィールド
+  EMAIL_DELIVERY_STATUS: 'メール配信ステータス',
+  TERMS_AGREED: '利用規約同意',
 } as const;
 
 // 案件DB（Job）のフィールドコード
@@ -109,7 +112,15 @@ export const DROPDOWN_OPTIONS = {
   
   // 希望出社頻度の選択肢
   DESIRED_COMMUTE: ['週1', '週2', '週3', '週4', '週5', '案件条件に従う', 'なし'] as const,
+  
+  // メール配信ステータスの選択肢
+  EMAIL_DELIVERY_STATUS: ['配信中', '配信停止'] as const,
+  
+  // 利用規約同意の選択肢
+  TERMS_AGREED: ['同意済み'] as const,
 } as const;
 
 export type DesiredWorkDays = typeof DROPDOWN_OPTIONS.DESIRED_WORK_DAYS[number];
 export type DesiredCommute = typeof DROPDOWN_OPTIONS.DESIRED_COMMUTE[number];
+export type EmailDeliveryStatus = typeof DROPDOWN_OPTIONS.EMAIL_DELIVERY_STATUS[number];
+export type TermsAgreed = typeof DROPDOWN_OPTIONS.TERMS_AGREED[number];

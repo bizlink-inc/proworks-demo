@@ -2,32 +2,96 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { PWInput } from "@/components/ui/pw-input"
+import { PWSelect } from "@/components/ui/pw-select"
 import { Label } from "@/components/ui/label"
+import { Checkbox } from "@/components/ui/checkbox"
 import { CenteredLayout } from "@/components/layouts"
 import { PWAlert } from "@/components/ui/pw-alert"
 import { useToast } from "@/hooks/use-toast"
 import { Mail } from "lucide-react"
 
+// 生年月日用の選択肢を生成するユーティリティ
+const generateYears = () => {
+  const currentYear = new Date().getFullYear()
+  const years: number[] = []
+  // 18歳以上〜100歳まで
+  for (let year = currentYear - 18; year >= currentYear - 100; year--) {
+    years.push(year)
+  }
+  return years
+}
+
+const generateMonths = () => {
+  return Array.from({ length: 12 }, (_, i) => i + 1)
+}
+
+const generateDays = (year: string, month: string) => {
+  if (!year || !month) {
+    return Array.from({ length: 31 }, (_, i) => i + 1)
+  }
+  const daysInMonth = new Date(Number(year), Number(month), 0).getDate()
+  return Array.from({ length: daysInMonth }, (_, i) => i + 1)
+}
+
 export default function SignUpPage() {
   const { toast } = useToast()
   const [step, setStep] = useState<"form" | "email-sent">("form")
-  const [email, setEmail] = useState("")
   const [loading, setLoading] = useState(false)
+
+  // フォームの状態
+  const [lastName, setLastName] = useState("")
+  const [firstName, setFirstName] = useState("")
+  const [email, setEmail] = useState("")
+  const [phone, setPhone] = useState("")
+  const [birthYear, setBirthYear] = useState("")
+  const [birthMonth, setBirthMonth] = useState("")
+  const [birthDay, setBirthDay] = useState("")
+  const [receiveEmailDelivery, setReceiveEmailDelivery] = useState(true)
+  const [termsAgreed, setTermsAgreed] = useState(false)
+
+  // 生年月日の選択肢
+  const years = useMemo(() => generateYears(), [])
+  const months = useMemo(() => generateMonths(), [])
+  const days = useMemo(() => generateDays(birthYear, birthMonth), [birthYear, birthMonth])
+
+  // バリデーション
+  const isFormValid = lastName && firstName && email && phone && birthYear && birthMonth && birthDay && termsAgreed
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    
+    if (!termsAgreed) {
+      toast({
+        title: "確認が必要です",
+        description: "利用規約・個人情報取扱規約に同意してください。",
+        variant: "destructive",
+      })
+      return
+    }
+
     setLoading(true)
 
     try {
-      // メールアドレスのみでユーザー登録（ランダムパスワード自動生成）
+      // 生年月日をフォーマット
+      const birthDate = `${birthYear}-${String(birthMonth).padStart(2, '0')}-${String(birthDay).padStart(2, '0')}`
+
+      // メールアドレスでユーザー登録（追加情報も一緒に送信）
       const response = await fetch("/api/auth/signup-with-email", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({
+          email,
+          lastName,
+          firstName,
+          phone,
+          birthDate,
+          emailDeliveryStatus: receiveEmailDelivery ? "配信中" : "配信停止",
+          termsAgreed: "同意済み",
+        }),
       })
 
       if (!response.ok) {
@@ -123,30 +187,55 @@ export default function SignUpPage() {
           className="font-bold mb-2"
           style={{
             fontSize: "var(--pw-text-2xl)",
-            color: "var(--pw-border-dark)"
+            color: "var(--pw-text-primary)",
+            letterSpacing: "0.1em"
           }}
         >
-          PRO WORKS
+          新規登録
         </h1>
         <p
-          className="text-[var(--pw-text-gray)]"
-          style={{ fontSize: "var(--pw-text-sm)" }}
+          className="font-medium"
+          style={{ 
+            fontSize: "var(--pw-text-base)",
+            color: "var(--pw-text-primary)"
+          }}
         >
-          新規登録
-        </p>
-        <p
-          className="text-[var(--pw-text-gray)] mt-2"
-          style={{ fontSize: "var(--pw-text-sm)" }}
-        >
-          メールアドレスを入力して登録を開始してください
+          無料でアカウントを作成できます
         </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-5">
+        {/* お名前 */}
+        <div>
+          <Label
+            className="text-[var(--pw-text-primary)] mb-2 block"
+            style={{ fontSize: "var(--pw-text-sm)" }}
+          >
+            お名前
+          </Label>
+          <div className="flex gap-3">
+            <PWInput
+              type="text"
+              placeholder="山田"
+              value={lastName}
+              onChange={(e) => setLastName(e.target.value)}
+              required
+            />
+            <PWInput
+              type="text"
+              placeholder="太郎"
+              value={firstName}
+              onChange={(e) => setFirstName(e.target.value)}
+              required
+            />
+          </div>
+        </div>
+
+        {/* メールアドレス */}
         <div>
           <Label
             htmlFor="email"
-            className="text-[var(--pw-text-primary)] mb-1 block"
+            className="text-[var(--pw-text-primary)] mb-2 block"
             style={{ fontSize: "var(--pw-text-sm)" }}
           >
             メールアドレス
@@ -161,16 +250,150 @@ export default function SignUpPage() {
           />
         </div>
 
+        {/* 電話番号 */}
+        <div>
+          <Label
+            htmlFor="phone"
+            className="text-[var(--pw-text-primary)] mb-2 block"
+            style={{ fontSize: "var(--pw-text-sm)" }}
+          >
+            電話番号
+          </Label>
+          <PWInput
+            id="phone"
+            type="tel"
+            placeholder="09011112222"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            required
+          />
+        </div>
+
+        {/* 生年月日 */}
+        <div>
+          <Label
+            className="text-[var(--pw-text-primary)] mb-2 block"
+            style={{ fontSize: "var(--pw-text-sm)" }}
+          >
+            生年月日
+          </Label>
+          <div className="flex gap-3">
+            <PWSelect
+              id="birth-year"
+              value={birthYear}
+              onChange={(e) => setBirthYear(e.target.value)}
+            >
+              <option value="">年</option>
+              {years.map((year) => (
+                <option key={year} value={year}>
+                  {year}
+                </option>
+              ))}
+            </PWSelect>
+            <PWSelect
+              id="birth-month"
+              value={birthMonth}
+              onChange={(e) => setBirthMonth(e.target.value)}
+            >
+              <option value="">月</option>
+              {months.map((month) => (
+                <option key={month} value={month}>
+                  {month}
+                </option>
+              ))}
+            </PWSelect>
+            <PWSelect
+              id="birth-day"
+              value={birthDay}
+              onChange={(e) => setBirthDay(e.target.value)}
+            >
+              <option value="">日</option>
+              {days.map((day) => (
+                <option key={day} value={day}>
+                  {day}
+                </option>
+              ))}
+            </PWSelect>
+          </div>
+        </div>
+
+        {/* 新着案件・サービス情報を受け取る */}
+        <div className="flex items-center gap-2 pt-2">
+          <Checkbox
+            id="receive-email-delivery"
+            checked={receiveEmailDelivery}
+            onCheckedChange={(checked) => setReceiveEmailDelivery(checked === true)}
+            className="data-[state=checked]:bg-[var(--pw-button-primary)] data-[state=checked]:border-[var(--pw-button-primary)]"
+          />
+          <Label
+            htmlFor="receive-email-delivery"
+            className="text-[var(--pw-text-primary)] cursor-pointer font-medium"
+            style={{ fontSize: "var(--pw-text-sm)" }}
+          >
+            新着案件・サービス情報を受け取る
+          </Label>
+        </div>
+
+        {/* 利用規約・個人情報取扱規約 */}
+        <div
+          className="pt-4 pb-2"
+          style={{ borderTop: "1px solid var(--pw-border-lighter)" }}
+        >
+          <p
+            className="text-center mb-3"
+            style={{
+              fontSize: "var(--pw-text-sm)",
+              color: "var(--pw-text-primary)"
+            }}
+          >
+            <Link
+              href="/terms"
+              className="underline hover:no-underline"
+              style={{ color: "var(--pw-text-link)" }}
+            >
+              利用規約
+            </Link>
+            ・
+            <Link
+              href="/privacy"
+              className="underline hover:no-underline"
+              style={{ color: "var(--pw-text-link)" }}
+            >
+              個人情報取扱規約
+            </Link>
+            を必ずご確認ください。
+            <br />
+            ご送信頂いた場合は、同意頂いたものとみなします。
+          </p>
+          <div className="flex items-center justify-center gap-2">
+            <Checkbox
+              id="terms-agreed"
+              checked={termsAgreed}
+              onCheckedChange={(checked) => setTermsAgreed(checked === true)}
+              className="data-[state=checked]:bg-[var(--pw-button-primary)] data-[state=checked]:border-[var(--pw-button-primary)]"
+            />
+            <Label
+              htmlFor="terms-agreed"
+              className="text-[var(--pw-text-primary)] cursor-pointer"
+              style={{ fontSize: "var(--pw-text-sm)" }}
+            >
+              利用規約・個人情報取扱規約に同意する
+            </Label>
+          </div>
+        </div>
+
+        {/* 登録ボタン */}
         <Button
           type="submit"
           variant="pw-primary"
-          className="w-full mt-6"
-          disabled={loading}
+          className="w-full mt-4"
+          disabled={loading || !isFormValid}
           style={{ fontSize: "var(--pw-text-md)" }}
         >
-          {loading ? "送信中..." : "認証メールを送信"}
+          {loading ? "送信中..." : "内容を確認して登録する"}
         </Button>
 
+        {/* ログインリンク */}
         <p
           className="text-center mt-4"
           style={{
@@ -178,11 +401,11 @@ export default function SignUpPage() {
             color: "var(--pw-text-gray)"
           }}
         >
-          既にアカウントをお持ちの方は{" "}
+          既にアカウントをお持ちの方はこちら{" "}
           <Link
             href="/auth/signin"
-            className="hover:underline font-medium"
-            style={{ color: "var(--pw-button-primary)" }}
+            className="font-medium underline hover:no-underline"
+            style={{ color: "var(--pw-text-primary)" }}
           >
             ログイン
           </Link>

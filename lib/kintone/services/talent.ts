@@ -35,6 +35,9 @@ const convertTalentRecord = (record: TalentRecord): Talent => {
     desiredWork: record[TALENT_FIELDS.DESIRED_WORK].value,
     ngCompanies: record[TALENT_FIELDS.NG_COMPANIES].value,
     otherRequests: record[TALENT_FIELDS.OTHER_REQUESTS].value,
+    // 新規登録時の同意・設定フィールド
+    emailDeliveryStatus: record[TALENT_FIELDS.EMAIL_DELIVERY_STATUS]?.value || '',
+    termsAgreed: record[TALENT_FIELDS.TERMS_AGREED]?.value || '',
   };
 };
 
@@ -68,6 +71,8 @@ export const createTalent = async (data: {
   email: string;
   phone: string;
   birthDate: string;
+  emailDeliveryStatus?: string;
+  termsAgreed?: string;
 }): Promise<string> => {
   const client = createTalentClient();
   const appId = getAppIds().talent;
@@ -78,17 +83,29 @@ export const createTalent = async (data: {
       ? `${data.lastName} ${data.firstName}`.trim()
       : data.email.split("@")[0];
 
+    const record: Record<string, { value: string }> = {
+      auth_user_id: { value: data.authUserId },
+      姓: { value: data.lastName },
+      名: { value: data.firstName },
+      氏名: { value: fullName },
+      メールアドレス: { value: data.email },
+      電話番号: { value: data.phone },
+      生年月日: { value: data.birthDate },
+    };
+
+    // メール配信ステータスフィールドがある場合は追加
+    if (data.emailDeliveryStatus) {
+      record[TALENT_FIELDS.EMAIL_DELIVERY_STATUS] = { value: data.emailDeliveryStatus };
+    }
+
+    // 利用規約同意フィールドがある場合は追加
+    if (data.termsAgreed) {
+      record[TALENT_FIELDS.TERMS_AGREED] = { value: data.termsAgreed };
+    }
+
     const response = await client.record.addRecord({
       app: appId,
-      record: {
-        auth_user_id: { value: data.authUserId },
-        姓: { value: data.lastName },
-        名: { value: data.firstName },
-        氏名: { value: fullName },
-        メールアドレス: { value: data.email },
-        電話番号: { value: data.phone },
-        生年月日: { value: data.birthDate },
-      },
+      record,
     });
 
     return response.id;
@@ -103,6 +120,8 @@ export const createTalent = async (data: {
       email: data.email,
       phone: data.phone,
       birthDate: data.birthDate,
+      emailDeliveryStatus: data.emailDeliveryStatus,
+      termsAgreed: data.termsAgreed,
     });
     throw error;
   }
@@ -148,6 +167,9 @@ export const updateTalent = async (
   if (data.desiredWork !== undefined) record[TALENT_FIELDS.DESIRED_WORK] = { value: data.desiredWork };
   if (data.ngCompanies !== undefined) record[TALENT_FIELDS.NG_COMPANIES] = { value: data.ngCompanies };
   if (data.otherRequests !== undefined) record[TALENT_FIELDS.OTHER_REQUESTS] = { value: data.otherRequests };
+  // 新規登録時の同意・設定フィールド
+  if (data.emailDeliveryStatus !== undefined) record[TALENT_FIELDS.EMAIL_DELIVERY_STATUS] = { value: data.emailDeliveryStatus };
+  if (data.termsAgreed !== undefined) record[TALENT_FIELDS.TERMS_AGREED] = { value: data.termsAgreed };
 
   try {
     await client.record.updateRecord({
