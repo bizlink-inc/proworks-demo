@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getDb } from "@/lib/db/client";
+import * as schema from "@/lib/db/schema";
+import { eq } from "drizzle-orm";
+import { hashPassword } from "better-auth/crypto";
 
-// Vercel 環境では SQLite が使用できないため、この API は機能しません
+// Vercel 環境では機能しない
 const isVercel = process.env.VERCEL === "1" || process.env.VERCEL === "true";
 
 export const POST = async (request: NextRequest) => {
@@ -12,18 +16,8 @@ export const POST = async (request: NextRequest) => {
     );
   }
 
-  // ローカル環境でのみ動的インポート
   try {
-    const { drizzle } = await import("drizzle-orm/better-sqlite3");
-    const Database = (await import("better-sqlite3")).default;
-    const { eq } = await import("drizzle-orm");
-    const schema = await import("@/lib/db/schema");
-    const bcrypt = await import("bcryptjs");
-    const path = await import("path");
-
-    const dbPath = path.join(process.cwd(), "auth.db");
-    const sqlite = new Database(dbPath);
-    const db = drizzle(sqlite, { schema });
+    const db = getDb();
 
     const body = await request.json();
     const { token, password } = body;
@@ -47,9 +41,7 @@ export const POST = async (request: NextRequest) => {
     }
 
     // ユーザーを取得
-    const user = await db.query.user.findFirst({
-      where: eq(schema.user.email, email),
-    });
+    const user = await db.select().from(schema.user).where(eq(schema.user.email, email)).then(rows => rows[0]);
 
     if (!user) {
       return NextResponse.json(
@@ -58,13 +50,15 @@ export const POST = async (request: NextRequest) => {
       );
     }
 
-    // パスワードをハッシュ化
-    const hashedPassword = await bcrypt.hash(password, 10);
+    // パスワードをハッシュ化（better-auth の公式関数を使用）
+    const hashedPassword = await hashPassword(password);
 
     // アカウントテーブルのパスワードを更新
-    await db
-      .update(schema.account)
-      .set({ password: hashedPassword })
+    await db.update(schema.account)
+      .set({ 
+        password: hashedPassword,
+        updatedAt: new Date(),
+      })
       .where(eq(schema.account.userId, user.id));
 
     console.log("✅ パスワードリセット成功:", email);

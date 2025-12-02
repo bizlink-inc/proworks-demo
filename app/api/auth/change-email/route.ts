@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getDb } from "@/lib/db/client";
+import * as schema from "@/lib/db/schema";
+import { eq } from "drizzle-orm";
+import { randomBytes } from "crypto";
 
-// Vercel 環境では SQLite が使用できないため、この API は機能しません
+// Vercel 環境では機能しない
 const isVercel = process.env.VERCEL === "1" || process.env.VERCEL === "true";
 
 export const POST = async (request: NextRequest) => {
@@ -12,19 +16,9 @@ export const POST = async (request: NextRequest) => {
     );
   }
 
-  // ローカル環境でのみ動的インポート
   try {
     const { getSession } = await import("@/lib/auth-server");
-    const { drizzle } = await import("drizzle-orm/better-sqlite3");
-    const Database = (await import("better-sqlite3")).default;
-    const { eq } = await import("drizzle-orm");
-    const schema = await import("@/lib/db/schema");
-    const path = await import("path");
-    const { randomBytes } = await import("crypto");
-
-    const dbPath = path.join(process.cwd(), "auth.db");
-    const sqlite = new Database(dbPath);
-    const db = drizzle(sqlite, { schema });
+    const db = getDb();
 
     const session = await getSession();
     console.log("🔍 メールアドレス変更リクエスト - セッション:", session?.user?.email, session?.user?.id);
@@ -67,9 +61,7 @@ export const POST = async (request: NextRequest) => {
     }
 
     // 既に使用されているメールアドレスかチェック
-    const existingUser = await db.query.user.findFirst({
-      where: eq(schema.user.email, newEmail),
-    });
+    const existingUser = await db.select().from(schema.user).where(eq(schema.user.email, newEmail)).then(rows => rows[0]);
 
     if (existingUser) {
       return NextResponse.json(
@@ -78,13 +70,12 @@ export const POST = async (request: NextRequest) => {
       );
     }
 
-    // Better Authでパスワードを検証するために、
-    // signInEmail エンドポイントをテストログイン的に使用
+    // Better Authでパスワードを検証
     console.log("🔍 パスワード検証開始:", session.user.email);
     
     try {
-      // Better Authの内部メソッドを使わず、直接sign-inエンドポイントで検証
-      const testLoginResponse = await fetch("http://localhost:3000/api/auth/sign-in/email", {
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+      const testLoginResponse = await fetch(`${appUrl}/api/auth/sign-in/email`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -118,9 +109,9 @@ export const POST = async (request: NextRequest) => {
 
     // verificationテーブルにトークンを保存
     await db.insert(schema.verification).values({
-      id: token, // トークンをIDとして使用
-      identifier: session.user.id, // ユーザーID
-      value: newEmail, // 新しいメールアドレス
+      id: token,
+      identifier: session.user.id,
+      value: newEmail,
       expiresAt,
       createdAt: new Date(),
       updatedAt: new Date(),

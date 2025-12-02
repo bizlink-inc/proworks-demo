@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getDb } from "@/lib/db/client";
+import * as schema from "@/lib/db/schema";
+import { eq, and, gt } from "drizzle-orm";
 
-// Vercel 環境では SQLite が使用できないため、この API は機能しません
+// Vercel 環境では機能しない
 const isVercel = process.env.VERCEL === "1" || process.env.VERCEL === "true";
 
 export const GET = async (request: NextRequest) => {
@@ -11,17 +14,8 @@ export const GET = async (request: NextRequest) => {
     );
   }
 
-  // ローカル環境でのみ動的インポート
   try {
-    const { drizzle } = await import("drizzle-orm/better-sqlite3");
-    const Database = (await import("better-sqlite3")).default;
-    const { eq, and, gt } = await import("drizzle-orm");
-    const schema = await import("@/lib/db/schema");
-    const path = await import("path");
-
-    const dbPath = path.join(process.cwd(), "auth.db");
-    const sqlite = new Database(dbPath);
-    const db = drizzle(sqlite, { schema });
+    const db = getDb();
 
     const searchParams = request.nextUrl.searchParams;
     const token = searchParams.get("token");
@@ -35,14 +29,17 @@ export const GET = async (request: NextRequest) => {
     }
 
     // トークンを検証
-    const verification = await db.query.verification.findFirst({
-      where: and(
-        eq(schema.verification.id, token),
-        eq(schema.verification.identifier, userId),
-        eq(schema.verification.value, newEmail),
-        gt(schema.verification.expiresAt, new Date())
-      ),
-    });
+    const verification = await db.select()
+      .from(schema.verification)
+      .where(
+        and(
+          eq(schema.verification.id, token),
+          eq(schema.verification.identifier, userId),
+          eq(schema.verification.value, newEmail),
+          gt(schema.verification.expiresAt, new Date())
+        )
+      )
+      .then(rows => rows[0]);
 
     if (!verification) {
       return NextResponse.redirect(
@@ -51,8 +48,7 @@ export const GET = async (request: NextRequest) => {
     }
 
     // ユーザーのメールアドレスを更新
-    await db
-      .update(schema.user)
+    await db.update(schema.user)
       .set({
         email: newEmail,
         updatedAt: new Date(),
@@ -60,16 +56,17 @@ export const GET = async (request: NextRequest) => {
       .where(eq(schema.user.id, userId));
 
     // accountテーブルのaccountIdも更新
-    await db
-      .update(schema.account)
+    await db.update(schema.account)
       .set({
         accountId: newEmail,
         updatedAt: new Date(),
       })
-      .where(and(
-        eq(schema.account.userId, userId),
-        eq(schema.account.providerId, "credential")
-      ));
+      .where(
+        and(
+          eq(schema.account.userId, userId),
+          eq(schema.account.providerId, "credential")
+        )
+      );
 
     // kintoneの人材DBのメールアドレスも更新
     try {
@@ -85,8 +82,7 @@ export const GET = async (request: NextRequest) => {
     }
 
     // 使用済みトークンを削除
-    await db
-      .delete(schema.verification)
+    await db.delete(schema.verification)
       .where(eq(schema.verification.id, verification.id));
 
     console.log("✅ メールアドレス変更完了:", userId, "→", newEmail);

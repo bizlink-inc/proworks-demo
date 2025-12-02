@@ -1,10 +1,12 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
+import { drizzle } from "drizzle-orm/node-postgres";
+import { Pool } from "pg";
 import crypto from "crypto";
+import * as schema from "./db/schema";
 
 // 環境判定
 const isVercel = process.env.VERCEL === "1" || process.env.VERCEL === "true";
-const isCloudRun = !!process.env.DATABASE_URL; // Cloud Run では DATABASE_URL が設定される
 
 // ランダムなパスワードを生成する関数
 const generateRandomPassword = () => {
@@ -23,94 +25,52 @@ export const DEMO_USER = {
   updatedAt: new Date(),
 };
 
+// データベース接続URL
+// ローカル: postgresql://ss@localhost:5432/proworks_local
+// Cloud Run: 環境変数 DATABASE_URL から取得
+const getDatabaseUrl = (): string => {
+  if (process.env.DATABASE_URL) {
+    return process.env.DATABASE_URL;
+  }
+  // ローカル開発環境のデフォルト
+  return "postgresql://ss@localhost:5432/proworks_local";
+};
+
 // better-auth インスタンスの初期化
 let auth: ReturnType<typeof betterAuth>;
 
-// Cloud Run 環境（PostgreSQL を使用）
-if (isCloudRun) {
-  const { drizzle } = require("drizzle-orm/node-postgres");
-  const { Pool } = require("pg");
-  const schema = require("./db/schema-postgres");
-
-  const pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
-  });
-  const db = drizzle(pool, { schema });
-
-  auth = betterAuth({
-    database: drizzleAdapter(db, {
-      provider: "pg",
-    }),
-    secret: process.env.BETTER_AUTH_SECRET || "production-secret-key",
-    baseURL: process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
-    basePath: "/api/auth",
-    emailAndPassword: {
-      enabled: true,
-      minPasswordLength: 6,
-      requireEmailVerification: true,
-      sendResetPassword: async ({ user, url }) => {
-        // 本番環境ではメール送信サービスを使用
-        console.log(`[Password Reset] User: ${user.email}, URL: ${url}`);
-      },
-    },
-    emailVerification: {
-      sendOnSignUp: true,
-      autoSignInAfterVerification: true,
-      sendVerificationEmail: async ({ user, url }) => {
-        const callbackUrl = `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/callback`;
-        const verificationUrl = url.includes("callbackURL")
-          ? url.replace(/callbackURL=[^&]*/, `callbackURL=${encodeURIComponent(callbackUrl)}`)
-          : `${url}&callbackURL=${encodeURIComponent(callbackUrl)}`;
-        
-        // 本番環境ではメール送信サービスを使用
-        console.log(`[Email Verification] User: ${user.email}, URL: ${verificationUrl}`);
-      },
-    },
-    session: {
-      cookieCache: {
-        enabled: true,
-        maxAge: 5 * 60,
-      },
-    },
-    trustedOrigins: [
-      process.env.NEXT_PUBLIC_APP_URL || "",
-    ].filter(Boolean),
-  });
-}
 // Vercel 環境（認証無効）
-else if (isVercel) {
+if (isVercel) {
   auth = {
     api: {
       getSession: async () => null,
     },
     handler: async () => new Response("Not available in demo", { status: 503 }),
   } as unknown as ReturnType<typeof betterAuth>;
-}
-// ローカル開発環境（SQLite を使用）
+} 
+// PostgreSQL を使用（ローカル開発 & Cloud Run）
 else {
-  const Database = require("better-sqlite3");
-  const { drizzle } = require("drizzle-orm/better-sqlite3");
-  const path = require("path");
-  const schema = require("./db/schema");
+  const pool = new Pool({
+    connectionString: getDatabaseUrl(),
+  });
+  const db = drizzle(pool, { schema });
 
-  const dbPath = path.join(process.cwd(), "auth.db");
-  const sqlite = new Database(dbPath);
-  sqlite.pragma("journal_mode = WAL");
-  const db = drizzle(sqlite, { schema });
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+  const isDevelopment = process.env.NODE_ENV === "development";
 
   auth = betterAuth({
     database: drizzleAdapter(db, {
-      provider: "better-sqlite3",
+      provider: "pg",
     }),
     secret: process.env.BETTER_AUTH_SECRET || "demo-secret-key-for-development",
-    baseURL: process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
+    baseURL: appUrl,
     basePath: "/api/auth",
     emailAndPassword: {
       enabled: true,
       minPasswordLength: 6,
       requireEmailVerification: true,
       sendResetPassword: async ({ user, url }) => {
-        if (process.env.NODE_ENV === "development") {
+        if (isDevelopment) {
           console.log("\n" + "=".repeat(80));
           console.log("🔑 パスワードリセットリンク");
           console.log("=".repeat(80));
@@ -119,18 +79,20 @@ else {
           console.log("=".repeat(80) + "\n");
           return;
         }
+        // 本番環境ではメール送信サービスを使用
+        console.log(`[Password Reset] User: ${user.email}, URL: ${url}`);
       },
     },
     emailVerification: {
       sendOnSignUp: true,
       autoSignInAfterVerification: true,
       sendVerificationEmail: async ({ user, url }) => {
-        const callbackUrl = `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/callback`;
+        const callbackUrl = `${appUrl}/api/auth/callback`;
         const verificationUrl = url.includes("callbackURL")
           ? url.replace(/callbackURL=[^&]*/, `callbackURL=${encodeURIComponent(callbackUrl)}`)
           : `${url}&callbackURL=${encodeURIComponent(callbackUrl)}`;
 
-        if (process.env.NODE_ENV === "development") {
+        if (isDevelopment) {
           console.log("\n" + "=".repeat(80));
           console.log("📧 【PRO WORKS】メールアドレスの確認");
           console.log("=".repeat(80));
@@ -144,6 +106,8 @@ else {
           console.log("=".repeat(80) + "\n");
           return;
         }
+        // 本番環境ではメール送信サービスを使用
+        console.log(`[Email Verification] User: ${user.email}, URL: ${verificationUrl}`);
       },
     },
     session: {
@@ -155,12 +119,20 @@ else {
     trustedOrigins: [
       "http://localhost:3000",
       "http://192.168.100.5:3000",
-      process.env.NEXT_PUBLIC_APP_URL || "",
+      appUrl,
     ].filter(Boolean),
   });
 }
 
-export { auth, generateRandomPassword, isVercel, isCloudRun };
+export { auth, generateRandomPassword, isVercel };
+
+// データベース接続を取得する関数（他のファイルで使用）
+export const getDb = () => {
+  const pool = new Pool({
+    connectionString: getDatabaseUrl(),
+  });
+  return drizzle(pool, { schema });
+};
 
 export type Session = {
   user: {

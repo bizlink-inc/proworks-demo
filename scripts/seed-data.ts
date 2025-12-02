@@ -14,13 +14,11 @@ import { createTalentClient, createJobClient, createApplicationClient, createRec
 import { uploadFileToKintone } from "../lib/kintone/services/file";
 import { TALENT_FIELDS, JOB_FIELDS, APPLICATION_FIELDS } from "../lib/kintone/fieldMapping";
 import { seedData3 } from "./seed-data-large";
-import Database from "better-sqlite3";
-import { drizzle } from "drizzle-orm/better-sqlite3";
-import * as schema from "../lib/db/schema";
-import path from "path";
+import { getDb, closePool, query, schema } from "../lib/db/client";
+import { eq } from "drizzle-orm";
 import fs from "fs";
+import path from "path";
 import { exec } from "child_process";
-import { auth } from "../lib/auth";
 // Better Authの公式ハッシュ関数を使用
 import { hashPassword as hashPasswordBetterAuth } from "better-auth/crypto";
 
@@ -34,7 +32,7 @@ const generateId = (length: number = 32): string => {
   return result;
 };
 
-const dbPath = path.join(process.cwd(), "auth.db");
+// PostgreSQL データベース接続は lib/db/client.ts から取得
 
 // ダミーファイルをアップロードする関数
 const uploadDummyFiles = async (): Promise<Array<{ fileKey: string; name: string; size: string }>> => {
@@ -975,12 +973,12 @@ export const createSeedData = async () => {
     console.log("=".repeat(80));
 
     const authUserIds: string[] = [];
-    const sqlite = new Database(dbPath);
+    const db = getDb();
     
     try {
       // 既存ユーザーのメールアドレスを取得
       const existingEmails = new Map<string, string>();
-      const existingRows = sqlite.prepare("SELECT email, id FROM user").all() as { email: string; id: string }[];
+      const existingRows = await db.select({ email: schema.user.email, id: schema.user.id }).from(schema.user);
       for (const row of existingRows) {
         existingEmails.set(row.email, row.id);
       }
@@ -1000,40 +998,46 @@ export const createSeedData = async () => {
         
         // パスワードは全員同じなので、一度だけハッシュ化
         const hashedPassword = await hashPasswordBetterAuth("password123");
-        const now = Date.now();
+        const now = new Date();
 
-        // トランザクション内で一括挿入
-        const insertUser = sqlite.prepare(`
-          INSERT INTO user (id, name, email, emailVerified, image, createdAt, updatedAt)
-          VALUES (?, ?, ?, 1, NULL, ?, ?)
-        `);
-        const insertAccount = sqlite.prepare(`
-          INSERT INTO account (id, userId, accountId, providerId, accessToken, refreshToken, accessTokenExpiresAt, refreshTokenExpiresAt, scope, idToken, password, createdAt, updatedAt)
-          VALUES (?, ?, ?, 'credential', NULL, NULL, NULL, NULL, NULL, NULL, ?, ?, ?)
-        `);
+        // 一括挿入
+        for (const user of newUsers) {
+          // seedData に id が定義されている場合はそれを使用（Vercel との整合性のため）
+          // 定義されていない場合はランダム生成
+          const userId = user.id || generateId(32);
+          const accountId = generateId(32);
 
-        const transaction = sqlite.transaction(() => {
-          for (const user of newUsers) {
-            // seedData に id が定義されている場合はそれを使用（Vercel との整合性のため）
-            // 定義されていない場合はランダム生成
-            const userId = user.id || generateId(32);
-            const accountId = generateId(32);
+          await db.insert(schema.user).values({
+            id: userId,
+            name: user.name,
+            email: user.email,
+            emailVerified: true,
+            image: null,
+            createdAt: now,
+            updatedAt: now,
+          });
 
-            insertUser.run(userId, user.name, user.email, now, now);
-            insertAccount.run(accountId, userId, userId, hashedPassword, now, now);
+          await db.insert(schema.account).values({
+            id: accountId,
+            userId: userId,
+            accountId: userId,
+            providerId: "credential",
+            password: hashedPassword,
+            createdAt: now,
+            updatedAt: now,
+          });
 
-            authUserIds.push(userId);
-          }
-        });
+          authUserIds.push(userId);
+        }
 
-        transaction();
         console.log(`✅ ${newUsers.length}人のユーザーを一括作成しました`);
       }
       
       console.log(`\n✅ 合計 ${authUserIds.length}人のユーザーを処理しました`);
       
-    } finally {
-      sqlite.close();
+    } catch (error) {
+      console.error("ユーザー作成エラー:", error);
+      throw error;
     }
 
     // 2. 人材DBにレコード作成（一括作成で高速化）
@@ -1316,24 +1320,25 @@ export const deleteSeedData = async () => {
     console.log("👤 Step 5: Better Authユーザーを削除");
     console.log("=".repeat(80));
 
-    const sqlite = new Database(dbPath);
+    const db = getDb();
     
     // すべてのテーブルのレコード数を確認
-    const userCount = sqlite.prepare("SELECT COUNT(*) as count FROM user").get() as { count: number };
+    const users = await db.select({ id: schema.user.id }).from(schema.user);
+    const userCount = users.length;
     
-    if (userCount.count > 0) {
+    if (userCount > 0) {
       // すべてのテーブルを削除（外部キー制約の順番に注意）
-      sqlite.prepare("DELETE FROM session").run();
-      sqlite.prepare("DELETE FROM account").run();
-      sqlite.prepare("DELETE FROM verification").run();
-      sqlite.prepare("DELETE FROM user").run();
+      await db.delete(schema.session);
+      await db.delete(schema.account);
+      await db.delete(schema.verification);
+      await db.delete(schema.user);
       
-      console.log(`✅ ユーザーを削除: ${userCount.count}件`);
+      console.log(`✅ ユーザーを削除: ${userCount}件`);
     } else {
       console.log("✅ ユーザー: 削除対象なし");
     }
 
-    sqlite.close();
+    await closePool();
 
     console.log("\n" + "=".repeat(80));
     console.log("🎉 シードデータの削除が完了しました！");
@@ -1374,70 +1379,90 @@ const upsertYamadaSeedData = async () => {
     console.log("👤 Step 1: Better Auth ユーザーを Upsert");
     console.log("=".repeat(80));
 
-    const sqlite = new Database(dbPath);
+    const db = getDb();
 
     try {
       // 既存ユーザーを確認（ID またはメールアドレスで検索）
-      const existingUserById = sqlite.prepare("SELECT id, email FROM user WHERE id = ?").get(YAMADA_AUTH_USER_ID) as { id: string; email: string } | undefined;
-      const existingUserByEmail = sqlite.prepare("SELECT id, email FROM user WHERE email = ?").get(seedData.authUsers[0].email) as { id: string; email: string } | undefined;
+      const existingUserById = await db.select().from(schema.user).where(eq(schema.user.id, YAMADA_AUTH_USER_ID)).then(rows => rows[0]);
+      const existingUserByEmail = await db.select().from(schema.user).where(eq(schema.user.email, seedData.authUsers[0].email)).then(rows => rows[0]);
 
       if (existingUserById) {
         console.log(`✅ 既存ユーザーを確認（ID一致）: ${YAMADA_AUTH_USER_ID}`);
         // 更新（名前とメールアドレス）
-        const updateUser = sqlite.prepare(`
-          UPDATE user SET name = ?, email = ?, updatedAt = ? WHERE id = ?
-        `);
-        updateUser.run(seedData.authUsers[0].name, seedData.authUsers[0].email, Date.now(), YAMADA_AUTH_USER_ID);
+        await db.update(schema.user)
+          .set({
+            name: seedData.authUsers[0].name,
+            email: seedData.authUsers[0].email,
+            updatedAt: new Date(),
+          })
+          .where(eq(schema.user.id, YAMADA_AUTH_USER_ID));
         console.log(`✅ ユーザー情報を更新しました`);
       } else if (existingUserByEmail) {
         console.log(`⚠️ 同じメールアドレスで別のユーザーが存在: ${existingUserByEmail.id}`);
         console.log(`🔄 既存ユーザーを削除して、正しい ID で再作成します`);
         
         // 既存ユーザーを削除（外部キー制約の順番に注意）
-        sqlite.prepare("DELETE FROM session WHERE userId = ?").run(existingUserByEmail.id);
-        sqlite.prepare("DELETE FROM account WHERE userId = ?").run(existingUserByEmail.id);
-        sqlite.prepare("DELETE FROM user WHERE id = ?").run(existingUserByEmail.id);
+        await db.delete(schema.session).where(eq(schema.session.userId, existingUserByEmail.id));
+        await db.delete(schema.account).where(eq(schema.account.userId, existingUserByEmail.id));
+        await db.delete(schema.user).where(eq(schema.user.id, existingUserByEmail.id));
         console.log(`✅ 既存ユーザーを削除しました`);
 
         // 新規作成
         const hashedPassword = await hashPasswordBetterAuth(seedData.authUsers[0].password);
-        const now = Date.now();
-
-        const insertUser = sqlite.prepare(`
-          INSERT INTO user (id, name, email, emailVerified, image, createdAt, updatedAt)
-          VALUES (?, ?, ?, 1, NULL, ?, ?)
-        `);
-        const insertAccount = sqlite.prepare(`
-          INSERT INTO account (id, userId, accountId, providerId, accessToken, refreshToken, accessTokenExpiresAt, refreshTokenExpiresAt, scope, idToken, password, createdAt, updatedAt)
-          VALUES (?, ?, ?, 'credential', NULL, NULL, NULL, NULL, NULL, NULL, ?, ?, ?)
-        `);
-
+        const now = new Date();
         const accountId = generateId(32);
-        insertUser.run(YAMADA_AUTH_USER_ID, seedData.authUsers[0].name, seedData.authUsers[0].email, now, now);
-        insertAccount.run(accountId, YAMADA_AUTH_USER_ID, YAMADA_AUTH_USER_ID, hashedPassword, now, now);
+
+        await db.insert(schema.user).values({
+          id: YAMADA_AUTH_USER_ID,
+          name: seedData.authUsers[0].name,
+          email: seedData.authUsers[0].email,
+          emailVerified: true,
+          image: null,
+          createdAt: now,
+          updatedAt: now,
+        });
+
+        await db.insert(schema.account).values({
+          id: accountId,
+          userId: YAMADA_AUTH_USER_ID,
+          accountId: YAMADA_AUTH_USER_ID,
+          providerId: "credential",
+          password: hashedPassword,
+          createdAt: now,
+          updatedAt: now,
+        });
         console.log(`✅ 正しい ID でユーザーを再作成しました`);
       } else {
         console.log(`📝 新規ユーザーを作成: ${YAMADA_AUTH_USER_ID}`);
         // 新規作成
         const hashedPassword = await hashPasswordBetterAuth(seedData.authUsers[0].password);
-        const now = Date.now();
-
-        const insertUser = sqlite.prepare(`
-          INSERT INTO user (id, name, email, emailVerified, image, createdAt, updatedAt)
-          VALUES (?, ?, ?, 1, NULL, ?, ?)
-        `);
-        const insertAccount = sqlite.prepare(`
-          INSERT INTO account (id, userId, accountId, providerId, accessToken, refreshToken, accessTokenExpiresAt, refreshTokenExpiresAt, scope, idToken, password, createdAt, updatedAt)
-          VALUES (?, ?, ?, 'credential', NULL, NULL, NULL, NULL, NULL, NULL, ?, ?, ?)
-        `);
-
+        const now = new Date();
         const accountId = generateId(32);
-        insertUser.run(YAMADA_AUTH_USER_ID, seedData.authUsers[0].name, seedData.authUsers[0].email, now, now);
-        insertAccount.run(accountId, YAMADA_AUTH_USER_ID, YAMADA_AUTH_USER_ID, hashedPassword, now, now);
+
+        await db.insert(schema.user).values({
+          id: YAMADA_AUTH_USER_ID,
+          name: seedData.authUsers[0].name,
+          email: seedData.authUsers[0].email,
+          emailVerified: true,
+          image: null,
+          createdAt: now,
+          updatedAt: now,
+        });
+
+        await db.insert(schema.account).values({
+          id: accountId,
+          userId: YAMADA_AUTH_USER_ID,
+          accountId: YAMADA_AUTH_USER_ID,
+          providerId: "credential",
+          password: hashedPassword,
+          createdAt: now,
+          updatedAt: now,
+        });
         console.log(`✅ 新規ユーザーを作成しました`);
       }
-    } finally {
-      sqlite.close();
+    } catch (error) {
+      console.error("ユーザー Upsert エラー:", error);
+      throw error;
     }
 
     // 2. 人材DB の Upsert
