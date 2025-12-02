@@ -2,8 +2,9 @@ import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import crypto from "crypto";
 
-// Vercel 環境かどうかを判定
+// 環境判定
 const isVercel = process.env.VERCEL === "1" || process.env.VERCEL === "true";
+const isCloudRun = !!process.env.DATABASE_URL; // Cloud Run では DATABASE_URL が設定される
 
 // ランダムなパスワードを生成する関数
 const generateRandomPassword = () => {
@@ -22,12 +23,71 @@ export const DEMO_USER = {
   updatedAt: new Date(),
 };
 
-// Vercel 環境では better-auth を初期化しない
-// ローカル環境でのみ動作
+// better-auth インスタンスの初期化
 let auth: ReturnType<typeof betterAuth>;
 
-if (!isVercel) {
-  // ローカル環境では SQLite + drizzle を使用
+// Cloud Run 環境（PostgreSQL を使用）
+if (isCloudRun) {
+  const { drizzle } = require("drizzle-orm/node-postgres");
+  const { Pool } = require("pg");
+  const schema = require("./db/schema-postgres");
+
+  const pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+  });
+  const db = drizzle(pool, { schema });
+
+  auth = betterAuth({
+    database: drizzleAdapter(db, {
+      provider: "pg",
+    }),
+    secret: process.env.BETTER_AUTH_SECRET || "production-secret-key",
+    baseURL: process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
+    basePath: "/api/auth",
+    emailAndPassword: {
+      enabled: true,
+      minPasswordLength: 6,
+      requireEmailVerification: true,
+      sendResetPassword: async ({ user, url }) => {
+        // 本番環境ではメール送信サービスを使用
+        console.log(`[Password Reset] User: ${user.email}, URL: ${url}`);
+      },
+    },
+    emailVerification: {
+      sendOnSignUp: true,
+      autoSignInAfterVerification: true,
+      sendVerificationEmail: async ({ user, url }) => {
+        const callbackUrl = `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/callback`;
+        const verificationUrl = url.includes("callbackURL")
+          ? url.replace(/callbackURL=[^&]*/, `callbackURL=${encodeURIComponent(callbackUrl)}`)
+          : `${url}&callbackURL=${encodeURIComponent(callbackUrl)}`;
+        
+        // 本番環境ではメール送信サービスを使用
+        console.log(`[Email Verification] User: ${user.email}, URL: ${verificationUrl}`);
+      },
+    },
+    session: {
+      cookieCache: {
+        enabled: true,
+        maxAge: 5 * 60,
+      },
+    },
+    trustedOrigins: [
+      process.env.NEXT_PUBLIC_APP_URL || "",
+    ].filter(Boolean),
+  });
+}
+// Vercel 環境（認証無効）
+else if (isVercel) {
+  auth = {
+    api: {
+      getSession: async () => null,
+    },
+    handler: async () => new Response("Not available in demo", { status: 503 }),
+  } as unknown as ReturnType<typeof betterAuth>;
+}
+// ローカル開発環境（SQLite を使用）
+else {
   const Database = require("better-sqlite3");
   const { drizzle } = require("drizzle-orm/better-sqlite3");
   const path = require("path");
@@ -98,18 +158,9 @@ if (!isVercel) {
       process.env.NEXT_PUBLIC_APP_URL || "",
     ].filter(Boolean),
   });
-} else {
-  // Vercel 環境ではダミーの auth オブジェクトを作成
-  // API は別途ハンドリングする
-  auth = {
-    api: {
-      getSession: async () => null,
-    },
-    handler: async () => new Response("Not available in demo", { status: 503 }),
-  } as unknown as ReturnType<typeof betterAuth>;
 }
 
-export { auth, generateRandomPassword, isVercel };
+export { auth, generateRandomPassword, isVercel, isCloudRun };
 
 export type Session = {
   user: {
