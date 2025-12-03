@@ -4,6 +4,7 @@ import { drizzle } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
 import crypto from "crypto";
 import * as schema from "./db/schema";
+import { sendVerificationEmail, sendPasswordResetEmail, logEmailToConsole } from "./email";
 
 // 環境判定
 const isVercel = process.env.VERCEL === "1" || process.env.VERCEL === "true";
@@ -70,17 +71,16 @@ else {
       minPasswordLength: 6,
       requireEmailVerification: true,
       sendResetPassword: async ({ user, url }) => {
+        // 開発環境: コンソール出力
         if (isDevelopment) {
-          console.log("\n" + "=".repeat(80));
-          console.log("🔑 パスワードリセットリンク");
-          console.log("=".repeat(80));
-          console.log(`宛先: ${user.email}`);
-          console.log(`リンク: ${url}`);
-          console.log("=".repeat(80) + "\n");
+          logEmailToConsole("reset", user.email, url);
           return;
         }
-        // 本番環境ではメール送信サービスを使用
-        console.log(`[Password Reset] User: ${user.email}, URL: ${url}`);
+        // 本番環境: Resend でメール送信
+        const result = await sendPasswordResetEmail(user.email, url);
+        if (!result.success) {
+          console.error(`❌ パスワードリセットメール送信失敗: ${user.email}`, result.error);
+        }
       },
     },
     emailVerification: {
@@ -92,22 +92,16 @@ else {
           ? url.replace(/callbackURL=[^&]*/, `callbackURL=${encodeURIComponent(callbackUrl)}`)
           : `${url}&callbackURL=${encodeURIComponent(callbackUrl)}`;
 
+        // 開発環境: コンソール出力
         if (isDevelopment) {
-          console.log("\n" + "=".repeat(80));
-          console.log("📧 【PRO WORKS】メールアドレスの確認");
-          console.log("=".repeat(80));
-          console.log(`宛先: ${user.email}`);
-          console.log("");
-          console.log("以下のリンクをクリックして、メールアドレスの確認を完了してください。");
-          console.log("");
-          console.log(`▶ ${verificationUrl}`);
-          console.log("");
-          console.log("※ このリンクの有効期限は1時間です。");
-          console.log("=".repeat(80) + "\n");
+          logEmailToConsole("verification", user.email, verificationUrl);
           return;
         }
-        // 本番環境ではメール送信サービスを使用
-        console.log(`[Email Verification] User: ${user.email}, URL: ${verificationUrl}`);
+        // 本番環境: Resend でメール送信
+        const result = await sendVerificationEmail(user.email, verificationUrl);
+        if (!result.success) {
+          console.error(`❌ メールアドレス確認メール送信失敗: ${user.email}`, result.error);
+        }
       },
     },
     session: {

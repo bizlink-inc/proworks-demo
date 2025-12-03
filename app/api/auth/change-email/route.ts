@@ -3,6 +3,7 @@ import { getDb } from "@/lib/db/client";
 import * as schema from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { randomBytes } from "crypto";
+import { sendEmailChangeVerificationEmail, logEmailToConsole } from "@/lib/email";
 
 // Vercel 環境では機能しない
 const isVercel = process.env.VERCEL === "1" || process.env.VERCEL === "true";
@@ -117,22 +118,22 @@ export const POST = async (request: NextRequest) => {
       updatedAt: new Date(),
     });
 
-    // 確認メールを送信（開発環境ではコンソールに出力）
+    // 確認メールを送信
     const verificationUrl = `${process.env.NEXT_PUBLIC_APP_URL}/auth/verify-email-change?token=${token}&email=${encodeURIComponent(newEmail)}&userId=${session.user.id}`;
 
+    // 開発環境: コンソール出力
     if (process.env.NODE_ENV === "development") {
-      console.log("\n" + "=".repeat(80));
-      console.log("📧 【PRO WORKS】メールアドレス変更の確認");
-      console.log("=".repeat(80));
-      console.log(`宛先: ${newEmail}`);
-      console.log("");
-      console.log("メールアドレスの変更を完了するには、以下のリンクをクリックしてください。");
-      console.log("");
-      console.log(`▶ ${verificationUrl}`);
-      console.log("");
-      console.log("※ このリンクの有効期限は1時間です。");
-      console.log("※ このメールに心当たりがない場合は、削除してください。");
-      console.log("=".repeat(80) + "\n");
+      logEmailToConsole("email-change", newEmail, verificationUrl);
+    } else {
+      // 本番環境: Resend でメール送信
+      const result = await sendEmailChangeVerificationEmail(newEmail, verificationUrl);
+      if (!result.success) {
+        console.error(`❌ メールアドレス変更確認メール送信失敗: ${newEmail}`, result.error);
+        return NextResponse.json(
+          { error: "確認メールの送信に失敗しました" },
+          { status: 500 }
+        );
+      }
     }
 
     console.log("✅ メールアドレス変更リクエスト成功:", session.user.email, "→", newEmail);

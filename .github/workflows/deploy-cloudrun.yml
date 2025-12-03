@@ -27,7 +27,8 @@
 # 共通:
 # - KINTONE_BASE_URL: kintone のベース URL
 # - GEMINI_API_KEY: Gemini AI の API キー
-# - RESEND_API_KEY: メール送信用 API キー
+# - SENDGRID_API_KEY: メール送信用 API キー（SendGrid で取得）
+# - EMAIL_FROM: 送信元メールアドレス（例: "PRO WORKS <noreply@proworks.jp>"）
 
 name: Deploy to Cloud Run
 
@@ -151,7 +152,8 @@ jobs:
             --set-env-vars "KINTONE_RECOMMENDATION_APP_ID=${{ env.KINTONE_RECOMMENDATION_APP_ID }}" \
             --set-env-vars "KINTONE_RECOMMENDATION_API_TOKEN=${{ env.KINTONE_RECOMMENDATION_API_TOKEN }}" \
             --set-env-vars "GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}" \
-            --set-env-vars "RESEND_API_KEY=${{ secrets.RESEND_API_KEY }}" \
+            --set-env-vars "SENDGRID_API_KEY=${{ secrets.SENDGRID_API_KEY }}" \
+            --set-env-vars "EMAIL_FROM=${{ secrets.EMAIL_FROM }}" \
             --memory 512Mi \
             --cpu 1 \
             --min-instances 0 \

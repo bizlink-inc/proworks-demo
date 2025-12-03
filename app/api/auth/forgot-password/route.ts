@@ -1,7 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
+import { headers } from "next/headers";
+
+// Vercel 環境では機能しない
+const isVercel = process.env.VERCEL === "1" || process.env.VERCEL === "true";
 
 export const POST = async (request: NextRequest) => {
+  // Vercel 環境では機能しないことを返す
+  if (isVercel) {
+    return NextResponse.json(
+      { error: "この機能はデモ環境では利用できません" },
+      { status: 503 }
+    );
+  }
+
   try {
     const body = await request.json();
     const { email } = body;
@@ -13,39 +25,31 @@ export const POST = async (request: NextRequest) => {
       );
     }
 
-    // 開発環境ではコンソールにリセットリンクを出力
-    if (process.env.NODE_ENV === "development") {
-      // パスワードリセットトークンを生成（簡易版）
-      const resetToken = Buffer.from(`${email}:${Date.now()}`).toString("base64");
-      const resetUrl = `${process.env.NEXT_PUBLIC_APP_URL}/auth/reset-password?token=${resetToken}`;
+    console.log("📧 パスワードリセットリクエスト:", email);
 
-      console.log("\n" + "=".repeat(80));
-      console.log("🔑 パスワードリセットリンク");
-      console.log("=".repeat(80));
-      console.log(`宛先: ${email}`);
-      console.log(`リンク: ${resetUrl}`);
-      console.log("=".repeat(80) + "\n");
-    }
+    // Better Auth の forgetPassword API を呼び出し
+    // これにより lib/auth.ts の sendResetPassword が呼び出される
+    await auth.api.forgetPassword({
+      body: {
+        email,
+        redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/reset-password`,
+      },
+      headers: await headers(),
+    });
 
-    // 本番環境ではResendを使用（後で実装）
-    // const resend = new Resend(process.env.RESEND_API_KEY);
-    // await resend.emails.send({
-    //   from: "noreply@yourapp.com",
-    //   to: email,
-    //   subject: "パスワードリセット",
-    //   html: `...`,
-    // });
+    console.log("✅ パスワードリセットメール送信完了:", email);
 
     return NextResponse.json(
       { message: "パスワードリセットメールを送信しました" },
       { status: 200 }
     );
   } catch (error) {
-    console.error("パスワードリセットエラー:", error);
+    console.error("❌ パスワードリセットエラー:", error);
+    
+    // ユーザーが存在しない場合でもセキュリティ上、成功メッセージを返す
     return NextResponse.json(
-      { error: "パスワードリセットメールの送信に失敗しました" },
-      { status: 500 }
+      { message: "パスワードリセットメールを送信しました" },
+      { status: 200 }
     );
   }
 };
-
