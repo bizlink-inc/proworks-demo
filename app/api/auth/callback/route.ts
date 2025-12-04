@@ -13,21 +13,44 @@ export const GET = async (request: NextRequest) => {
 
     console.log("✅ メール認証後のコールバック:", session.user.email);
 
+    // サインアップ時に保存したデータをクッキーから取得
+    const signupDataCookie = request.cookies.get("pw_signup_data")?.value;
+    let signupData = {
+      lastName: "",
+      firstName: "",
+      phone: "",
+      birthDate: "",
+      emailDeliveryStatus: "",
+      termsAgreed: "",
+    };
+
+    if (signupDataCookie) {
+      try {
+        signupData = JSON.parse(signupDataCookie);
+        console.log("📋 サインアップデータを復元:", signupData);
+      } catch (e) {
+        console.warn("⚠️ サインアップデータの解析に失敗:", e);
+      }
+    }
+
     // kintoneに人材レコードが既に存在するかチェック
     const existingTalent = await getTalentByAuthUserId(session.user.id);
 
     if (!existingTalent) {
-      // kintoneに最小限の人材情報を作成（メールアドレスのみ）
+      // kintoneに人材情報を作成（サインアップ時のデータを含む）
       try {
         await createTalent({
           authUserId: session.user.id,
-          lastName: "",
-          firstName: "",
+          lastName: signupData.lastName,
+          firstName: signupData.firstName,
           email: session.user.email,
-          phone: "",
-          birthDate: "",
+          phone: signupData.phone,
+          birthDate: signupData.birthDate,
+          emailDeliveryStatus: signupData.emailDeliveryStatus,
+          termsAgreed: signupData.termsAgreed,
         });
-        console.log("✅ kintoneに人材レコード作成（最小限）:", session.user.email);
+        console.log("✅ kintoneに人材レコード作成:", session.user.email);
+        console.log("   姓名:", signupData.lastName, signupData.firstName);
       } catch (error) {
         console.warn("⚠️ kintone登録エラー（メール認証は成功）:", error);
       }
@@ -37,6 +60,9 @@ export const GET = async (request: NextRequest) => {
 
     // プロフィール入力完了ページにリダイレクト
     const response = NextResponse.redirect(new URL("/auth/complete-profile", request.url));
+
+    // サインアップデータのクッキーを削除
+    response.cookies.delete("pw_signup_data");
 
     // rememberMe クッキーから ログイン保持フラグを確認
     const rememberMeEmail = request.cookies.get("pw_signup_remember")?.value;

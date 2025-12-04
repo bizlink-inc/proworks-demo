@@ -5,7 +5,17 @@ import { headers } from "next/headers";
 export const POST = async (request: NextRequest) => {
   try {
     const body = await request.json();
-    const { email, rememberMe } = body;
+    const { 
+      email, 
+      password,
+      lastName, 
+      firstName, 
+      phone, 
+      birthDate,
+      emailDeliveryStatus,
+      termsAgreed,
+      rememberMe 
+    } = body;
 
     if (!email) {
       return NextResponse.json(
@@ -14,19 +24,19 @@ export const POST = async (request: NextRequest) => {
       );
     }
 
-    // ランダムなパスワードを生成
-    const randomPassword = generateRandomPassword();
+    // パスワードが指定されていない場合はランダム生成
+    const userPassword = password || generateRandomPassword();
 
     console.log("📝 サインアップ処理開始:", email);
-    console.log("   自動生成パスワード:", randomPassword.substring(0, 8) + "...");
+    console.log("   姓名:", lastName, firstName);
     console.log("   ログイン保持:", rememberMe ? "有効" : "無効");
 
     // Better Authでユーザー登録（メール認証付き）
     await auth.api.signUpEmail({
       body: {
         email,
-        password: randomPassword,
-        name: email.split("@")[0], // 一時的にメールアドレスの@前を名前とする
+        password: userPassword,
+        name: `${lastName} ${firstName}`.trim() || email.split("@")[0],
       },
       headers: await headers(),
     });
@@ -43,6 +53,25 @@ export const POST = async (request: NextRequest) => {
       },
       { status: 200 }
     );
+
+    // サインアップ時の情報をクッキーに保存（メール認証後にkintoneに登録するため）
+    const signupData = JSON.stringify({
+      lastName: lastName || "",
+      firstName: firstName || "",
+      phone: phone || "",
+      birthDate: birthDate || "",
+      emailDeliveryStatus: emailDeliveryStatus || "",
+      termsAgreed: termsAgreed || "",
+    });
+    
+    response.cookies.set("pw_signup_data", signupData, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 60 * 60, // 1時間（メール認証の有効期限内）
+      path: "/",
+    });
+    console.log("🍪 サインアップデータをクッキーに保存");
 
     // rememberMe が有効な場合、クッキーに情報を保存
     if (rememberMe) {

@@ -16,7 +16,19 @@ type ProfileFormProps = {
 };
 
 export const ProfileForm = ({ user, onUpdate }: ProfileFormProps) => {
-  const [formData, setFormData] = useState(user);
+  // nullを空文字列に変換してformDataを初期化
+  const [formData, setFormData] = useState({
+    ...user,
+    lastName: user.lastName || "",
+    firstName: user.firstName || "",
+    lastNameKana: user.lastNameKana || "",
+    firstNameKana: user.firstNameKana || "",
+    email: user.email || "",
+    birthDate: user.birthDate || "",
+    phone: user.phone || "",
+    postalCode: user.postalCode || "",
+    address: user.address || "",
+  });
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
@@ -74,7 +86,7 @@ export const ProfileForm = ({ user, onUpdate }: ProfileFormProps) => {
             </div>
           <Input
             id="lastName"
-            value={formData.lastName}
+            value={formData.lastName || ""}
             onChange={(e) =>
               setFormData({ ...formData, lastName: e.target.value })
             }
@@ -88,7 +100,7 @@ export const ProfileForm = ({ user, onUpdate }: ProfileFormProps) => {
             </div>
           <Input
             id="firstName"
-            value={formData.firstName}
+            value={formData.firstName || ""}
             onChange={(e) =>
               setFormData({ ...formData, firstName: e.target.value })
             }
@@ -106,7 +118,7 @@ export const ProfileForm = ({ user, onUpdate }: ProfileFormProps) => {
           <Input
             id="lastNameKana"
             placeholder="ヤマダ"
-            value={formData.lastNameKana}
+            value={formData.lastNameKana || ""}
             onChange={(e) =>
               setFormData({ ...formData, lastNameKana: e.target.value })
             }
@@ -120,7 +132,7 @@ export const ProfileForm = ({ user, onUpdate }: ProfileFormProps) => {
           <Input
             id="firstNameKana"
             placeholder="タロウ"
-            value={formData.firstNameKana}
+            value={formData.firstNameKana || ""}
             onChange={(e) =>
               setFormData({ ...formData, firstNameKana: e.target.value })
             }
@@ -136,7 +148,7 @@ export const ProfileForm = ({ user, onUpdate }: ProfileFormProps) => {
           <Input
           id="email"
           type="email"
-          value={formData.email}
+          value={formData.email || ""}
           onChange={(e) =>
             setFormData({ ...formData, email: e.target.value })
           }
@@ -152,7 +164,7 @@ export const ProfileForm = ({ user, onUpdate }: ProfileFormProps) => {
         <Input
           id="birthDate"
           type="date"
-          value={formData.birthDate}
+          value={formData.birthDate || ""}
           onChange={(e) =>
             setFormData({ ...formData, birthDate: e.target.value })
           }
