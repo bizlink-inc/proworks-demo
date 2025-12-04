@@ -188,7 +188,7 @@ export const WorkHistoryForm = ({ user, onUpdate }: WorkHistoryFormProps) => {
         </div>
           </FieldSection>
 
-          <FieldSection label="ポートフォリオ・GitHubのURL" required helper="※入力必須です">
+          <FieldSection label="ポートフォリオ・GitHubのURL">
         <Input
           id="portfolioUrl"
           type="url"

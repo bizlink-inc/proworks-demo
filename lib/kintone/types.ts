@@ -21,6 +21,7 @@ export type TalentRecord = {
   希望勤務日数: { value: string };
   希望出社頻度: { value: string };
   希望勤務スタイル: { value: string[] }; // チェックボックス
+  希望作業時間: { value: string };
   希望案件_作業内容: { value: string };
   NG企業: { value: string };
   その他要望: { value: string };
@@ -80,6 +81,7 @@ export type Talent = {
   desiredWorkDays: string;
   desiredCommute: string;
   desiredWorkStyle: string[];
+  desiredWorkHours: string;
   desiredWork: string;
   ngCompanies: string;
   otherRequests: string;

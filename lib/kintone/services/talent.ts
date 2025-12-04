@@ -32,6 +32,7 @@ const convertTalentRecord = (record: TalentRecord): Talent => {
     desiredWorkDays: record[TALENT_FIELDS.DESIRED_WORK_DAYS].value,
     desiredCommute: record[TALENT_FIELDS.DESIRED_COMMUTE].value,
     desiredWorkStyle: record[TALENT_FIELDS.DESIRED_WORK_STYLE].value,
+    desiredWorkHours: record[TALENT_FIELDS.DESIRED_WORK_HOURS]?.value || '',
     desiredWork: record[TALENT_FIELDS.DESIRED_WORK].value,
     ngCompanies: record[TALENT_FIELDS.NG_COMPANIES].value,
     otherRequests: record[TALENT_FIELDS.OTHER_REQUESTS].value,
@@ -164,6 +165,7 @@ export const updateTalent = async (
   if (data.desiredWorkDays !== undefined) record[TALENT_FIELDS.DESIRED_WORK_DAYS] = { value: data.desiredWorkDays };
   if (data.desiredCommute !== undefined) record[TALENT_FIELDS.DESIRED_COMMUTE] = { value: data.desiredCommute };
   if (data.desiredWorkStyle !== undefined) record[TALENT_FIELDS.DESIRED_WORK_STYLE] = { value: data.desiredWorkStyle };
+  if (data.desiredWorkHours !== undefined) record[TALENT_FIELDS.DESIRED_WORK_HOURS] = { value: data.desiredWorkHours };
   if (data.desiredWork !== undefined) record[TALENT_FIELDS.DESIRED_WORK] = { value: data.desiredWork };
   if (data.ngCompanies !== undefined) record[TALENT_FIELDS.NG_COMPANIES] = { value: data.ngCompanies };
   if (data.otherRequests !== undefined) record[TALENT_FIELDS.OTHER_REQUESTS] = { value: data.otherRequests };

@@ -25,6 +25,7 @@ export const PreferencesForm = ({ user, onUpdate }: PreferencesFormProps) => {
     desiredWorkDays: user.desiredWorkDays || "",
     desiredCommute: user.desiredCommute || "",
     desiredWorkStyle: user.desiredWorkStyle || [],
+    desiredWorkHours: user.desiredWorkHours || "",
     desiredWork: user.desiredWork || "",
     ngCompanies: user.ngCompanies || "",
     otherRequests: user.otherRequests || "",
@@ -81,7 +82,7 @@ export const PreferencesForm = ({ user, onUpdate }: PreferencesFormProps) => {
         <div>
           <div className="flex items-center gap-2 mb-2">
             <Label htmlFor="availableFrom">稼働可能時期</Label>
-            <SupportTag variant="optional">任意</SupportTag>
+            <SupportTag variant="required">必須</SupportTag>
           </div>
           <Input
             id="availableFrom"
@@ -90,6 +91,7 @@ export const PreferencesForm = ({ user, onUpdate }: PreferencesFormProps) => {
             onChange={(e) =>
               setFormData({ ...formData, availableFrom: e.target.value })
             }
+            required
           />
         </div>
 
@@ -114,7 +116,7 @@ export const PreferencesForm = ({ user, onUpdate }: PreferencesFormProps) => {
           <div>
             <div className="flex items-center gap-2 mb-2">
               <Label htmlFor="desiredWorkDays">希望勤務日数</Label>
-              <SupportTag variant="optional">任意</SupportTag>
+              <SupportTag variant="required">必須</SupportTag>
             </div>
             <select
               id="desiredWorkDays"
@@ -127,6 +129,7 @@ export const PreferencesForm = ({ user, onUpdate }: PreferencesFormProps) => {
                 borderColor: "var(--pw-border-gray)",
                 fontSize: "var(--pw-text-sm)",
               }}
+              required
             >
               <option value="">選択してください</option>
               {DROPDOWN_OPTIONS.DESIRED_WORK_DAYS.map((option) => (
@@ -186,6 +189,34 @@ export const PreferencesForm = ({ user, onUpdate }: PreferencesFormProps) => {
               </div>
             ))}
           </div>
+        </div>
+
+        <div>
+          <div className="flex items-center gap-2 mb-2">
+            <Label htmlFor="desiredWorkHours">希望作業時間（1日あたり）</Label>
+            <SupportTag variant="required">必須</SupportTag>
+          </div>
+          <select
+            id="desiredWorkHours"
+            value={formData.desiredWorkHours}
+            onChange={(e) =>
+              setFormData({ ...formData, desiredWorkHours: e.target.value })
+            }
+            className="w-full px-3 py-2 border rounded-[var(--pw-radius-sm)] focus:outline-none focus:ring-0"
+            style={{
+              borderColor: "var(--pw-border-gray)",
+              fontSize: "var(--pw-text-sm)",
+            }}
+            required
+          >
+            <option value="">選択してください</option>
+            {DROPDOWN_OPTIONS.DESIRED_WORK_HOURS.map((option) => (
+              <option key={option} value={option}>
+                {option}
+              </option>
+            ))}
+          </select>
+          <p className="text-xs text-[var(--pw-text-gray)] mt-1">1日あたりの稼働可能な時間を選択してください</p>
         </div>
 
         <div>

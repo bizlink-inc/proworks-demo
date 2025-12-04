@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { PWInput } from "@/components/ui/pw-input"
 import { Label } from "@/components/ui/label"
+import { Checkbox } from "@/components/ui/checkbox"
 import { CenteredLayout } from "@/components/layouts"
 import { PWAlert } from "@/components/ui/pw-alert"
 import { useToast } from "@/hooks/use-toast"
@@ -16,13 +17,23 @@ export default function CompleteProfilePage() {
   const { toast } = useToast()
   const [loading, setLoading] = useState(false)
   const [formData, setFormData] = useState({
-    lastName: "",
-    firstName: "",
     lastNameKana: "",
     firstNameKana: "",
-    phone: "",
-    birthDate: "",
+    desiredWorkStyle: [] as string[],
+    availableFrom: "",
+    desiredRate: "",
   })
+
+  const workStyleOptions = ["リモート", "ハイブリッド", "常駐"]
+
+  const toggleWorkStyle = (style: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      desiredWorkStyle: prev.desiredWorkStyle.includes(style)
+        ? prev.desiredWorkStyle.filter((s) => s !== style)
+        : [...prev.desiredWorkStyle, style],
+    }))
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -56,6 +67,9 @@ export default function CompleteProfilePage() {
     }
   }
 
+  // バリデーション：フリガナは必須
+  const isFormValid = formData.lastNameKana && formData.firstNameKana
+
   return (
     <CenteredLayout showFooter={false}>
       <div className="text-center mb-6">
@@ -81,59 +95,19 @@ export default function CompleteProfilePage() {
           className="text-[var(--pw-text-gray)]"
           style={{ fontSize: "var(--pw-text-sm)" }}
         >
-          プロフィールを入力して、登録を完了させましょう
+          あと少しで登録完了です！<br />
+          以下の情報を入力すると、より精度の高い案件マッチングが可能になります。
         </p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        <PWAlert variant="info" title="以下の情報を入力してください">
+        <PWAlert variant="info" title="プロフィールを完成させましょう">
           <p style={{ fontSize: "var(--pw-text-xs)" }}>
             これらの情報は案件への応募や企業とのマッチングに使用されます。
           </p>
         </PWAlert>
 
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <Label
-              htmlFor="lastName"
-              className="text-[var(--pw-text-primary)] mb-1 block"
-              style={{ fontSize: "var(--pw-text-sm)" }}
-            >
-              姓 <span style={{ color: "var(--pw-alert-error)" }}>*</span>
-            </Label>
-            <PWInput
-              id="lastName"
-              type="text"
-              placeholder="山田"
-              value={formData.lastName}
-              onChange={(e) =>
-                setFormData({ ...formData, lastName: e.target.value })
-              }
-              required
-            />
-          </div>
-
-          <div>
-            <Label
-              htmlFor="firstName"
-              className="text-[var(--pw-text-primary)] mb-1 block"
-              style={{ fontSize: "var(--pw-text-sm)" }}
-            >
-              名 <span style={{ color: "var(--pw-alert-error)" }}>*</span>
-            </Label>
-            <PWInput
-              id="firstName"
-              type="text"
-              placeholder="太郎"
-              value={formData.firstName}
-              onChange={(e) =>
-                setFormData({ ...formData, firstName: e.target.value })
-              }
-              required
-            />
-          </div>
-        </div>
-
+        {/* フリガナ */}
         <div className="grid grid-cols-2 gap-4">
           <div>
             <Label
@@ -176,23 +150,51 @@ export default function CompleteProfilePage() {
           </div>
         </div>
 
+        {/* 希望勤務スタイル */}
         <div>
           <Label
-            htmlFor="phone"
+            className="text-[var(--pw-text-primary)] mb-2 block"
+            style={{ fontSize: "var(--pw-text-sm)" }}
+          >
+            希望勤務スタイル（複数選択可）
+          </Label>
+          <div className="space-y-2">
+            {workStyleOptions.map((style) => (
+              <div key={style} className="flex items-center space-x-2">
+                <Checkbox
+                  id={`workstyle-${style}`}
+                  checked={formData.desiredWorkStyle.includes(style)}
+                  onCheckedChange={() => toggleWorkStyle(style)}
+                  className="data-[state=checked]:bg-[var(--pw-button-primary)] data-[state=checked]:border-[var(--pw-button-primary)]"
+                />
+                <Label
+                  htmlFor={`workstyle-${style}`}
+                  className="cursor-pointer"
+                  style={{ fontSize: "var(--pw-text-sm)" }}
+                >
+                  {style}
+                </Label>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* 稼働可能時期 */}
+        <div>
+          <Label
+            htmlFor="availableFrom"
             className="text-[var(--pw-text-primary)] mb-1 block"
             style={{ fontSize: "var(--pw-text-sm)" }}
           >
-            電話番号 <span style={{ color: "var(--pw-alert-error)" }}>*</span>
+            稼働可能時期
           </Label>
           <PWInput
-            id="phone"
-            type="tel"
-            placeholder="090-1234-5678"
-            value={formData.phone}
+            id="availableFrom"
+            type="date"
+            value={formData.availableFrom}
             onChange={(e) =>
-              setFormData({ ...formData, phone: e.target.value })
+              setFormData({ ...formData, availableFrom: e.target.value })
             }
-            required
           />
           <p
             className="mt-1"
@@ -201,34 +203,55 @@ export default function CompleteProfilePage() {
               color: "var(--pw-text-light-gray)"
             }}
           >
-            ハイフンありでも、なしでもOKです
+            すぐに稼働可能な場合は空欄のままでOKです
           </p>
         </div>
 
+        {/* 希望単価 */}
         <div>
           <Label
-            htmlFor="birthDate"
+            htmlFor="desiredRate"
             className="text-[var(--pw-text-primary)] mb-1 block"
             style={{ fontSize: "var(--pw-text-sm)" }}
           >
-            生年月日 <span style={{ color: "var(--pw-alert-error)" }}>*</span>
+            希望単価（月額・万円）
           </Label>
-          <PWInput
-            id="birthDate"
-            type="date"
-            value={formData.birthDate}
-            onChange={(e) =>
-              setFormData({ ...formData, birthDate: e.target.value })
-            }
-            required
-          />
+          <div className="flex items-center gap-2">
+            <PWInput
+              id="desiredRate"
+              type="number"
+              placeholder="60"
+              value={formData.desiredRate}
+              onChange={(e) =>
+                setFormData({ ...formData, desiredRate: e.target.value })
+              }
+              className="flex-1"
+            />
+            <span
+              style={{
+                fontSize: "var(--pw-text-sm)",
+                color: "var(--pw-text-gray)"
+              }}
+            >
+              万円〜
+            </span>
+          </div>
+          <p
+            className="mt-1"
+            style={{
+              fontSize: "var(--pw-text-xs)",
+              color: "var(--pw-text-light-gray)"
+            }}
+          >
+            案件マッチングの参考にさせていただきます
+          </p>
         </div>
 
         <Button
           type="submit"
           variant="pw-primary"
           className="w-full py-6"
-          disabled={loading}
+          disabled={loading || !isFormValid}
           style={{ fontSize: "var(--pw-text-lg)" }}
         >
           {loading ? "登録中..." : "プロフィールを完成させる"}
@@ -247,4 +270,3 @@ export default function CompleteProfilePage() {
     </CenteredLayout>
   )
 }
-

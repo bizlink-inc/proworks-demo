@@ -147,7 +147,7 @@ export const ProfileForm = ({ user, onUpdate }: ProfileFormProps) => {
       <div>
           <div className="flex items-center gap-2 mb-2">
         <Label htmlFor="birthDate">生年月日</Label>
-            <SupportTag variant="required">必須</SupportTag>
+            <SupportTag variant="optional">任意</SupportTag>
           </div>
         <Input
           id="birthDate"
@@ -156,7 +156,6 @@ export const ProfileForm = ({ user, onUpdate }: ProfileFormProps) => {
           onChange={(e) =>
             setFormData({ ...formData, birthDate: e.target.value })
           }
-          required
         />
       </div>
 

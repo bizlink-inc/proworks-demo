@@ -27,6 +27,7 @@ export const TALENT_FIELDS = {
   DESIRED_WORK_DAYS: '希望勤務日数',
   DESIRED_COMMUTE: '希望出社頻度',
   DESIRED_WORK_STYLE: '希望勤務スタイル',
+  DESIRED_WORK_HOURS: '希望作業時間',
   DESIRED_WORK: '希望案件_作業内容',
   NG_COMPANIES: 'NG企業',
   OTHER_REQUESTS: 'その他要望',
@@ -98,7 +99,11 @@ export const DROPDOWN_OPTIONS = {
   
   // 希望出社頻度の選択肢
   DESIRED_COMMUTE: ['週1', '週2', '週3', '週4', '週5', '案件条件に従う', 'なし'] as const,
+
+  // 希望作業時間（1日あたり）の選択肢
+  DESIRED_WORK_HOURS: ['2時間', '4時間', '6時間', '8時間', '8時間以上', '案件条件に従う'] as const,
 } as const;
 
 export type DesiredWorkDays = typeof DROPDOWN_OPTIONS.DESIRED_WORK_DAYS[number];
 export type DesiredCommute = typeof DROPDOWN_OPTIONS.DESIRED_COMMUTE[number];
+export type DesiredWorkHours = typeof DROPDOWN_OPTIONS.DESIRED_WORK_HOURS[number];
