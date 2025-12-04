@@ -36,7 +36,27 @@ export const GET = async (request: NextRequest) => {
     }
 
     // プロフィール入力完了ページにリダイレクト
-    return NextResponse.redirect(new URL("/auth/complete-profile", request.url));
+    const response = NextResponse.redirect(new URL("/auth/complete-profile", request.url));
+
+    // rememberMe クッキーから ログイン保持フラグを確認
+    const rememberMeEmail = request.cookies.get("pw_signup_remember")?.value;
+    const rememberMe = rememberMeEmail === session.user.email;
+
+    if (rememberMe) {
+      console.log("🔐 ログイン保持が有効です。セッション有効期限を拡張");
+      // ログイン保持が有効な場合のログをここに記録
+      // セッション自体の有効期限はBetter Authが管理するため、
+      // ここではクッキーの設定を行う
+      response.cookies.set("pw_extended_session", "true", {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        maxAge: 30 * 24 * 60 * 60, // 30日間
+        path: "/",
+      });
+    }
+
+    return response;
   } catch (error) {
     console.error("❌ コールバックエラー:", error);
     return NextResponse.redirect(new URL("/auth/signin", request.url));

@@ -68,6 +68,7 @@ export default function SignUpPage() {
   const [birthDay, setBirthDay] = useState("")
   const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
+  const [rememberMe, setRememberMe] = useState(false)
   const [receiveEmailDelivery, setReceiveEmailDelivery] = useState(true)
   const [termsAgreed, setTermsAgreed] = useState(false)
 
@@ -121,6 +122,7 @@ export default function SignUpPage() {
           birthDate,
           emailDeliveryStatus: receiveEmailDelivery ? "配信中" : "配信停止",
           termsAgreed: "同意済み",
+          rememberMe,
         }),
       })
 
@@ -407,6 +409,23 @@ export default function SignUpPage() {
             style={{ fontSize: "var(--pw-text-sm)" }}
           >
             新着案件・サービス情報を受け取る
+          </Label>
+        </div>
+
+        {/* ログイン状態を保持 */}
+        <div className="flex items-center gap-2 pt-2">
+          <Checkbox
+            id="remember-me"
+            checked={rememberMe}
+            onCheckedChange={(checked) => setRememberMe(checked === true)}
+            className="data-[state=checked]:bg-[var(--pw-button-primary)] data-[state=checked]:border-[var(--pw-button-primary)]"
+          />
+          <Label
+            htmlFor="remember-me"
+            className="text-[var(--pw-text-primary)] cursor-pointer font-medium"
+            style={{ fontSize: "var(--pw-text-sm)" }}
+          >
+            ログイン状態を保持
           </Label>
         </div>
 

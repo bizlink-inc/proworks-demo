@@ -12,14 +12,15 @@ const handleDemoAuth = async (request: NextRequest): Promise<Response> => {
   if (pathname.endsWith("/sign-in/email") && request.method === "POST") {
     try {
       const body = await request.json();
-      const { email, password } = body;
+      const { email, password, rememberMe } = body;
 
       // yamada ユーザーの認証情報を確認
       if (email === DEMO_USER.email && password === DEMO_USER.password) {
         // デモセッションを作成
         await createDemoSession();
 
-        return NextResponse.json({
+        // rememberMe が有効な場合、クッキーに設定
+        const response = NextResponse.json({
           user: {
             id: DEMO_USER.id,
             name: DEMO_USER.name,
@@ -35,6 +36,19 @@ const handleDemoAuth = async (request: NextRequest): Promise<Response> => {
             token: "demo_token",
           },
         });
+
+        if (rememberMe) {
+          response.cookies.set("pw_login_remember", email, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "lax",
+            maxAge: 30 * 24 * 60 * 60, // 30日間
+            path: "/",
+          });
+          console.log("🍪 ログイン保持クッキーを設定:", email);
+        }
+
+        return response;
       }
 
       return NextResponse.json(
