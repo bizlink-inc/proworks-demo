@@ -58,3 +58,12 @@ pids
 
 # kintone field data
 fields-data.json
+
+# E2E test data
+.e2e-test-data/
+
+# Playwright
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/

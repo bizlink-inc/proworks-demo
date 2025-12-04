@@ -299,4 +299,25 @@ export const logEmailToConsole = (
   console.log("");
   console.log("※ このリンクの有効期限は1時間です。");
   console.log("=".repeat(80) + "\n");
+
+  // E2Eテスト用: 認証リンクをファイルに書き出す
+  if (process.env.E2E_TEST === "true" || process.env.NODE_ENV === "development") {
+    try {
+      const fs = require("fs");
+      const path = require("path");
+      const testDataDir = path.join(process.cwd(), ".e2e-test-data");
+      
+      // ディレクトリがなければ作成
+      if (!fs.existsSync(testDataDir)) {
+        fs.mkdirSync(testDataDir, { recursive: true });
+      }
+      
+      // 認証リンクをファイルに保存
+      const data = JSON.stringify({ type, to, url, timestamp: Date.now() });
+      fs.writeFileSync(path.join(testDataDir, "last-email.json"), data);
+      console.log(`📁 E2Eテスト用: 認証リンクを .e2e-test-data/last-email.json に保存しました`);
+    } catch (error) {
+      console.warn("⚠️ E2Eテストデータの保存に失敗:", error);
+    }
+  }
 };
