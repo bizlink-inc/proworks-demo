@@ -117,15 +117,19 @@ test.describe('新規登録フロー', () => {
     // プロフィールを完成させるボタンをクリック
     await page.locator('button[type="submit"]').click();
 
-    // ステップ6: マイページに遷移
-    console.log('📝 ステップ6: マイページに遷移');
-    await expect(page).toHaveURL('/me', { timeout: 10000 });
-    console.log('✅ マイページに遷移しました');
+    // ステップ6: ウェルカムページに遷移
+    console.log('📝 ステップ6: ウェルカムページに遷移');
+    await expect(page).toHaveURL('/auth/welcome', { timeout: 10000 });
+    console.log('✅ ウェルカムページに遷移しました');
 
-    // マイページでプロフィール情報が表示されていることを確認
-    await expect(page.getByRole('heading', { name: 'プロフィール' })).toBeVisible();
+    // ウェルカムページでメッセージが表示されていることを確認
+    await expect(page.locator('text=ようこそ、PRO WORKS へ！')).toBeVisible();
+    console.log('✅ ウェルカムメッセージが表示されました');
+
+    // プロフィール進捗が表示されていることを確認
+    await expect(page.locator('text=プロフィール完成度')).toBeVisible();
     console.log('✅ テスト完了！全フローが正常に動作しました！');
-    console.log('💾 マイページでブラウザを開き続けています。');
+    console.log('💾 ウェルカムページでブラウザを開き続けています。');
     console.log(`   登録ユーザーのメール: ${testUser.email}`);
     console.log('   Playwright Inspectorで「Resume」ボタンを押すとテストが終了します。');
     

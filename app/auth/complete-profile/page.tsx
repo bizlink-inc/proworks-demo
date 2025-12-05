@@ -56,7 +56,7 @@ export default function CompleteProfilePage() {
       })
 
       // マイページにリダイレクト
-      router.push("/me")
+      router.push("/auth/welcome")
     } catch (error) {
       toast({
         title: "エラー",
