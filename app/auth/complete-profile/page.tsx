@@ -217,16 +217,16 @@ export default function CompleteProfilePage() {
             希望単価（月額・万円）
           </Label>
           <div className="flex items-center gap-2">
-            <PWInput
+          <PWInput
               id="desiredRate"
               type="number"
               placeholder="60"
               value={formData.desiredRate}
-              onChange={(e) =>
+            onChange={(e) =>
                 setFormData({ ...formData, desiredRate: e.target.value })
-              }
+            }
               className="flex-1"
-            />
+          />
             <span
               style={{
                 fontSize: "var(--pw-text-sm)",

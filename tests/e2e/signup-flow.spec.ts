@@ -106,8 +106,15 @@ test.describe('新規登録フロー', () => {
     console.log('📝 ステップ5: プロフィール完成ページ');
     await expect(page.locator('text=メール認証が完了しました')).toBeVisible({ timeout: 10000 });
     console.log('✅ プロフィール完成ページが表示されました');
+    console.log('📍 このページでテストを一時停止します。ブラウザで確認してください！');
+    console.log(`   登録ユーザーのメール: ${testUser.email}`);
+    console.log('   Playwright Inspectorで「Resume」ボタンを押して続行します。');
+    
+    // ここでブラウザを開いたまま待機
+    await page.pause();
 
     // フリガナを入力
+    console.log('📝 フリガナを入力');
     await page.locator('#lastNameKana').fill(testUser.lastNameKana);
     await page.locator('#firstNameKana').fill(testUser.firstNameKana);
 
@@ -115,6 +122,7 @@ test.describe('新規登録フロー', () => {
     await page.locator('#workstyle-リモート').check();
 
     // プロフィールを完成させるボタンをクリック
+    console.log('📝 プロフィールを完成させるボタンをクリック');
     await page.locator('button[type="submit"]').click();
 
     // ステップ6: ウェルカムページに遷移
@@ -122,18 +130,18 @@ test.describe('新規登録フロー', () => {
     await expect(page).toHaveURL('/auth/welcome', { timeout: 10000 });
     console.log('✅ ウェルカムページに遷移しました');
 
-    // ウェルカムページでメッセージが表示されていることを確認
-    await expect(page.locator('text=ようこそ、PRO WORKS へ！')).toBeVisible();
-    console.log('✅ ウェルカムメッセージが表示されました');
+    // ウェルカムページでスキル入力フォーム（ステップ1）が表示されていることを確認
+    await expect(page.locator('text=スキル・経験を追加しませんか？')).toBeVisible();
+    console.log('✅ スキル入力フォーム（ステップ1）が表示されました');
 
-    // プロフィール進捗が表示されていることを確認
-    await expect(page.locator('text=プロフィール完成度')).toBeVisible();
     console.log('✅ テスト完了！全フローが正常に動作しました！');
     console.log('💾 ウェルカムページでブラウザを開き続けています。');
-    console.log(`   登録ユーザーのメール: ${testUser.email}`);
+    console.log('   ・ステップ1: スキル入力');
+    console.log('   ・ステップ2: 実績・職歴入力');
+    console.log('   ・各ステップで「後で入力する」でスキップ可能');
     console.log('   Playwright Inspectorで「Resume」ボタンを押すとテストが終了します。');
     
-    // ブラウザを開いたまま待機（Playwright Inspectorが開く）
+    // ウェルカムページで最終確認用に待機
     await page.pause();
   });
 });
