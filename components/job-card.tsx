@@ -13,8 +13,9 @@ type JobCardProps = {
 // 仕様書: 案件カード > フォント・カラー
 const primaryTextColor = "#30373f" // タイトル
 const bodyTextColor = "#000000"    // 本文
-const titleColor = "#3d8ab8"       // タイトル・職種ポジション・必須スキル用（濃い青）
+const titleColor = "#30373f"       // タイトル（仕様書準拠）
 const accentColor = "#ea8737"      // 金額
+const dividerColor = "#9ab6ca"     // 区切り線（仕様書準拠）
 
 const formatRateValue = (rate?: string) => {
   if (!rate) return ""
@@ -245,7 +246,7 @@ export function JobCard({ job, onViewDetail, showApplicationStatus = false, isEn
 
       {/* 区切り線 */}
       <div className="px-4">
-        <div style={{ borderTop: "1px solid #d5e5f0" }} />
+        <div style={{ borderTop: `1px solid ${dividerColor}` }} />
       </div>
 
       {/* 必須スキル */}
@@ -282,7 +283,7 @@ export function JobCard({ job, onViewDetail, showApplicationStatus = false, isEn
 
       {/* 区切り線 */}
       <div className="px-4">
-        <div style={{ borderTop: "1px solid #d5e5f0" }} />
+        <div style={{ borderTop: `1px solid ${dividerColor}` }} />
       </div>
 
       {/* 職種ポジション */}
@@ -317,7 +318,7 @@ export function JobCard({ job, onViewDetail, showApplicationStatus = false, isEn
 
       {/* 区切り線 */}
       <div className="px-4">
-        <div style={{ borderTop: "1px solid #d5e5f0" }} />
+        <div style={{ borderTop: `1px solid ${dividerColor}` }} />
       </div>
 
       {/* 詳細を見るボタン */}

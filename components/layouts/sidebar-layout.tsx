@@ -54,7 +54,7 @@ export const SidebarLayout = ({
               メニュー
             </p>
           </div>
-          <nav className="py-2 px-4" role="navigation">
+          <nav className="py-2 pr-4" role="navigation">
             {menuItems.map((item) => (
               <button
                 key={item.id}
@@ -67,9 +67,9 @@ export const SidebarLayout = ({
                 )}
                 style={{
                   fontSize: "var(--pw-text-md)",
-                  color: activeMenu === item.id ? "#ffffff" : "var(--pw-text-navy)",
-                  borderRadius: "4px",
-                  backgroundColor: activeMenu === item.id ? "#3966a2" : "transparent",
+                  color: activeMenu === item.id ? "var(--pw-sidemenu-active-text)" : "var(--pw-sidemenu-text)",
+                  borderRadius: activeMenu === item.id ? "var(--pw-sidemenu-active-radius)" : "0px 4px 4px 0px",
+                  backgroundColor: activeMenu === item.id ? "var(--pw-sidemenu-active-bg)" : "transparent",
                 }}
                 aria-current={activeMenu === item.id ? "page" : undefined}
               >

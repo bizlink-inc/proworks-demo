@@ -52,6 +52,17 @@
   --pw-button-secondary: #686868;
   --pw-button-dark: #1f3151;
 
+  /* === ヘッダー === */
+  --pw-header-active-text: #3966a2;
+  --pw-header-active-border-width: 4.5px;
+  --pw-header-active-border-color: #3966a2;
+
+  /* === サイドメニュー === */
+  --pw-sidemenu-text: #1f3151;
+  --pw-sidemenu-active-text: #ffffff;
+  --pw-sidemenu-active-bg: #1f3151;
+  --pw-sidemenu-active-radius: 0px 4px 4px 0px;
+
   /* === 特殊色 === */
   --pw-shadow: rgba(188, 210, 225, 0.28);
   --pw-overlay: rgba(51, 58, 66, 0.8);

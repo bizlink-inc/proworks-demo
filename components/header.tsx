@@ -5,7 +5,7 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { ChevronDown, HelpCircle, LogOut } from "lucide-react"
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
-import { faGear, faList, faComments } from "@fortawesome/free-solid-svg-icons"
+import { faGear, faList, faLightbulb } from "@fortawesome/free-solid-svg-icons"
 import { faSquareCheck } from "@fortawesome/free-regular-svg-icons"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { MobileMenu } from "@/components/mobile-menu"
@@ -84,8 +84,8 @@ export function Header({ user }: HeaderProps) {
                 className="px-4 py-3 transition-colors flex items-center gap-2"
                 style={{
                   fontSize: "var(--pw-text-md)",
-                  color: pathname === "/me" ? "#3966a2" : "var(--pw-text-navy)",
-                  borderBottom: pathname === "/me" ? "4.5px solid #3966a2" : "none",
+                  color: pathname === "/me" ? "var(--pw-header-active-text)" : "var(--pw-text-navy)",
+                  borderBottom: pathname === "/me" ? `var(--pw-header-active-border-width) solid var(--pw-header-active-border-color)` : "none",
                   fontWeight: pathname === "/me" ? 600 : 400,
                 }}
               >
@@ -97,8 +97,8 @@ export function Header({ user }: HeaderProps) {
                 className="px-4 py-3 transition-colors flex items-center gap-2"
                 style={{
                   fontSize: "var(--pw-text-md)",
-                  color: pathname === "/" ? "#3966a2" : "var(--pw-text-navy)",
-                  borderBottom: pathname === "/" ? "4.5px solid #3966a2" : "none",
+                  color: pathname === "/" ? "var(--pw-header-active-text)" : "var(--pw-text-navy)",
+                  borderBottom: pathname === "/" ? `var(--pw-header-active-border-width) solid var(--pw-header-active-border-color)` : "none",
                   fontWeight: pathname === "/" ? 600 : 400,
                 }}
               >
@@ -110,8 +110,8 @@ export function Header({ user }: HeaderProps) {
                 className="px-4 py-3 transition-colors flex items-center gap-2"
                 style={{
                   fontSize: "var(--pw-text-md)",
-                  color: pathname === "/applications" ? "#3966a2" : "var(--pw-text-navy)",
-                  borderBottom: pathname === "/applications" ? "4.5px solid #3966a2" : "none",
+                  color: pathname === "/applications" ? "var(--pw-header-active-text)" : "var(--pw-text-navy)",
+                  borderBottom: pathname === "/applications" ? `var(--pw-header-active-border-width) solid var(--pw-header-active-border-color)` : "none",
                   fontWeight: pathname === "/applications" ? 600 : 400,
                 }}
               >
@@ -124,12 +124,12 @@ export function Header({ user }: HeaderProps) {
                     className="px-4 py-3 transition-colors flex items-center gap-2"
                     style={{
                       fontSize: "var(--pw-text-md)",
-                      color: pathname.startsWith("/media") ? "#3966a2" : "var(--pw-text-navy)",
-                      borderBottom: pathname.startsWith("/media") ? "4.5px solid #3966a2" : "none",
+                      color: pathname.startsWith("/media") ? "var(--pw-header-active-text)" : "var(--pw-text-navy)",
+                      borderBottom: pathname.startsWith("/media") ? `var(--pw-header-active-border-width) solid var(--pw-header-active-border-color)` : "none",
                       fontWeight: pathname.startsWith("/media") ? 600 : 400,
                     }}
                   >
-                    <FontAwesomeIcon icon={faComments} className="w-5 h-5" />
+                    <FontAwesomeIcon icon={faLightbulb} className="w-5 h-5" />
                     <span>お役立ち情報</span>
                     <ChevronDown className="w-4 h-4" />
                   </button>
@@ -154,8 +154,8 @@ export function Header({ user }: HeaderProps) {
                 href="/me"
                 className="px-3 py-3 transition-colors flex items-center justify-center"
                 style={{
-                  color: pathname === "/me" ? "#3966a2" : "var(--pw-text-navy)",
-                  borderBottom: pathname === "/me" ? "4.5px solid #3966a2" : "none",
+                  color: pathname === "/me" ? "var(--pw-header-active-text)" : "var(--pw-text-navy)",
+                  borderBottom: pathname === "/me" ? `var(--pw-header-active-border-width) solid var(--pw-header-active-border-color)` : "none",
                 }}
                 title="マイページ"
               >
@@ -165,8 +165,8 @@ export function Header({ user }: HeaderProps) {
                 href="/"
                 className="px-3 py-3 transition-colors flex items-center justify-center"
                 style={{
-                  color: pathname === "/" ? "#3966a2" : "var(--pw-text-navy)",
-                  borderBottom: pathname === "/" ? "4.5px solid #3966a2" : "none",
+                  color: pathname === "/" ? "var(--pw-header-active-text)" : "var(--pw-text-navy)",
+                  borderBottom: pathname === "/" ? `var(--pw-header-active-border-width) solid var(--pw-header-active-border-color)` : "none",
                 }}
                 title="案件一覧"
               >
@@ -176,8 +176,8 @@ export function Header({ user }: HeaderProps) {
                 href="/applications"
                 className="px-3 py-3 transition-colors flex items-center justify-center"
                 style={{
-                  color: pathname === "/applications" ? "#3966a2" : "var(--pw-text-navy)",
-                  borderBottom: pathname === "/applications" ? "4.5px solid #3966a2" : "none",
+                  color: pathname === "/applications" ? "var(--pw-header-active-text)" : "var(--pw-text-navy)",
+                  borderBottom: pathname === "/applications" ? `var(--pw-header-active-border-width) solid var(--pw-header-active-border-color)` : "none",
                 }}
                 title="応募済み案件"
               >
@@ -188,12 +188,12 @@ export function Header({ user }: HeaderProps) {
                   <button
                     className="px-3 py-3 transition-colors flex items-center justify-center"
                     style={{
-                      color: pathname.startsWith("/media") ? "#3966a2" : "var(--pw-text-navy)",
-                      borderBottom: pathname.startsWith("/media") ? "4.5px solid #3966a2" : "none",
+                      color: pathname.startsWith("/media") ? "var(--pw-header-active-text)" : "var(--pw-text-navy)",
+                      borderBottom: pathname.startsWith("/media") ? `var(--pw-header-active-border-width) solid var(--pw-header-active-border-color)` : "none",
                     }}
                     title="お役立ち情報"
                   >
-                    <FontAwesomeIcon icon={faComments} className="w-5 h-5" />
+                    <FontAwesomeIcon icon={faLightbulb} className="w-5 h-5" />
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
@@ -294,7 +294,7 @@ export function Header({ user }: HeaderProps) {
                     fontSize: "var(--pw-text-md)"
                   }}
                 >
-                  <FontAwesomeIcon icon={faComments} className="w-5 h-5" />
+                  <FontAwesomeIcon icon={faLightbulb} className="w-5 h-5" />
                   お役立ち情報
                 </Link>
               </nav>
