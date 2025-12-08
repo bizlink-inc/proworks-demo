@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getAllJobs } from "@/lib/kintone/services/job";
 import { getSession } from "@/lib/auth-server";
 import { getApplicationsByAuthUserId } from "@/lib/kintone/services/application";
+import { POSITION_MAPPING } from "@/components/dashboard-filters";
 
 export const GET = async (request: NextRequest) => {
   try {
@@ -10,10 +11,13 @@ export const GET = async (request: NextRequest) => {
     const query = searchParams.get("query") || "";
     const sort = searchParams.get("sort") || "new";
     const remoteParam = searchParams.get("remote") || "";
+    const positionsParam = searchParams.get("positions") || "";
+    const location = searchParams.get("location") || "";
     const nearestStation = searchParams.get("nearestStation") || "";
 
-    // リモートフィルターをパース（カンマ区切り）
+    // フィルターをパース（カンマ区切り）
     const remoteFilters = remoteParam ? remoteParam.split(",") : [];
+    const positionFilters = positionsParam ? positionsParam.split(",") : [];
 
     // kintoneからすべての案件を取得
     let jobs = await getAllJobs();
@@ -50,11 +54,58 @@ export const GET = async (request: NextRequest) => {
       });
     }
 
-    // リモート可否フィルター
+    // リモート可否フィルター（案件特徴から検索）
+    // 選択肢: フルリモート可, リモート併用可, 常駐案件
     if (remoteFilters.length > 0) {
       jobs = jobs.filter((job) => {
-        // 案件のリモート値がフィルター条件のいずれかに一致するか
-        return remoteFilters.includes(job.remote);
+        // 案件特徴（features配列）にフィルター条件のいずれかが含まれるか
+        return job.features?.some(feature => remoteFilters.includes(feature));
+      });
+    }
+
+    // 職種/ポジションフィルター
+    // マッピングに基づいて職種_ポジションを検索
+    if (positionFilters.length > 0) {
+      jobs = jobs.filter((job) => {
+        // 選択された各職種カテゴリに対してチェック
+        return positionFilters.some(category => {
+          const mappedValues = POSITION_MAPPING[category];
+          
+          if (!mappedValues || mappedValues.length === 0) {
+            // マッピングが空の場合（開発、その他）
+            if (category === "開発") {
+              // 開発はフリーワード的に検索（開発を含む職種）
+              return job.position?.some(p => 
+                p.includes("開発") || 
+                p.includes("エンジニア") && !p.includes("インフラ")
+              );
+            }
+            if (category === "その他") {
+              // その他は定義されたマッピング以外の職種
+              const allMappedPositions = Object.values(POSITION_MAPPING)
+                .flat()
+                .filter(v => v); // 空文字を除外
+              
+              return job.position?.some(p => 
+                !allMappedPositions.some(mapped => p.includes(mapped))
+              );
+            }
+            return false;
+          }
+          
+          // マッピングされた値のいずれかが職種_ポジションに含まれるか
+          return job.position?.some(p => 
+            mappedValues.some(mapped => p.includes(mapped))
+          );
+        });
+      });
+    }
+
+    // 勤務地エリアフィルター（部分一致検索）
+    if (location) {
+      const locationQuery = location.toLowerCase();
+      jobs = jobs.filter((job) => {
+        return job.location?.toLowerCase().includes(locationQuery);
       });
     }
 
@@ -97,5 +148,5 @@ export const GET = async (request: NextRequest) => {
       { error: "案件一覧の取得に失敗しました" },
       { status: 500 }
     );
-}
+  }
 };

@@ -90,21 +90,23 @@ export type Talent = {
 export type Job = {
   id: string;
   title: string;
-  features: string[];
-  position: string[];
+  features: string[]; // 案件特徴（フルリモート可、リモート併用可、常駐案件など）
+  position: string[]; // 職種_ポジション
   skills: string[]; // スキル（複数選択）
   description: string;
   environment: string;
   notes: string;
   requiredSkills: string;
   preferredSkills: string;
-  location: string;
+  location: string; // 勤務地エリア
   nearestStation: string;
   minHours: string;
   maxHours: string;
   period: string;
   rate: string;
   interviewCount: string;
+  remote?: string; // リモート可否（ドロップダウン_3）
+  isNew?: boolean; // 新着フラグ
   applicationStatus?: string | null; // ログインユーザーの応募ステータス
 };
 

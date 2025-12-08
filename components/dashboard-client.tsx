@@ -30,6 +30,8 @@ export const DashboardClient = ({ user }: DashboardClientProps) => {
     query: "", 
     sort: "new",
     remote: [],
+    positions: [],
+    location: "",
     nearestStation: "",
   })
   const [selectedJobId, setSelectedJobId] = useState<string | null>(null)
@@ -54,6 +56,16 @@ export const DashboardClient = ({ user }: DashboardClientProps) => {
     // リモートフィルター（複数選択可）
     if (filters.remote.length > 0) {
       params.set("remote", filters.remote.join(","))
+    }
+    
+    // 職種フィルター（複数選択可）
+    if (filters.positions.length > 0) {
+      params.set("positions", filters.positions.join(","))
+    }
+    
+    // 勤務地エリアフィルター
+    if (filters.location) {
+      params.set("location", filters.location)
     }
     
     // 最寄駅フィルター

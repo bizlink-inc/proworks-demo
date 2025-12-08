@@ -3,15 +3,44 @@
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
-import { PWInput } from "@/components/ui/pw-input"
 import { ChevronDown, ChevronUp, X, Search } from "lucide-react"
+
+// 職種マッピング定義
+// UI表示名 → 実際の職種_ポジションフィールド値
+export const POSITION_MAPPING: Record<string, string[]> = {
+  "開発": [], // 開発は特定のマッピングなし（フリーワード検索で対応）
+  "インフラ": ["インフラエンジニア"],
+  "PM・PMO": ["PM (プロジェクトマネージャー)", "PMO (プロジェクト管理支援)"],
+  "コンサル": ["SAPコンサルタント", "業務系コンサルタント", "ITコンサルタント"],
+  "デザイン": ["Webデザイナー", "UI / UXデザイナー"],
+  "その他": [], // その他は上記に該当しないものを検索
+}
+
+// リモート可否の選択肢（案件特徴フィールドの値）
+export const REMOTE_OPTIONS = [
+  { value: "フルリモート可", label: "フルリモート可" },
+  { value: "リモート併用可", label: "リモート併用可" },
+  { value: "常駐案件", label: "常駐案件" },
+]
+
+// 職種/ポジションの選択肢
+export const POSITION_OPTIONS = [
+  { value: "開発", label: "開発" },
+  { value: "インフラ", label: "インフラ" },
+  { value: "PM・PMO", label: "PM・PMO" },
+  { value: "コンサル", label: "コンサル" },
+  { value: "デザイン", label: "デザイン" },
+  { value: "その他", label: "その他" },
+]
 
 // フィルターの型定義
 export type JobFilters = {
   query: string
   sort: string
-  remote: string[] // 可, 不可, 条件付き可
-  nearestStation: string
+  remote: string[] // フルリモート可, リモート併用可, 常駐案件
+  positions: string[] // 開発, インフラ, PM・PMO, コンサル, デザイン, その他
+  location: string // 勤務地エリア
+  nearestStation: string // 最寄り駅
 }
 
 type DashboardFiltersProps = {
@@ -23,6 +52,8 @@ export const DashboardFilters = ({ onSearch, currentSort = "new" }: DashboardFil
   const [query, setQuery] = useState("")
   const [sort, setSort] = useState(currentSort)
   const [remoteOptions, setRemoteOptions] = useState<string[]>([])
+  const [positions, setPositions] = useState<string[]>([])
+  const [location, setLocation] = useState("")
   const [nearestStation, setNearestStation] = useState("")
   const [showAdvanced, setShowAdvanced] = useState(false)
   const [isMounted, setIsMounted] = useState(false)
@@ -44,12 +75,23 @@ export const DashboardFilters = ({ onSearch, currentSort = "new" }: DashboardFil
     }
   }
 
+  // 職種の切り替え
+  const handlePositionChange = (value: string, checked: boolean) => {
+    if (checked) {
+      setPositions([...positions, value])
+    } else {
+      setPositions(positions.filter(v => v !== value))
+    }
+  }
+
   // 検索実行
   const handleSearch = () => {
     onSearch({ 
       query, 
       sort,
       remote: remoteOptions,
+      positions,
+      location,
       nearestStation,
     })
   }
@@ -58,11 +100,15 @@ export const DashboardFilters = ({ onSearch, currentSort = "new" }: DashboardFil
   const handleClear = () => {
     setQuery("")
     setRemoteOptions([])
+    setPositions([])
+    setLocation("")
     setNearestStation("")
     onSearch({ 
       query: "", 
       sort,
       remote: [],
+      positions: [],
+      location: "",
       nearestStation: "",
     })
   }
@@ -71,6 +117,9 @@ export const DashboardFilters = ({ onSearch, currentSort = "new" }: DashboardFil
   const handleClearQuery = () => {
     setQuery("")
   }
+
+  // 共通の入力スタイル
+  const inputStyle = "h-9 w-full py-2 text-sm transition-colors px-3 placeholder:text-[var(--pw-text-light-gray)] focus-visible:outline-none rounded-[var(--pw-radius-sm)] border border-[var(--pw-input-border)] bg-white focus:border-[var(--pw-input-focus)]"
 
   // Hydration errorを避けるため、クライアントサイドでマウントされるまで簡易版を表示
   if (!isMounted) {
@@ -83,8 +132,8 @@ export const DashboardFilters = ({ onSearch, currentSort = "new" }: DashboardFil
         }}
       >
         <div className="flex gap-4">
-          <div className="flex-1 h-10 border rounded-md bg-white" />
-          <div className="h-10 w-32 border rounded-md bg-white" />
+          <div className="flex-1 h-9 border rounded-md bg-white" />
+          <div className="h-9 w-32 border rounded-md bg-white" />
         </div>
       </div>
     )
@@ -98,20 +147,20 @@ export const DashboardFilters = ({ onSearch, currentSort = "new" }: DashboardFil
         border: "1px solid #9ab6ca"
       }}
     >
-      {/* 1行目: フリーワード検索 */}
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto_1fr] gap-4 items-start">
-        {/* 左側: フリーワード + リモート可否 */}
-        <div className="space-y-4">
+      {/* メインフィルター */}
+      <div className="flex flex-col lg:flex-row gap-6">
+        {/* 左セクション: フリーワード + リモート可否 */}
+        <div className="flex-1 space-y-3">
           {/* フリーワード検索 */}
           <div className="relative">
             <input
               type="text"
-          placeholder="フリーワードで探す"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-              className="flex h-10 w-full py-2 text-sm transition-colors px-3 pr-10 placeholder:text-[var(--pw-text-light-gray)] focus-visible:outline-none rounded-[var(--pw-radius-sm)] border border-[var(--pw-input-border)] bg-white focus:bg-[var(--pw-input-error-bg)] focus:border-[var(--pw-input-focus)]"
-        />
+              placeholder="フリーワードで探す"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+              className={`${inputStyle} pr-10`}
+            />
             <button
               type="button"
               onClick={handleClearQuery}
@@ -123,7 +172,7 @@ export const DashboardFilters = ({ onSearch, currentSort = "new" }: DashboardFil
           </div>
 
           {/* リモート可否 */}
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4 flex-wrap">
             <span
               className="font-bold whitespace-nowrap"
               style={{ 
@@ -133,87 +182,123 @@ export const DashboardFilters = ({ onSearch, currentSort = "new" }: DashboardFil
             >
               リモート可否
             </span>
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-1.5">
-                <input
-                  type="checkbox"
-                  id="remote-yes"
-                  checked={remoteOptions.includes("可")}
-                  onChange={(e) => handleRemoteChange("可", e.target.checked)}
-                  className="w-4 h-4 rounded border-2 border-[var(--pw-border-gray)] bg-white accent-[var(--pw-button-primary)] cursor-pointer"
-                />
-                <Label
-                  htmlFor="remote-yes"
-                  className="cursor-pointer font-bold"
-                  style={{ fontSize: "var(--pw-text-sm)", color: "var(--pw-text-primary)" }}
-                >
-                  可
-                </Label>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <input
-                  type="checkbox"
-                  id="remote-no"
-                  checked={remoteOptions.includes("不可")}
-                  onChange={(e) => handleRemoteChange("不可", e.target.checked)}
-                  className="w-4 h-4 rounded border-2 border-[var(--pw-border-gray)] bg-white accent-[var(--pw-button-primary)] cursor-pointer"
-                />
-                <Label
-                  htmlFor="remote-no"
-                  className="cursor-pointer font-bold"
-                  style={{ fontSize: "var(--pw-text-sm)", color: "var(--pw-text-primary)" }}
-                >
-                  不可
-                </Label>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <input
-                  type="checkbox"
-                  id="remote-conditional"
-                  checked={remoteOptions.includes("条件付き可")}
-                  onChange={(e) => handleRemoteChange("条件付き可", e.target.checked)}
-                  className="w-4 h-4 rounded border-2 border-[var(--pw-border-gray)] bg-white accent-[var(--pw-button-primary)] cursor-pointer"
-                />
-                <Label
-                  htmlFor="remote-conditional"
-                  className="cursor-pointer font-bold"
-                  style={{ fontSize: "var(--pw-text-sm)", color: "var(--pw-text-primary)" }}
-                >
-                  条件付き可
-                </Label>
-              </div>
+            <div className="flex items-center gap-4 flex-wrap">
+              {REMOTE_OPTIONS.map((option) => (
+                <div key={option.value} className="flex items-center gap-1.5">
+                  <input
+                    type="checkbox"
+                    id={`remote-${option.value}`}
+                    checked={remoteOptions.includes(option.value)}
+                    onChange={(e) => handleRemoteChange(option.value, e.target.checked)}
+                    className="w-4 h-4 rounded border-2 border-[var(--pw-border-gray)] bg-white accent-[var(--pw-button-primary)] cursor-pointer"
+                  />
+                  <Label
+                    htmlFor={`remote-${option.value}`}
+                    className="cursor-pointer font-medium"
+                    style={{ fontSize: "var(--pw-text-sm)", color: "var(--pw-text-primary)" }}
+                  >
+                    {option.label}
+                  </Label>
+                </div>
+              ))}
             </div>
           </div>
         </div>
 
-        {/* 中央: 最寄り駅 */}
-        <div className="space-y-4">
+        {/* 縦線（区切り） */}
+        <div 
+          className="hidden lg:block w-px self-stretch"
+          style={{ backgroundColor: "#9ab6ca" }}
+        />
+
+        {/* 中央セクション: 勤務地エリア + 最寄り駅 */}
+        <div className="space-y-3">
+          {/* 勤務地エリア */}
           <div className="flex items-center gap-3">
             <span
-              className="font-medium whitespace-nowrap"
+              className="font-bold whitespace-nowrap"
               style={{ 
                 fontSize: "var(--pw-text-sm)",
                 color: "var(--pw-text-primary)"
               }}
             >
+              勤務地エリア
+            </span>
+            <input
+              type="text"
+              placeholder="フリーワード"
+              value={location}
+              onChange={(e) => setLocation(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+              className={`${inputStyle} w-40`}
+            />
+          </div>
+
+          {/* 最寄り駅 */}
+          <div className="flex items-center gap-3">
+            <span
+              className="font-bold whitespace-nowrap"
+              style={{ 
+                fontSize: "var(--pw-text-sm)",
+                color: "var(--pw-text-primary)",
+                marginLeft: "1.75rem" // 「勤務地エリア」との位置調整
+              }}
+            >
               最寄り駅
             </span>
-            <PWInput
+            <input
+              type="text"
               placeholder="フリーワード"
               value={nearestStation}
               onChange={(e) => setNearestStation(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-              className="w-48"
+              className={`${inputStyle} w-40`}
             />
           </div>
         </div>
 
-        {/* 右側: 空欄（職種/ポジションは除外のため） */}
-        <div />
+        {/* 縦線（区切り） */}
+        <div 
+          className="hidden lg:block w-px self-stretch"
+          style={{ backgroundColor: "#9ab6ca" }}
+        />
+
+        {/* 右セクション: 職種/ポジション */}
+        <div className="space-y-2">
+          <span
+            className="font-bold block"
+            style={{ 
+              fontSize: "var(--pw-text-sm)",
+              color: "var(--pw-text-primary)"
+            }}
+          >
+            職種/ポジション
+          </span>
+          <div className="grid grid-cols-3 gap-x-4 gap-y-2">
+            {POSITION_OPTIONS.map((option) => (
+              <div key={option.value} className="flex items-center gap-1.5">
+                <input
+                  type="checkbox"
+                  id={`position-${option.value}`}
+                  checked={positions.includes(option.value)}
+                  onChange={(e) => handlePositionChange(option.value, e.target.checked)}
+                  className="w-4 h-4 rounded border-2 border-[var(--pw-border-gray)] bg-white accent-[var(--pw-button-primary)] cursor-pointer"
+                />
+                <Label
+                  htmlFor={`position-${option.value}`}
+                  className="cursor-pointer font-medium whitespace-nowrap"
+                  style={{ fontSize: "var(--pw-text-sm)", color: "var(--pw-text-primary)" }}
+                >
+                  {option.label}
+                </Label>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
 
-      {/* 詳細条件トグル */}
-      <div className="mt-4">
+      {/* 詳細条件トグル + ボタン */}
+      <div className="flex items-center justify-between mt-4">
         <button
           type="button"
           onClick={() => setShowAdvanced(!showAdvanced)}
@@ -223,6 +308,38 @@ export const DashboardFilters = ({ onSearch, currentSort = "new" }: DashboardFil
           {showAdvanced ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
           もっと詳細な条件を追加する
         </button>
+
+        {/* ボタン */}
+        <div className="flex gap-3">
+          <Button
+            type="button"
+            onClick={handleClear}
+            style={{ 
+              fontSize: "var(--pw-text-md)",
+              backgroundColor: "#8b8b8b",
+              color: "white",
+              borderRadius: "var(--pw-radius-sm)",
+              minWidth: "120px"
+            }}
+            className="hover:opacity-90 transition-opacity"
+          >
+            条件をクリア
+          </Button>
+          <Button 
+            type="button"
+            variant="pw-dark"
+            onClick={handleSearch}
+            style={{ 
+              fontSize: "var(--pw-text-md)", 
+              whiteSpace: "nowrap",
+              minWidth: "180px"
+            }}
+            className="flex items-center gap-2"
+          >
+            <Search className="w-4 h-4" />
+            この条件で案件検索
+          </Button>
+        </div>
       </div>
 
       {/* 詳細条件（展開時） */}
@@ -239,33 +356,6 @@ export const DashboardFilters = ({ onSearch, currentSort = "new" }: DashboardFil
           </p>
         </div>
       )}
-
-      {/* ボタン */}
-      <div className="flex justify-end gap-3 mt-6">
-        <Button
-          type="button"
-          onClick={handleClear}
-          style={{ 
-            fontSize: "var(--pw-text-md)",
-            backgroundColor: "#8b8b8b",
-            color: "white",
-            borderRadius: "var(--pw-radius-sm)"
-          }}
-          className="hover:opacity-90 transition-opacity"
-        >
-          条件をクリア
-        </Button>
-        <Button 
-          type="button"
-          variant="pw-dark"
-          onClick={handleSearch}
-          style={{ fontSize: "var(--pw-text-md)", whiteSpace: "nowrap" }}
-          className="flex items-center gap-2"
-        >
-          <Search className="w-4 h-4" />
-          この条件で案件検索
-        </Button>
-      </div>
     </div>
   )
 }
