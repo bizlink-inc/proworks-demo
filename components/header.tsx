@@ -82,8 +82,8 @@ export function Header({ user }: HeaderProps) {
 
         {user ? (
           <>
-            {/* デスクトップナビゲーション - 大画面: テキスト付き（中央寄せ） */}
-            <nav className="hidden lg:flex gap-0 flex-1 justify-center">
+            {/* デスクトップナビゲーション - 大画面: テキスト付き（左寄せ） */}
+            <nav className="hidden lg:flex gap-0 ml-6">
               <Link
                 href="/me"
                 className="px-4 py-3 transition-colors flex items-center gap-2"
@@ -215,8 +215,8 @@ export function Header({ user }: HeaderProps) {
               </DropdownMenu>
             </nav>
 
-            {/* 右側のスペーサー（タブレット用） */}
-            <div className="hidden md:block lg:hidden flex-1" />
+            {/* 右側のスペーサー */}
+            <div className="flex-1" />
 
             {/* デスクトップ右側アイコン - 大画面 */}
             <div className="hidden lg:flex items-center gap-4">
@@ -233,7 +233,7 @@ export function Header({ user }: HeaderProps) {
               <span
                 className="font-medium"
                 style={{
-                  fontSize: "var(--pw-text-sm)",
+                  fontSize: "var(--pw-text-md)",
                   color: "var(--pw-text-primary)"
                 }}
               >
@@ -255,7 +255,7 @@ export function Header({ user }: HeaderProps) {
             </div>
 
             {/* タブレット右側アイコン - 中画面 */}
-            <div className="hidden md:flex lg:hidden items-center gap-3">
+            <div className="hidden md:flex lg:hidden items-center gap-3 ml-auto">
               <button
                 className="p-2 transition-colors hover:opacity-70"
                 style={{ color: "var(--pw-text-navy)" }}
@@ -269,7 +269,7 @@ export function Header({ user }: HeaderProps) {
               <span
                 className="font-medium"
                 style={{
-                  fontSize: "var(--pw-text-sm)",
+                  fontSize: "var(--pw-text-md)",
                   color: "var(--pw-text-primary)"
                 }}
               >

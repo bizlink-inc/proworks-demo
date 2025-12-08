@@ -137,7 +137,7 @@ export const DashboardClient = ({ user }: DashboardClientProps) => {
               fontWeight: 600
             }}
           >
-            検索結果 {total}件
+            検索結果 <span style={{ fontSize: "var(--pw-text-xl)" }}>{total}</span>件
           </span>
           
           {totalPages > 1 && (
@@ -181,7 +181,7 @@ export const DashboardClient = ({ user }: DashboardClientProps) => {
                 fontWeight: 600
               }}
             >
-              検索結果 {total}件
+              検索結果 <span style={{ fontSize: "var(--pw-text-xl)" }}>{total}</span>件
             </span>
             
             {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
