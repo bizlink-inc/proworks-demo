@@ -68,7 +68,6 @@ export default function SignUpPage() {
   const [birthDay, setBirthDay] = useState("")
   const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
-  const [rememberMe, setRememberMe] = useState(false)
   const [receiveEmailDelivery, setReceiveEmailDelivery] = useState(true)
   const [termsAgreed, setTermsAgreed] = useState(false)
 
@@ -122,7 +121,6 @@ export default function SignUpPage() {
           birthDate,
           emailDeliveryStatus: receiveEmailDelivery ? "配信中" : "配信停止",
           termsAgreed: "同意済み",
-          rememberMe,
         }),
       })
 
@@ -212,8 +210,53 @@ export default function SignUpPage() {
     )
   }
 
+  const policyLinks = (
+    <div className="flex items-center justify-center gap-4">
+      <Link
+        href="/terms"
+        className="hover:underline"
+        style={{
+          fontSize: "var(--pw-text-xs)",
+          color: "var(--pw-text-gray)"
+        }}
+      >
+        利用規約
+      </Link>
+      <Link
+        href="/privacy"
+        className="hover:underline"
+        style={{
+          fontSize: "var(--pw-text-xs)",
+          color: "var(--pw-text-gray)"
+        }}
+      >
+        プライバシーポリシー
+      </Link>
+      <Link
+        href="/cookie"
+        className="hover:underline"
+        style={{
+          fontSize: "var(--pw-text-xs)",
+          color: "var(--pw-text-gray)"
+        }}
+      >
+        クッキーポリシー
+      </Link>
+      <Link
+        href="/news"
+        className="hover:underline"
+        style={{
+          fontSize: "var(--pw-text-xs)",
+          color: "var(--pw-text-gray)"
+        }}
+      >
+        お知らせ
+      </Link>
+    </div>
+  )
+
   return (
-    <CenteredLayout>
+    <CenteredLayout showFooter={false} bottomContent={policyLinks}>
       <div className="text-center mb-8">
         <h1
           className="font-bold mb-2"
@@ -226,7 +269,7 @@ export default function SignUpPage() {
           新規登録
         </h1>
         <p
-          className="font-medium"
+          className="font-bold"
           style={{ 
             fontSize: "var(--pw-text-base)",
             color: "var(--pw-text-primary)"
@@ -240,7 +283,7 @@ export default function SignUpPage() {
         {/* お名前 */}
         <div>
           <Label
-            className="text-[var(--pw-text-primary)] mb-2 block"
+            className="text-[var(--pw-text-primary)] mb-2 block font-bold"
             style={{ fontSize: "var(--pw-text-sm)" }}
           >
             お名前
@@ -267,7 +310,7 @@ export default function SignUpPage() {
         <div>
           <Label
             htmlFor="email"
-            className="text-[var(--pw-text-primary)] mb-2 block"
+            className="text-[var(--pw-text-primary)] mb-2 block font-bold"
             style={{ fontSize: "var(--pw-text-sm)" }}
           >
             メールアドレス
@@ -286,7 +329,7 @@ export default function SignUpPage() {
         <div>
           <Label
             htmlFor="password"
-            className="text-[var(--pw-text-primary)] mb-2 block"
+            className="text-[var(--pw-text-primary)] mb-2 block font-bold"
             style={{ fontSize: "var(--pw-text-sm)" }}
           >
             パスワード
@@ -332,7 +375,7 @@ export default function SignUpPage() {
         <div>
           <Label
             htmlFor="phone"
-            className="text-[var(--pw-text-primary)] mb-2 block"
+            className="text-[var(--pw-text-primary)] mb-2 block font-bold"
             style={{ fontSize: "var(--pw-text-sm)" }}
           >
             電話番号
@@ -350,7 +393,7 @@ export default function SignUpPage() {
         {/* 生年月日 */}
         <div>
           <Label
-            className="text-[var(--pw-text-primary)] mb-2 block"
+            className="text-[var(--pw-text-primary)] mb-2 block font-bold"
             style={{ fontSize: "var(--pw-text-sm)" }}
           >
             生年月日
@@ -409,23 +452,6 @@ export default function SignUpPage() {
             style={{ fontSize: "var(--pw-text-sm)" }}
           >
             新着案件・サービス情報を受け取る
-          </Label>
-        </div>
-
-        {/* ログイン状態を保持 */}
-        <div className="flex items-center gap-2 pt-2">
-          <Checkbox
-            id="remember-me"
-            checked={rememberMe}
-            onCheckedChange={(checked) => setRememberMe(checked === true)}
-            className="data-[state=checked]:bg-[var(--pw-button-primary)] data-[state=checked]:border-[var(--pw-button-primary)]"
-          />
-          <Label
-            htmlFor="remember-me"
-            className="text-[var(--pw-text-primary)] cursor-pointer font-medium"
-            style={{ fontSize: "var(--pw-text-sm)" }}
-          >
-            ログイン状態を保持
           </Label>
         </div>
 

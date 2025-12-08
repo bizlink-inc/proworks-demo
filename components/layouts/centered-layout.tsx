@@ -10,9 +10,10 @@ interface CenteredLayoutProps {
   children: React.ReactNode
   showFooter?: boolean
   showHeader?: boolean
+  bottomContent?: React.ReactNode
 }
 
-export const CenteredLayout = ({ children, showFooter = true, showHeader = true }: CenteredLayoutProps) => {
+export const CenteredLayout = ({ children, showFooter = true, showHeader = true, bottomContent }: CenteredLayoutProps) => {
   return (
     <div className="min-h-screen flex flex-col bg-[var(--pw-bg-body)]">
       {showHeader && (
@@ -34,14 +35,20 @@ export const CenteredLayout = ({ children, showFooter = true, showHeader = true 
         </header>
       )}
       <main className="flex-1 flex items-center justify-center px-4 py-8">
-        <div
-          className="w-full bg-white rounded-[var(--pw-radius-md)] shadow-[0_0_0_1px_var(--pw-border-lighter)] p-8 sm:p-10"
-          style={{
-            maxWidth: '520px',
-            boxShadow: '0 2px 8px var(--pw-shadow)',
-          }}
-        >
-          {children}
+        <div className="flex flex-col items-center" style={{ maxWidth: '520px', width: '100%' }}>
+          <div
+            className="w-full bg-white rounded-[var(--pw-radius-md)] shadow-[0_0_0_1px_var(--pw-border-lighter)] p-8 sm:p-10"
+            style={{
+              boxShadow: '0 2px 8px var(--pw-shadow)',
+            }}
+          >
+            {children}
+          </div>
+          {bottomContent && (
+            <div className="mt-6 w-full">
+              {bottomContent}
+            </div>
+          )}
         </div>
       </main>
       {showFooter && (
