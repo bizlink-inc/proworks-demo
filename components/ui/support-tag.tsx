@@ -11,7 +11,7 @@ const SupportTag = React.forwardRef<HTMLSpanElement, SupportTagProps>(
     const isRequired = variant === "required"
 
     const baseStyle =
-      "inline-block px-3 py-1 rounded text-sm font-medium leading-none select-none"
+      "inline-block px-3 py-1 text-sm font-medium leading-none select-none"
 
     const style = isRequired
       ? `${baseStyle} text-white`

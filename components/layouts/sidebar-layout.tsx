@@ -7,7 +7,7 @@
 import type React from "react"
 import { cn } from "@/lib/utils"
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faAddressCard, faFileLines, faCircleCheck, faEnvelope } from '@fortawesome/free-solid-svg-icons'
+import { faAddressCard, faFileLines, faCircleCheck, faEnvelope } from '@fortawesome/free-regular-svg-icons'
 
 interface SidebarLayoutProps {
   children: React.ReactNode
@@ -40,20 +40,12 @@ export const SidebarLayout = ({
       <div className="flex flex-col md:flex-row max-w-[1400px] mx-auto">
         {/* サイドメニュー - デスクトップ */}
         <aside
-          className="hidden md:block w-64 min-h-screen"
+          className="hidden md:block w-64 min-h-screen pt-6"
           style={{ 
             backgroundColor: "var(--pw-bg-body)",
           }}
           aria-label="サイドバーナビゲーション"
         >
-          <div className="px-6 py-4">
-            <p 
-              className="text-sm font-medium"
-              style={{ color: "var(--pw-text-primary)" }}
-            >
-              メニュー
-            </p>
-          </div>
           <nav className="py-2 pr-4" role="navigation">
             {menuItems.map((item) => (
               <button

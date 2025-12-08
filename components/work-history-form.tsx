@@ -19,20 +19,17 @@ type WorkHistoryFormProps = {
 const FieldSection = ({
   label,
   required = false,
-  helper,
+  isEmpty = false,
   children,
 }: {
   label: string;
   required?: boolean;
-  helper?: React.ReactNode;
+  isEmpty?: boolean;
   children: React.ReactNode;
 }) => {
   return (
-    <section
-      className="py-6"
-      style={{ borderBottom: "1px solid var(--pw-border-lighter)" }}
-    >
-      <div className="flex flex-col gap-2 mb-4">
+    <section className="py-6">
+      <div className="flex flex-col gap-1 mb-4">
         <div className="flex items-center gap-3">
           {required && <SupportTag>必須</SupportTag>}
           <div>
@@ -44,9 +41,9 @@ const FieldSection = ({
             </p>
           </div>
         </div>
-        {helper && (
-          <p className="text-xs" style={{ color: "var(--pw-alert-error)" }}>
-            {helper}
+        {required && isEmpty && (
+          <p style={{ fontSize: "var(--pw-text-xs)", color: "var(--pw-alert-error)" }}>
+            ※未入力です
           </p>
         )}
       </div>
@@ -117,10 +114,7 @@ export const WorkHistoryForm = ({ user, onUpdate }: WorkHistoryFormProps) => {
           border: "1px solid var(--pw-border-lighter)",
         }}
       >
-        <div
-          className="px-6 py-5 border-b"
-          style={{ borderColor: "var(--pw-border-lighter)" }}
-        >
+        <div className="px-6 py-5">
           <h2
             className="font-semibold"
             style={{ fontSize: "var(--pw-text-xl)", color: "var(--pw-text-primary)" }}
@@ -129,8 +123,10 @@ export const WorkHistoryForm = ({ user, onUpdate }: WorkHistoryFormProps) => {
           </h2>
         </div>
 
+        <div className="mx-6" style={{ borderTop: "1px solid var(--pw-border-lighter)" }} />
+
         <div className="px-6">
-          <FieldSection label="言語・ツールの経験" required helper="※入力必須です">
+          <FieldSection label="言語・ツールの経験" required isEmpty={!formData.skills}>
         <Textarea
           id="skills"
           placeholder="JavaScript, TypeScript, React, Next.js, Python, AWS など"
@@ -145,7 +141,7 @@ export const WorkHistoryForm = ({ user, onUpdate }: WorkHistoryFormProps) => {
         </p>
           </FieldSection>
 
-          <FieldSection label="主な実績・PR・職務経歴" required helper="※入力必須です">
+          <FieldSection label="主な実績・PR・職務経歴" required isEmpty={!formData.experience}>
         <Textarea
           id="experience"
               placeholder="職務経歴・実績・アピールポイントなどをできるだけ具体的にご入力ください。"
@@ -157,7 +153,7 @@ export const WorkHistoryForm = ({ user, onUpdate }: WorkHistoryFormProps) => {
         />
           </FieldSection>
 
-          <FieldSection label="経歴書アップロード" helper="資料を添付してください。">
+          <FieldSection label="経歴書アップロード">
         <div className="space-y-4">
           <FileList
             files={formData.resumeFiles}
@@ -199,19 +195,18 @@ export const WorkHistoryForm = ({ user, onUpdate }: WorkHistoryFormProps) => {
           }
         />
           </FieldSection>
-        </div>
-      </div>
 
-      <div className="flex justify-end">
-      <Button
-        type="submit"
-          variant="pw-primary"
-          size="lg"
-        disabled={loading}
-          className="px-10"
-      >
-          {loading ? "保存中..." : "職歴・資格を更新する"}
-      </Button>
+          <div className="flex justify-center py-6">
+            <Button
+              type="submit"
+              variant="pw-primary"
+              disabled={loading}
+              style={{ fontSize: "var(--pw-text-md)" }}
+            >
+              {loading ? "保存中..." : "職歴・資格を更新する"}
+            </Button>
+          </div>
+        </div>
       </div>
     </form>
   );

@@ -3,7 +3,8 @@
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { ChevronDown, HelpCircle, LogOut } from "lucide-react"
+import Image from "next/image"
+import { ChevronDown, HelpCircle } from "lucide-react"
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
 import { faGear, faList, faLightbulb } from "@fortawesome/free-solid-svg-icons"
 import { faSquareCheck } from "@fortawesome/free-regular-svg-icons"
@@ -40,13 +41,15 @@ export function Header({ user }: HeaderProps) {
         <div className="container mx-auto px-6 py-4 flex items-center justify-between">
           <Link
             href={user ? "/" : "/landing"}
-            className="font-bold"
-            style={{ 
-              color: "var(--pw-border-dark)",
-              fontSize: "var(--pw-text-xl)"
-            }}
+            className="font-bold flex-shrink-0"
           >
-            PRO WORKS
+            <Image
+              src="/logo_proworks.svg"
+              alt="PRO WORKS"
+              width={150}
+              height={24}
+              priority
+            />
           </Link>
           <div className="w-8 h-8" /> {/* プレースホルダー */}
         </div>
@@ -67,12 +70,14 @@ export function Header({ user }: HeaderProps) {
         <Link
           href={user ? "/" : "/landing"}
           className="font-bold flex-shrink-0"
-          style={{
-            color: "var(--pw-text-navy)",
-            fontSize: "var(--pw-text-xl)"
-          }}
         >
-          PRO WORKS
+          <Image
+            src="/logo_proworks.svg"
+            alt="PRO WORKS"
+            width={150}
+            height={24}
+            priority
+          />
         </Link>
 
         {user ? (
@@ -238,10 +243,14 @@ export function Header({ user }: HeaderProps) {
               <button
                 onClick={onSignOut}
                 className="p-2 transition-colors hover:opacity-70"
-                style={{ color: "var(--pw-text-navy)" }}
                 title="ログアウト"
               >
-                <LogOut className="w-5 h-5" />
+                <Image
+                  src="/logout.svg"
+                  alt="ログアウト"
+                  width={20}
+                  height={20}
+                />
               </button>
             </div>
 
@@ -270,10 +279,14 @@ export function Header({ user }: HeaderProps) {
               <button
                 onClick={onSignOut}
                 className="p-2 transition-colors hover:opacity-70"
-                style={{ color: "var(--pw-text-navy)" }}
                 title="ログアウト"
               >
-                <LogOut className="w-5 h-5" />
+                <Image
+                  src="/logout.svg"
+                  alt="ログアウト"
+                  width={20}
+                  height={20}
+                />
               </button>
             </div>
 

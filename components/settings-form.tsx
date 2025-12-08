@@ -7,7 +7,8 @@ import { Label } from "@/components/ui/label"
 import { useToast } from "@/hooks/use-toast"
 import { FormSection } from "@/components/ui/form-section"
 import { PWInput } from "@/components/ui/pw-input"
-import { Eye, EyeOff } from "lucide-react"
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
+import { faEyeSlash, faEye } from "@fortawesome/free-solid-svg-icons"
 import type { Talent } from "@/lib/kintone/types"
 
 interface SettingsFormProps {
@@ -224,26 +225,54 @@ export const SettingsForm = ({ user }: SettingsFormProps) => {
               </Label>
               <div className="flex items-center gap-6">
                 <label className="flex items-center gap-2 cursor-pointer">
+                  <span
+                    className="w-5 h-5 rounded-full border flex items-center justify-center"
+                    style={{
+                      borderColor: "var(--pw-border-gray)",
+                      backgroundColor: "transparent",
+                    }}
+                  >
+                    {emailData.emailDeliveryStatus === "receive" && (
+                      <span 
+                        className="w-3 h-3 rounded-full"
+                        style={{ backgroundColor: "var(--pw-button-primary)" }}
+                      />
+                    )}
+                  </span>
                   <input
                     type="radio"
                     name="emailDeliveryStatus"
                     value="receive"
                     checked={emailData.emailDeliveryStatus === "receive"}
                     onChange={(e) => setEmailData({ ...emailData, emailDeliveryStatus: e.target.value })}
-                    className="w-4 h-4 accent-[var(--pw-button-primary)]"
+                    className="sr-only"
                   />
                   <span style={{ fontSize: "var(--pw-text-sm)", color: "var(--pw-text-primary)" }}>
                     受信する
                   </span>
                 </label>
                 <label className="flex items-center gap-2 cursor-pointer">
+                  <span
+                    className="w-5 h-5 rounded-full border flex items-center justify-center"
+                    style={{
+                      borderColor: "var(--pw-border-gray)",
+                      backgroundColor: "transparent",
+                    }}
+                  >
+                    {emailData.emailDeliveryStatus === "stop" && (
+                      <span 
+                        className="w-3 h-3 rounded-full"
+                        style={{ backgroundColor: "var(--pw-button-primary)" }}
+                      />
+                    )}
+                  </span>
                   <input
                     type="radio"
                     name="emailDeliveryStatus"
                     value="stop"
                     checked={emailData.emailDeliveryStatus === "stop"}
                     onChange={(e) => setEmailData({ ...emailData, emailDeliveryStatus: e.target.value })}
-                    className="w-4 h-4 accent-[var(--pw-button-primary)]"
+                    className="sr-only"
                   />
                   <span style={{ fontSize: "var(--pw-text-sm)", color: "var(--pw-text-primary)" }}>
                     停止する
@@ -274,22 +303,22 @@ export const SettingsForm = ({ user }: SettingsFormProps) => {
           <Divider />
           
           <div className="py-4">
-            <div className="flex items-center gap-8">
+            <div className="flex items-center gap-4">
               <Label
                 htmlFor="currentPassword"
-                className="w-32 flex-shrink-0"
+                className="w-36 flex-shrink-0"
                 style={{ color: "var(--pw-text-primary)" }}
               >
                 現在のパスワード
               </Label>
-              <div className="relative flex-1" style={{ maxWidth: "400px" }}>
+              <div className="relative flex-1 min-w-0">
                 <PWInput
                   id="currentPassword"
                   type={showCurrentPassword ? "text" : "password"}
                   placeholder=""
                   value={passwordData.currentPassword}
                   onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
-                  className="pr-10"
+                  className="pr-10 w-full"
                 />
                 <button
                   type="button"
@@ -297,26 +326,22 @@ export const SettingsForm = ({ user }: SettingsFormProps) => {
                   className="absolute right-3 top-1/2 -translate-y-1/2"
                   style={{ color: "var(--pw-button-primary)" }}
                 >
-                  {showCurrentPassword ? (
-                    <Eye className="w-5 h-5" />
-                  ) : (
-                    <EyeOff className="w-5 h-5" />
-                  )}
+                  <FontAwesomeIcon icon={showCurrentPassword ? faEye : faEyeSlash} className="w-5 h-5" />
                 </button>
               </div>
             </div>
           </div>
 
           <div className="py-4">
-            <div className="flex items-center gap-8">
+            <div className="flex items-center gap-4">
               <Label
                 htmlFor="newPassword"
-                className="w-32 flex-shrink-0"
+                className="w-36 flex-shrink-0"
                 style={{ color: "var(--pw-text-primary)" }}
               >
                 新しいパスワード
               </Label>
-              <div className="flex-1" style={{ maxWidth: "400px" }}>
+              <div className="flex-1 min-w-0">
                 <div className="relative">
                   <PWInput
                     id="newPassword"
@@ -324,7 +349,7 @@ export const SettingsForm = ({ user }: SettingsFormProps) => {
                     placeholder=""
                     value={passwordData.newPassword}
                     onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
-                    className="pr-10"
+                    className="pr-10 w-full"
                     style={{
                       borderColor: showPasswordError ? "#dc2626" : undefined,
                     }}
@@ -333,26 +358,22 @@ export const SettingsForm = ({ user }: SettingsFormProps) => {
                     type="button"
                     onClick={() => setShowNewPassword(!showNewPassword)}
                     className="absolute right-3 top-1/2 -translate-y-1/2"
-                    style={{ color: showPasswordError ? "#dc2626" : "var(--pw-button-primary)" }}
+                    style={{ color: "var(--pw-button-primary)" }}
                   >
-                    {showNewPassword ? (
-                      <Eye className="w-5 h-5" />
-                    ) : (
-                      <EyeOff className="w-5 h-5" />
-                    )}
+                    <FontAwesomeIcon icon={showNewPassword ? faEye : faEyeSlash} className="w-5 h-5" />
                   </button>
                 </div>
-                <p
-                  className="mt-2"
-                  style={{ 
-                    fontSize: "var(--pw-text-xs)", 
-                    color: showPasswordError ? "#dc2626" : "var(--pw-text-gray)" 
-                  }}
-                >
-                  ※12文字以上で、英大文字・小文字・数字・記号のうち3種類以上を含めてください。
-                </p>
               </div>
             </div>
+            <p
+              className="mt-2 ml-40"
+              style={{ 
+                fontSize: "var(--pw-text-xs)", 
+                color: showPasswordError ? "#dc2626" : "var(--pw-text-gray)" 
+              }}
+            >
+              ※12文字以上で、英大文字・小文字・数字・記号のうち3種類以上を含めてください。
+            </p>
           </div>
 
           <Divider />
