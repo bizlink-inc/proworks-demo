@@ -72,24 +72,6 @@ export const GET = async (request: NextRequest) => {
           const mappedValues = POSITION_MAPPING[category];
           
           if (!mappedValues || mappedValues.length === 0) {
-            // マッピングが空の場合（開発、その他）
-            if (category === "開発") {
-              // 開発はフリーワード的に検索（開発を含む職種）
-              return job.position?.some(p => 
-                p.includes("開発") || 
-                p.includes("エンジニア") && !p.includes("インフラ")
-              );
-            }
-            if (category === "その他") {
-              // その他は定義されたマッピング以外の職種
-              const allMappedPositions = Object.values(POSITION_MAPPING)
-                .flat()
-                .filter(v => v); // 空文字を除外
-              
-              return job.position?.some(p => 
-                !allMappedPositions.some(mapped => p.includes(mapped))
-              );
-            }
             return false;
           }
           
@@ -148,5 +130,5 @@ export const GET = async (request: NextRequest) => {
       { error: "案件一覧の取得に失敗しました" },
       { status: 500 }
     );
-  }
+}
 };

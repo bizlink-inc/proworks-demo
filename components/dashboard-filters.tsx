@@ -8,12 +8,10 @@ import { ChevronDown, ChevronUp, X, Search } from "lucide-react"
 // 職種マッピング定義
 // UI表示名 → 実際の職種_ポジションフィールド値
 export const POSITION_MAPPING: Record<string, string[]> = {
-  "開発": [], // 開発は特定のマッピングなし（フリーワード検索で対応）
   "インフラ": ["インフラエンジニア"],
   "PM・PMO": ["PM (プロジェクトマネージャー)", "PMO (プロジェクト管理支援)"],
   "コンサル": ["SAPコンサルタント", "業務系コンサルタント", "ITコンサルタント"],
   "デザイン": ["Webデザイナー", "UI / UXデザイナー"],
-  "その他": [], // その他は上記に該当しないものを検索
 }
 
 // リモート可否の選択肢（案件特徴フィールドの値）
@@ -25,12 +23,10 @@ export const REMOTE_OPTIONS = [
 
 // 職種/ポジションの選択肢
 export const POSITION_OPTIONS = [
-  { value: "開発", label: "開発" },
   { value: "インフラ", label: "インフラ" },
   { value: "PM・PMO", label: "PM・PMO" },
   { value: "コンサル", label: "コンサル" },
   { value: "デザイン", label: "デザイン" },
-  { value: "その他", label: "その他" },
 ]
 
 // フィルターの型定義
@@ -155,12 +151,12 @@ export const DashboardFilters = ({ onSearch, currentSort = "new" }: DashboardFil
           <div className="relative">
             <input
               type="text"
-              placeholder="フリーワードで探す"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+          placeholder="フリーワードで探す"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && handleSearch()}
               className={`${inputStyle} pr-10`}
-            />
+        />
             <button
               type="button"
               onClick={handleClearQuery}
@@ -185,21 +181,21 @@ export const DashboardFilters = ({ onSearch, currentSort = "new" }: DashboardFil
             <div className="flex items-center gap-4 flex-wrap">
               {REMOTE_OPTIONS.map((option) => (
                 <div key={option.value} className="flex items-center gap-1.5">
-                  <input
-                    type="checkbox"
+                <input
+                  type="checkbox"
                     id={`remote-${option.value}`}
                     checked={remoteOptions.includes(option.value)}
                     onChange={(e) => handleRemoteChange(option.value, e.target.checked)}
-                    className="w-4 h-4 rounded border-2 border-[var(--pw-border-gray)] bg-white accent-[var(--pw-button-primary)] cursor-pointer"
-                  />
-                  <Label
+                  className="w-4 h-4 rounded border-2 border-[var(--pw-border-gray)] bg-white accent-[var(--pw-button-primary)] cursor-pointer"
+                />
+                <Label
                     htmlFor={`remote-${option.value}`}
                     className="cursor-pointer font-medium"
-                    style={{ fontSize: "var(--pw-text-sm)", color: "var(--pw-text-primary)" }}
-                  >
+                  style={{ fontSize: "var(--pw-text-sm)", color: "var(--pw-text-primary)" }}
+                >
                     {option.label}
-                  </Label>
-                </div>
+                </Label>
+              </div>
               ))}
             </div>
           </div>
