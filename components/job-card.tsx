@@ -11,11 +11,11 @@ type JobCardProps = {
 }
 
 // 仕様書: 案件カード > フォント・カラー
-const primaryTextColor = "#30373f" // タイトル
+const primaryTextColor = "#30373f" // ラベル
 const bodyTextColor = "#000000"    // 本文
-const titleColor = "#30373f"       // タイトル（仕様書準拠）
+const linkColor = "#1f3151"        // タイトル、職種ポジション、必須スキル
 const accentColor = "#ea8737"      // 金額
-const dividerColor = "#9ab6ca"     // 区切り線（仕様書準拠）
+const dividerColor = "#d5e5f0"     // 区切り線
 
 const formatRateValue = (rate?: string) => {
   if (!rate) return ""
@@ -169,7 +169,7 @@ export function JobCard({ job, onViewDetail, showApplicationStatus = false, isEn
           style={{
             fontSize: "16px",
             fontWeight: 700,
-            color: titleColor,
+            color: linkColor,
           }}
         >
           {job.title}
@@ -265,7 +265,7 @@ export function JobCard({ job, onViewDetail, showApplicationStatus = false, isEn
           <span
             style={{
               fontSize: "13px",
-              color: titleColor,
+              color: linkColor,
               fontWeight: 500,
             }}
           >
@@ -305,7 +305,7 @@ export function JobCard({ job, onViewDetail, showApplicationStatus = false, isEn
                 key={pos}
                 style={{
                   fontSize: "13px",
-                  color: titleColor,
+                  color: linkColor,
                   fontWeight: 500,
                 }}
               >
