@@ -16,17 +16,8 @@ type RecommendationRecord = {
   人材ID: { value: string };
   案件ID: { value: string };
   適合スコア: { value: string };
-  // AI評価フィールド
-  AIマッチ実行状況?: { value: string };
-  AI技術スキルスコア?: { value: string };
-  AI開発工程スコア?: { value: string };
-  AIインフラスコア?: { value: string };
-  AI業務知識スコア?: { value: string };
-  AIチーム開発スコア?: { value: string };
-  AIツール環境スコア?: { value: string };
-  AI総合スコア?: { value: string };
-  AI評価結果?: { value: string };
-  AI実行日時?: { value: string };
+  // AI評価フィールド（動的キー対応）
+  [key: string]: { value: string } | { value: string[] } | undefined;
 };
 
 type TalentRecord = {
@@ -67,6 +58,9 @@ export const GET = async (
     const appIds = getAppIds();
 
     // 1. 推薦DBから該当案件の推薦データを取得（AI評価フィールドも含む）
+    // ⚠️ 重要: AI評価フィールドの取得時は、RECOMMENDATION_FIELDS定数を使用してください。
+    // ハードコード（'適合スコア'など）ではなく必ず定数を参照し、fieldMapping.tsと同期を保ってください。
+    // 過去にハードコードされていたため、データが取得できない問題がありました。
     const recommendationsResponse = await recommendationClient.record.getAllRecords({
       app: appIds.recommendation,
       condition: `${RECOMMENDATION_FIELDS.JOB_ID} = "${jobId}"`,
@@ -135,6 +129,9 @@ export const GET = async (
     });
 
     // 5. 推薦データと人材データを結合（AI評価データも含める）
+    // ⚠️ 重要: AI評価フィールドにアクセスする際、RECOMMENDATION_FIELDS定数を使用してください。
+    // rec[RECOMMENDATION_FIELDS.AI_EXECUTION_STATUS] のように定数でアクセスすることが重要です。
+    // ハードコード（rec.AIマッチ実行状況 など）ではなく、必ず定数を参照してください。
     const matchedTalents = recommendations
       .map((rec) => {
         const talent = talentMap.get(rec.人材ID.value);
@@ -150,16 +147,16 @@ export const GET = async (
           positions: talent.複数選択?.value || [],
           score: parseInt(rec.適合スコア.value, 10) || 0,
           // AI評価データ
-          aiExecutionStatus: rec.AIマッチ実行状況?.value || "",
-          aiSkillScore: parseInt(rec.AI技術スキルスコア?.value || "0", 10) || 0,
-          aiProcessScore: parseInt(rec.AI開発工程スコア?.value || "0", 10) || 0,
-          aiInfraScore: parseInt(rec.AIインフラスコア?.value || "0", 10) || 0,
-          aiDomainScore: parseInt(rec.AI業務知識スコア?.value || "0", 10) || 0,
-          aiTeamScore: parseInt(rec.AIチーム開発スコア?.value || "0", 10) || 0,
-          aiToolScore: parseInt(rec.AIツール環境スコア?.value || "0", 10) || 0,
-          aiOverallScore: parseInt(rec.AI総合スコア?.value || "0", 10) || 0,
-          aiResult: rec.AI評価結果?.value || "",
-          aiExecutedAt: rec.AI実行日時?.value || "",
+          aiExecutionStatus: rec[RECOMMENDATION_FIELDS.AI_EXECUTION_STATUS]?.value || "",
+          aiSkillScore: parseInt(rec[RECOMMENDATION_FIELDS.AI_SKILL_SCORE]?.value || "0", 10) || 0,
+          aiProcessScore: parseInt(rec[RECOMMENDATION_FIELDS.AI_PROCESS_SCORE]?.value || "0", 10) || 0,
+          aiInfraScore: parseInt(rec[RECOMMENDATION_FIELDS.AI_INFRA_SCORE]?.value || "0", 10) || 0,
+          aiDomainScore: parseInt(rec[RECOMMENDATION_FIELDS.AI_DOMAIN_SCORE]?.value || "0", 10) || 0,
+          aiTeamScore: parseInt(rec[RECOMMENDATION_FIELDS.AI_TEAM_SCORE]?.value || "0", 10) || 0,
+          aiToolScore: parseInt(rec[RECOMMENDATION_FIELDS.AI_TOOL_SCORE]?.value || "0", 10) || 0,
+          aiOverallScore: parseInt(rec[RECOMMENDATION_FIELDS.AI_OVERALL_SCORE]?.value || "0", 10) || 0,
+          aiResult: rec[RECOMMENDATION_FIELDS.AI_RESULT]?.value || "",
+          aiExecutedAt: rec[RECOMMENDATION_FIELDS.AI_EXECUTED_AT]?.value || "",
         };
       })
       .filter((t): t is NonNullable<typeof t> => t !== null);

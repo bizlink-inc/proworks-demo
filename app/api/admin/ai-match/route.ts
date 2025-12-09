@@ -10,6 +10,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { verifyAdminSession } from "@/lib/admin-auth";
 import { createTalentClient, createJobClient, createRecommendationClient, getAppIds } from "@/lib/kintone/client";
 import { executeAIMatch, AIMatchResult } from "@/lib/gemini/client";
+import { RECOMMENDATION_FIELDS } from "@/lib/kintone/fieldMapping";
 
 // リクエスト型
 type AIMatchRequestBody = {
@@ -47,16 +48,8 @@ type RecommendationRecord = {
   人材ID: { value: string };
   案件ID: { value: string };
   適合スコア: { value: string };
-  AIマッチ実行状況?: { value: string };
-  AI技術スキルスコア?: { value: string };
-  AI開発工程スコア?: { value: string };
-  AIインフラスコア?: { value: string };
-  AI業務知識スコア?: { value: string };
-  AIチーム開発スコア?: { value: string };
-  AIツール環境スコア?: { value: string };
-  AI総合スコア?: { value: string };
-  AI評価結果?: { value: string };
-  AI実行日時?: { value: string };
+  // AI評価フィールド（動的キー対応）
+  [key: string]: { value: string } | { value: string[] } | undefined;
 };
 
 // レスポンス用の結果型
@@ -191,21 +184,37 @@ export const POST = async (request: NextRequest) => {
         },
       });
 
+      // AI評価がエラーの場合は保存をスキップ
+      if (aiResult.error) {
+        console.error(`    ❌ AI評価エラー: ${aiResult.error}`);
+        results.push({
+          talentAuthUserId: authUserId,
+          talentName: talent.氏名?.value || "(名前なし)",
+          result: aiResult,
+          recommendationId: "",
+        });
+        continue;
+      }
+
       // 5. 推薦DBに結果を保存
+      // ⚠️ 重要: ここでkintoneに保存する際、必ずRECOMMENDATION_FIELDSの定数を使用してください。
+      // 過去に本ファイルではハードコード（'適合スコア'など）が使われていましたが、
+      // これはフィールドマッピング定数と一致しないため、データが正しく保存されない問題がありました。
+      // 修正時も同じ間違いが起きないよう、必ずこの定数を参照してください。
       const now = new Date().toISOString();
       const existingRecId = recMap.get(authUserId);
 
       const updateData = {
-        AIマッチ実行状況: { value: "実行済み" },
-        AI技術スキルスコア: { value: aiResult.skillScore.toString() },
-        AI開発工程スコア: { value: aiResult.processScore.toString() },
-        AIインフラスコア: { value: aiResult.infraScore.toString() },
-        AI業務知識スコア: { value: aiResult.domainScore.toString() },
-        AIチーム開発スコア: { value: aiResult.teamScore.toString() },
-        AIツール環境スコア: { value: aiResult.toolScore.toString() },
-        AI総合スコア: { value: aiResult.overallScore.toString() },
-        AI評価結果: { value: aiResult.resultText },
-        AI実行日時: { value: now },
+        [RECOMMENDATION_FIELDS.AI_EXECUTION_STATUS]: { value: "実行済み" },
+        [RECOMMENDATION_FIELDS.AI_SKILL_SCORE]: { value: aiResult.skillScore.toString() },
+        [RECOMMENDATION_FIELDS.AI_PROCESS_SCORE]: { value: aiResult.processScore.toString() },
+        [RECOMMENDATION_FIELDS.AI_INFRA_SCORE]: { value: aiResult.infraScore.toString() },
+        [RECOMMENDATION_FIELDS.AI_DOMAIN_SCORE]: { value: aiResult.domainScore.toString() },
+        [RECOMMENDATION_FIELDS.AI_TEAM_SCORE]: { value: aiResult.teamScore.toString() },
+        [RECOMMENDATION_FIELDS.AI_TOOL_SCORE]: { value: aiResult.toolScore.toString() },
+        [RECOMMENDATION_FIELDS.AI_OVERALL_SCORE]: { value: aiResult.overallScore.toString() },
+        [RECOMMENDATION_FIELDS.AI_RESULT]: { value: aiResult.resultText },
+        [RECOMMENDATION_FIELDS.AI_EXECUTED_AT]: { value: now },
       };
 
       let recommendationId: string;

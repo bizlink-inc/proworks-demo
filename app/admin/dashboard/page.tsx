@@ -408,6 +408,11 @@ const AdminDashboardPage = () => {
       // 選択をクリア
       setSelectedTalentIds(new Set());
 
+      // エラーが発生した場合は警告を表示
+      if (data.stats.errors > 0) {
+        setError(`⚠️ ${data.stats.errors}件のAI評価に失敗しました。詳細は結果画面をご確認ください。`);
+      }
+
       // 結果モーダルを表示
       setShowResultModal(true);
     } catch (error) {
