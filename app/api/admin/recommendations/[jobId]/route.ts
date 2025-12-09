@@ -80,6 +80,8 @@ export const GET = async (
         RECOMMENDATION_FIELDS.AI_OVERALL_SCORE,
         RECOMMENDATION_FIELDS.AI_RESULT,
         RECOMMENDATION_FIELDS.AI_EXECUTED_AT,
+        // 担当者おすすめフィールド
+        RECOMMENDATION_FIELDS.STAFF_RECOMMEND,
       ],
       sortBy: [
         {
@@ -157,6 +159,8 @@ export const GET = async (
           aiOverallScore: parseInt(rec[RECOMMENDATION_FIELDS.AI_OVERALL_SCORE]?.value || "0", 10) || 0,
           aiResult: rec[RECOMMENDATION_FIELDS.AI_RESULT]?.value || "",
           aiExecutedAt: rec[RECOMMENDATION_FIELDS.AI_EXECUTED_AT]?.value || "",
+          // 担当者おすすめ（"おすすめ"の場合true）
+          staffRecommend: rec[RECOMMENDATION_FIELDS.STAFF_RECOMMEND]?.value === "おすすめ",
         };
       })
       .filter((t): t is NonNullable<typeof t> => t !== null);

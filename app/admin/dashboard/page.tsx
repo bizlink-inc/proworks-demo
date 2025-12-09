@@ -12,6 +12,13 @@
 import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import ReactMarkdown from "react-markdown";
+import { toast, Toaster } from "sonner";
+
+// kintone設定
+const KINTONE_BASE_URL = "https://jecen6wnsv66.cybozu.com";
+const KINTONE_TALENT_APP_ID = "81";
+const KINTONE_JOB_APP_ID = "85";
+const KINTONE_RECOMMENDATION_APP_ID = "97";
 
 // 型定義
 type Job = {
@@ -46,6 +53,8 @@ type Talent = {
   aiOverallScore?: number;
   aiResult?: string;
   aiExecutedAt?: string;
+  // 担当者おすすめ
+  staffRecommend?: boolean;
 };
 
 // AI評価結果型
@@ -67,7 +76,7 @@ type AIMatchResult = {
 };
 
 // ソートオプション
-type SortOption = "score" | "aiOverall" | "aiSkill" | "aiProcess" | "aiInfra" | "aiDomain" | "aiTeam" | "aiTool";
+type SortOption = "score" | "aiOverall" | "aiSkill" | "aiProcess" | "aiInfra" | "aiDomain" | "aiTeam" | "aiTool" | "staffRecommend";
 
 // ========================================
 // レーダーチャートコンポーネント
@@ -214,6 +223,9 @@ const AdminDashboardPage = () => {
   const [sortBy, setSortBy] = useState<SortOption>("score");
   const [expandedTalentId, setExpandedTalentId] = useState<string | null>(null);
   const [jobSearchQuery, setJobSearchQuery] = useState("");
+  
+  // 担当者おすすめ関連（個別の人材IDごとに処理中状態を管理）
+  const [settingRecommendIds, setSettingRecommendIds] = useState<Set<string>>(new Set());
 
   // 認証チェック
   useEffect(() => {
@@ -276,6 +288,11 @@ const AdminDashboardPage = () => {
   const sortedTalents = useMemo(() => {
     return [...talents].sort((a, b) => {
       switch (sortBy) {
+        case "staffRecommend":
+          // 担当者おすすめを優先（おすすめが上に来る）
+          if (a.staffRecommend && !b.staffRecommend) return -1;
+          if (!a.staffRecommend && b.staffRecommend) return 1;
+          return b.score - a.score;
         case "aiOverall":
           return (b.aiOverallScore || 0) - (a.aiOverallScore || 0);
         case "aiSkill":
@@ -299,6 +316,11 @@ const AdminDashboardPage = () => {
   // AI評価済みの人材数
   const aiEvaluatedCount = useMemo(() => {
     return talents.filter(t => t.aiExecutionStatus === "実行済み").length;
+  }, [talents]);
+
+  // 担当者おすすめの人材数
+  const staffRecommendCount = useMemo(() => {
+    return talents.filter(t => t.staffRecommend).length;
   }, [talents]);
 
   // 推薦データを再取得する関数
@@ -438,6 +460,70 @@ const AdminDashboardPage = () => {
       console.error("ログアウトエラー");
     }
   };
+
+  // 担当者おすすめをトグル（個別）
+  const handleToggleRecommend = async (talent: Talent) => {
+    if (!selectedJob || settingRecommendIds.has(talent.authUserId)) return;
+
+    const isAdding = !talent.staffRecommend;
+    
+    try {
+      // この人材を処理中に設定
+      setSettingRecommendIds(prev => new Set(prev).add(talent.authUserId));
+
+      const response = await fetch("/api/admin/staff-recommend", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          jobId: selectedJob.jobId,
+          talentAuthUserIds: [talent.authUserId],
+          recommend: isAdding,
+        }),
+      });
+
+      if (response.status === 401) {
+        router.push("/admin/login");
+        return;
+      }
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        toast.error(data.error || "担当者おすすめの設定に失敗しました");
+        return;
+      }
+
+      // データを再取得して最新状態に更新
+      await refreshRecommendations(selectedJob.jobId);
+
+      // トースト通知
+      if (isAdding) {
+        toast.success(
+          `「${selectedJob.title}」に対して「${talent.name}」さんを担当者おすすめとして登録しました`,
+          { duration: 4000 }
+        );
+      } else {
+        toast.info(
+          `「${talent.name}」さんの担当者おすすめを解除しました`,
+          { duration: 3000 }
+        );
+      }
+
+    } catch (error) {
+      console.error("担当者おすすめ設定エラー:", error);
+      toast.error("通信エラーが発生しました");
+    } finally {
+      // 処理完了後、この人材を処理中から削除
+      setSettingRecommendIds(prev => {
+        const next = new Set(prev);
+        next.delete(talent.authUserId);
+        return next;
+      });
+    }
+  };
+
 
   // マッチスコアに応じた色（高いほど暖色）
   // スコアは0〜20程度の範囲を想定
@@ -610,7 +696,8 @@ const AdminDashboardPage = () => {
 
           {/* 右側: 候補者一覧 */}
           <div className="col-span-8 bg-white rounded-xl shadow-sm border border-[var(--pw-border-lighter)] overflow-hidden flex flex-col">
-            <div className="p-4 border-b border-[var(--pw-border-lighter)] bg-[var(--pw-bg-light-blue)]">
+            {/* ヘッダー: タイトルとステータス */}
+            <div className="px-4 pt-4 pb-3 border-b border-[var(--pw-border-lighter)] bg-[var(--pw-bg-light-blue)]">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 bg-[var(--pw-bg-sidebar)] rounded-lg flex items-center justify-center">
@@ -621,68 +708,66 @@ const AdminDashboardPage = () => {
                   <div>
                     <h2 className="font-bold text-[var(--pw-text-primary)]">候補者一覧</h2>
                     {selectedJob && (
-                      <p className="text-xs text-[var(--pw-text-gray)] mt-0.5">
-                        {selectedJob.title}
-                      </p>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <p className="text-xs text-[var(--pw-text-gray)]">
+                          {selectedJob.title}
+                        </p>
+                        <a
+                          href={`${KINTONE_BASE_URL}/k/${KINTONE_JOB_APP_ID}/show#record=${selectedJob.jobId}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs text-[var(--pw-button-primary)] hover:underline flex items-center gap-0.5"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                          </svg>
+                          kintone
+                        </a>
+                      </div>
                     )}
                   </div>
-                  {talents.length > 0 && (
-                    <div className="flex items-center gap-2 ml-2">
-                      <span className="text-xs text-[var(--pw-text-gray)] bg-white px-2 py-0.5 rounded-full border border-[var(--pw-border-lighter)]">
-                        {talents.length}名
-                      </span>
-                      {aiEvaluatedCount > 0 && (
-                        <span className="text-xs text-[var(--pw-button-primary)] bg-white px-2 py-0.5 rounded-full border border-[var(--pw-button-primary)] flex items-center gap-1">
-                          <span>🤖</span> AI評価: {aiEvaluatedCount}名
-                        </span>
-                      )}
-                    </div>
-                  )}
                 </div>
-
+                
+                {/* ステータスバッジ */}
                 {talents.length > 0 && (
-                  <div className="flex items-center gap-3">
-                    <select
-                      value={sortBy}
-                      onChange={(e) => setSortBy(e.target.value as SortOption)}
-                      className="text-xs px-3 py-1.5 bg-white border border-[var(--pw-border-gray)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--pw-button-primary)]"
-                    >
-                      <option value="score">Score（抽出時）順</option>
-                      <option value="aiOverall">AI Score（総合）順</option>
-                      <option value="aiSkill">AI Score（技術）順</option>
-                      <option value="aiProcess">AI Score（工程）順</option>
-                      <option value="aiInfra">AI Score（インフラ）順</option>
-                    </select>
-
-                    <button
-                      onClick={handleToggleAll}
-                      className="text-xs px-3 py-1.5 text-[var(--pw-text-gray)] hover:text-[var(--pw-text-primary)] hover:bg-white rounded-lg transition-all border border-[var(--pw-border-lighter)]"
-                    >
-                      {selectedTalentIds.size === talents.length ? "全解除" : "全選択"}
-                    </button>
-
-                    <div className="text-sm text-[var(--pw-text-gray)]">
-                      <span className="font-semibold text-[var(--pw-button-primary)]">{selectedTalentIds.size}</span>名選択中
-                    </div>
-
-                    <button
-                      onClick={handleAIMatch}
-                      disabled={!isValidSelection}
-                      className={`px-4 py-2 rounded-xl font-medium text-sm flex items-center gap-2 transition-all ${
-                        isValidSelection
-                          ? "bg-[var(--pw-button-primary)] text-white hover:opacity-90 shadow-md"
-                          : "bg-[var(--pw-border-lighter)] text-[var(--pw-text-light-gray)] cursor-not-allowed"
-                      }`}
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                      </svg>
-                      AIマッチ実行
-                    </button>
+                  <div className="flex items-center gap-2">
+                    {staffRecommendCount > 0 && (
+                      <div className="flex items-center gap-1 px-3 py-1.5 bg-[#fef3c7] rounded-lg border border-[#f59e0b]">
+                        <span className="text-xs text-[#b45309]">おすすめ</span>
+                        <span className="text-sm font-bold text-[#b45309]">{staffRecommendCount}</span>
+                        <span className="text-xs text-[#b45309]">名</span>
+                      </div>
+                    )}
+                    {aiEvaluatedCount > 0 && (
+                      <div className="flex items-center gap-1 px-3 py-1.5 bg-[#eff6ff] rounded-lg border border-[var(--pw-button-primary)]">
+                        <span className="text-xs text-[var(--pw-button-primary)]">AI評価</span>
+                        <span className="text-sm font-bold text-[var(--pw-button-primary)]">{aiEvaluatedCount}</span>
+                        <span className="text-xs text-[var(--pw-button-primary)]">名</span>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
             </div>
+            
+            {/* ソートバー */}
+            {talents.length > 0 && (
+              <div className="px-4 py-2.5 border-b border-[var(--pw-border-lighter)] bg-white flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-[var(--pw-text-gray)]">並び替え:</span>
+                  <select
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value as SortOption)}
+                    className="text-xs px-2 py-1 bg-[var(--pw-bg-body)] border border-[var(--pw-border-gray)] rounded focus:outline-none focus:ring-1 focus:ring-[var(--pw-button-primary)]"
+                  >
+                    <option value="score">スコア順</option>
+                    <option value="staffRecommend">おすすめ優先</option>
+                    <option value="aiOverall">AI Score順</option>
+                  </select>
+                </div>
+              </div>
+            )}
 
             <div className="flex-1 overflow-y-auto p-4">
               {!selectedJob ? (
@@ -717,40 +802,86 @@ const AdminDashboardPage = () => {
                     const isSelected = selectedTalentIds.has(talent.authUserId);
                     const isExpanded = expandedTalentId === talent.authUserId;
                     const hasAIEvaluation = talent.aiExecutionStatus === "実行済み";
-                    
+                    const isStaffRecommend = talent.staffRecommend;
+
                     return (
                       <div
                         key={talent.id}
-                        className={`rounded-xl border-2 transition-all duration-300 ${
-                          isSelected
+                        className={`rounded-xl border-2 transition-all duration-300 relative self-start ${
+                          isStaffRecommend
+                            ? "border-[#f59e0b] bg-[#fffbeb] shadow-md"
+                            : isSelected
                             ? "border-[var(--pw-button-primary)] bg-[var(--pw-bg-light-blue)] shadow-lg"
                             : "border-[var(--pw-border-lighter)] bg-white hover:border-[var(--pw-border-light)] hover:shadow-md"
                         }`}
                       >
-                        <div 
-                          className="p-4 cursor-pointer"
-                          onClick={() => handleToggleTalent(talent.authUserId)}
+                        {/* 担当者おすすめバッジ（左上に配置・目立つデザイン） */}
+                        {isStaffRecommend && (
+                          <div className="absolute -top-2 -left-2 z-10">
+                            <div className="bg-[#f59e0b] text-white text-[10px] font-bold px-2 py-1 rounded-lg shadow-md flex items-center gap-1">
+                              <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                              </svg>
+                              担当者おすすめ
+                            </div>
+                          </div>
+                        )}
+
+                        {/* おすすめトグルボタン（右上に配置） */}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleToggleRecommend(talent);
+                          }}
+                          disabled={settingRecommendIds.has(talent.authUserId)}
+                          className={`absolute top-2 right-2 p-1.5 rounded-full transition-all z-10 ${
+                            settingRecommendIds.has(talent.authUserId)
+                              ? "opacity-50 cursor-not-allowed"
+                              : isStaffRecommend
+                              ? "bg-[#f59e0b] text-white hover:bg-[#d97706]"
+                              : "bg-[var(--pw-border-lighter)] text-[var(--pw-text-light-gray)] hover:bg-[#fef3c7] hover:text-[#f59e0b]"
+                          }`}
+                          title={isStaffRecommend ? "おすすめを解除" : "おすすめに設定"}
+                        >
+                          <svg className="w-4 h-4" fill={isStaffRecommend ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                          </svg>
+                        </button>
+
+                        <div
+                          className={`p-4 ${hasAIEvaluation ? "cursor-not-allowed" : "cursor-pointer"}`}
+                          onClick={() => {
+                            if (!hasAIEvaluation) {
+                              handleToggleTalent(talent.authUserId);
+                            }
+                          }}
                         >
                           <div className="flex items-start gap-3">
                             {/* チェックボックス＋ランク */}
                             <div className="flex flex-col items-center gap-2">
                               <div className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all ${
-                                isSelected
+                                hasAIEvaluation
+                                  ? "bg-[var(--pw-border-lighter)] border-[var(--pw-border-lighter)] cursor-not-allowed"
+                                  : isSelected
                                   ? "bg-[var(--pw-button-primary)] border-[var(--pw-button-primary)]"
                                   : "border-[var(--pw-border-gray)] bg-white"
                               }`}>
-                                {isSelected && (
+                                {hasAIEvaluation ? (
+                                  <svg className="w-4 h-4 text-[var(--pw-text-light-gray)]" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                  </svg>
+                                ) : isSelected ? (
                                   <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
                                     <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                                   </svg>
-                                )}
+                                ) : null}
                               </div>
                               {/* ランキング表示 */}
                               <div className="text-center">
                                 <span className="text-[10px] text-[var(--pw-text-light-gray)]">順位</span>
                                 <div className={`text-lg font-bold ${
-                                  index < 3 
-                                    ? "text-[var(--pw-alert-warning)]" 
+                                  index < 3
+                                    ? "text-[var(--pw-alert-warning)]"
                                     : "text-[var(--pw-text-gray)]"
                                 }`}>
                                   {index + 1}
@@ -759,11 +890,26 @@ const AdminDashboardPage = () => {
                             </div>
 
                             {/* メイン情報 */}
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2 mb-2">
+                            <div className="flex-1 min-w-0 pr-8">
+                              <div className="flex items-center gap-2 mb-1">
                                 <h3 className="font-bold text-[var(--pw-text-primary)] truncate">{talent.name}</h3>
-                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold text-white ${getMatchScoreColor(talent.score)}`}>
-                                  Score {talent.score}pt
+                                <a
+                                  href={`${KINTONE_BASE_URL}/k/${KINTONE_TALENT_APP_ID}/show#record=${talent.id}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-[10px] text-[var(--pw-button-primary)] hover:underline flex items-center gap-0.5"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                  </svg>
+                                  kintone
+                                </a>
+                              </div>
+                              
+                              <div className="flex items-center gap-1.5 mb-2">
+                                <span className={`px-2 py-0.5 rounded text-[10px] font-bold text-white ${getMatchScoreColor(talent.score)}`}>
+                                  スコア {talent.score}pt
                                 </span>
                               </div>
 
@@ -813,53 +959,51 @@ const AdminDashboardPage = () => {
                           </div>
                         </div>
 
-                        {/* AI評価詳細 */}
-                        {hasAIEvaluation && (
-                          <div className="border-t border-[var(--pw-border-lighter)]">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setExpandedTalentId(isExpanded ? null : talent.authUserId);
-                              }}
-                              className="w-full px-4 py-2 text-xs text-[var(--pw-button-primary)] hover:bg-[var(--pw-bg-light-blue)] flex items-center justify-center gap-1 transition-colors"
-                            >
-                              {isExpanded ? "詳細を閉じる" : "AI評価詳細を見る"}
-                              <svg className={`w-3 h-3 transition-transform ${isExpanded ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                              </svg>
-                            </button>
+                        {/* カードフッター（高さ統一用・角丸対応） */}
+                        <div className="border-t border-[var(--pw-border-lighter)] rounded-b-[11px] overflow-hidden">
+                          {hasAIEvaluation ? (
+                            <>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setExpandedTalentId(isExpanded ? null : talent.authUserId);
+                                }}
+                                className="w-full px-4 py-3 text-xs text-[var(--pw-button-primary)] hover:bg-[var(--pw-bg-light-blue)] flex items-center justify-center gap-1 transition-colors"
+                              >
+                                {isExpanded ? "詳細を閉じる" : "AI評価詳細を見る"}
+                                <svg className={`w-3 h-3 transition-transform ${isExpanded ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                </svg>
+                              </button>
 
-                            {isExpanded && (
-                              <div className="px-4 pb-4 space-y-3">
-                                <div className="grid grid-cols-2 gap-2">
-                                  <ScoreBar score={talent.aiSkillScore || 0} label="技術" compact />
-                                  <ScoreBar score={talent.aiProcessScore || 0} label="工程" compact />
-                                  <ScoreBar score={talent.aiInfraScore || 0} label="インフラ" compact />
-                                  <ScoreBar score={talent.aiDomainScore || 0} label="業務" compact />
-                                  <ScoreBar score={talent.aiTeamScore || 0} label="チーム" compact />
-                                  <ScoreBar score={talent.aiToolScore || 0} label="ツール" compact />
+                              {isExpanded && (
+                                <div className="px-4 pb-4 space-y-3 border-t border-[var(--pw-border-lighter)]">
+                                  <div className="grid grid-cols-2 gap-2 pt-3">
+                                    <ScoreBar score={talent.aiSkillScore || 0} label="技術" compact />
+                                    <ScoreBar score={talent.aiProcessScore || 0} label="工程" compact />
+                                    <ScoreBar score={talent.aiInfraScore || 0} label="インフラ" compact />
+                                    <ScoreBar score={talent.aiDomainScore || 0} label="業務" compact />
+                                    <ScoreBar score={talent.aiTeamScore || 0} label="チーム" compact />
+                                    <ScoreBar score={talent.aiToolScore || 0} label="ツール" compact />
+                                  </div>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleShowAIResult(talent);
+                                    }}
+                                    className="w-full py-2 text-xs bg-[var(--pw-bg-light-blue)] text-[var(--pw-button-primary)] rounded-lg hover:bg-[var(--pw-border-lighter)] transition-colors font-medium"
+                                  >
+                                    📝 詳細評価レポートを見る
+                                  </button>
                                 </div>
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleShowAIResult(talent);
-                                  }}
-                                  className="w-full py-2 text-xs bg-[var(--pw-bg-light-blue)] text-[var(--pw-button-primary)] rounded-lg hover:bg-[var(--pw-border-lighter)] transition-colors font-medium"
-                                >
-                                  📝 詳細評価レポートを見る
-                                </button>
-                              </div>
-                            )}
-                          </div>
-                        )}
-
-                        {!hasAIEvaluation && (
-                          <div className="px-4 pb-4">
-                            <div className="text-center py-3 bg-[var(--pw-bg-body)] rounded-lg text-xs text-[var(--pw-text-light-gray)]">
+                              )}
+                            </>
+                          ) : (
+                            <div className="px-4 py-3 text-center text-xs text-[var(--pw-text-light-gray)] bg-[var(--pw-bg-body)] hover:bg-[var(--pw-bg-light-blue)] transition-colors">
                               AI評価未実施
                             </div>
-                          </div>
-                        )}
+                          )}
+                        </div>
                       </div>
                     );
                   })}
@@ -870,9 +1014,9 @@ const AdminDashboardPage = () => {
         </div>
       </main>
 
-      {/* フローティングアクションバー */}
+      {/* フローティングアクションバー（AIマッチ用） */}
       {selectedTalentIds.size > 0 && talents.length > 0 && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-[var(--pw-bg-sidebar)] text-white px-6 py-3 rounded-2xl shadow-2xl flex items-center gap-6 z-50">
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-[var(--pw-bg-sidebar)] text-white px-6 py-3 rounded-2xl shadow-2xl flex items-center gap-4 z-40">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 bg-[var(--pw-button-primary)] rounded-full flex items-center justify-center font-bold">
               {selectedTalentIds.size}
@@ -888,7 +1032,7 @@ const AdminDashboardPage = () => {
           </button>
           <button
             onClick={handleAIMatch}
-            className="px-5 py-2 bg-[var(--pw-button-primary)] rounded-xl font-medium text-sm flex items-center gap-2 hover:opacity-90 transition-all shadow-lg"
+            className="px-4 py-2 bg-[var(--pw-button-primary)] rounded-xl font-medium text-sm flex items-center gap-2 hover:opacity-90 transition-all shadow-lg"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
@@ -1096,6 +1240,19 @@ const AdminDashboardPage = () => {
           </div>
         </div>
       )}
+
+      {/* トースト通知 */}
+      <Toaster 
+        position="top-right" 
+        richColors 
+        closeButton
+        toastOptions={{
+          style: {
+            background: 'white',
+            border: '1px solid #e5e7eb',
+          },
+        }}
+      />
     </div>
   );
 };

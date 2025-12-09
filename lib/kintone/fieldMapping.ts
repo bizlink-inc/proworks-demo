@@ -86,6 +86,10 @@ export const RECOMMENDATION_FIELDS = {
   AI_OVERALL_SCORE: 'AI総合スコア',
   AI_RESULT: 'AI評価結果',
   AI_EXECUTED_AT: 'AI実行日時',
+  // 担当者おすすめフィールド
+  // ⚠️ 重要: このフィールドは営業担当者が手動で設定する「おすすめ」フラグです。
+  // AIマッチスコアやプログラムマッチスコアとは別の、担当者の判断による推薦です。
+  STAFF_RECOMMEND: '担当者おすすめ',
 } as const;
 
 /**
