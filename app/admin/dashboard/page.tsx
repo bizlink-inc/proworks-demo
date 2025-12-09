@@ -201,8 +201,7 @@ const AdminDashboardPage = () => {
   const [talents, setTalents] = useState<Talent[]>([]);
   const [selectedTalentIds, setSelectedTalentIds] = useState<Set<string>>(new Set());
   const [isLoadingJobs, setIsLoadingJobs] = useState(true);
-  const [isExtracting, setIsExtracting] = useState(false);
-  const [hasExtracted, setHasExtracted] = useState(false);
+  const [isLoadingTalents, setIsLoadingTalents] = useState(false);
   const [error, setError] = useState("");
   
   // AI評価関連
@@ -325,7 +324,7 @@ const AdminDashboardPage = () => {
     setExpandedTalentId(null);
     
     try {
-      setIsExtracting(true);
+      setIsLoadingTalents(true);
       const response = await fetch(`/api/admin/recommendations/${job.jobId}`);
       
       if (response.status === 401) {
@@ -337,63 +336,13 @@ const AdminDashboardPage = () => {
       
       if (response.ok && data.talents && data.talents.length > 0) {
         setTalents(data.talents);
-        setHasExtracted(true);
       } else {
         setTalents([]);
-        setHasExtracted(false);
       }
     } catch {
       setError("データの取得に失敗しました");
     } finally {
-      setIsExtracting(false);
-    }
-  };
-
-  // 候補者抽出
-  const handleExtractCandidates = async () => {
-    if (!selectedJob) return;
-
-    try {
-      setIsExtracting(true);
-      setError("");
-      
-      const extractResponse = await fetch(`/api/admin/extract/${selectedJob.jobId}`, {
-        method: "POST",
-      });
-      
-      if (extractResponse.status === 401) {
-        router.push("/admin/login");
-        return;
-      }
-
-      const extractData = await extractResponse.json();
-      
-      if (!extractResponse.ok) {
-        setError(extractData.error || "候補者抽出に失敗しました");
-        return;
-      }
-
-      const recsResponse = await fetch(`/api/admin/recommendations/${selectedJob.jobId}`);
-      
-      if (recsResponse.status === 401) {
-        router.push("/admin/login");
-        return;
-      }
-
-      const recsData = await recsResponse.json();
-      
-      if (!recsResponse.ok) {
-        setError(recsData.error || "候補者データの取得に失敗しました");
-        return;
-      }
-
-      setTalents(recsData.talents);
-      setHasExtracted(true);
-      setSelectedTalentIds(new Set());
-    } catch {
-      setError("通信エラーが発生しました");
-    } finally {
-      setIsExtracting(false);
+      setIsLoadingTalents(false);
     }
   };
 
@@ -686,7 +635,7 @@ const AdminDashboardPage = () => {
                   )}
                 </div>
 
-                {hasExtracted && talents.length > 0 && (
+                {talents.length > 0 && (
                   <div className="flex items-center gap-3">
                     <select
                       value={sortBy}
@@ -741,37 +690,16 @@ const AdminDashboardPage = () => {
                   <p className="text-lg font-medium text-[var(--pw-text-gray)] mb-1">案件を選択してください</p>
                   <p className="text-sm">左側の案件一覧から案件をクリックすると候補者を確認できます</p>
                 </div>
-              ) : isExtracting ? (
+              ) : isLoadingTalents ? (
                 <div className="flex items-center justify-center h-full">
                   <div className="text-center">
                     <div className="relative mx-auto w-16 h-16 mb-4">
                       <div className="absolute inset-0 border-4 border-[var(--pw-border-lighter)] rounded-full"></div>
                       <div className="absolute inset-0 border-4 border-[var(--pw-button-primary)] border-t-transparent rounded-full animate-spin"></div>
                     </div>
-                    <p className="text-[var(--pw-text-primary)] font-medium mb-1">データを取得中...</p>
+                    <p className="text-[var(--pw-text-primary)] font-medium mb-1">候補者を取得中...</p>
                     <p className="text-sm text-[var(--pw-text-gray)]">しばらくお待ちください</p>
                   </div>
-                </div>
-              ) : !hasExtracted ? (
-                <div className="flex flex-col items-center justify-center h-full">
-                  <div className="w-32 h-32 bg-[var(--pw-bg-light-blue)] rounded-full flex items-center justify-center mb-6">
-                    <svg className="w-16 h-16 text-[var(--pw-button-primary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                    </svg>
-                  </div>
-                  <p className="text-xl font-bold text-[var(--pw-text-primary)] mb-2">候補者を抽出しましょう</p>
-                  <p className="text-sm text-[var(--pw-text-gray)] mb-6 text-center max-w-md">
-                    案件の要件に基づいて、マッチする人材を検索します。
-                  </p>
-                  <button
-                    onClick={handleExtractCandidates}
-                    className="px-8 py-3 bg-[var(--pw-button-primary)] text-white rounded-xl font-medium hover:opacity-90 transition-all shadow-md flex items-center gap-2"
-                  >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                    </svg>
-                    候補者抽出
-                  </button>
                 </div>
               ) : talents.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-full text-[var(--pw-text-light-gray)]">
@@ -938,7 +866,7 @@ const AdminDashboardPage = () => {
       </main>
 
       {/* フローティングアクションバー */}
-      {selectedTalentIds.size > 0 && hasExtracted && (
+      {selectedTalentIds.size > 0 && talents.length > 0 && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-[var(--pw-bg-sidebar)] text-white px-6 py-3 rounded-2xl shadow-2xl flex items-center gap-6 z-50">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 bg-[var(--pw-button-primary)] rounded-full flex items-center justify-center font-bold">

@@ -12,7 +12,8 @@ config({ path: ".env.local" });
 
 import { createTalentClient, createJobClient, createApplicationClient, createRecommendationClient, getAppIds } from "../lib/kintone/client";
 import { uploadFileToKintone } from "../lib/kintone/services/file";
-import { TALENT_FIELDS, JOB_FIELDS, APPLICATION_FIELDS } from "../lib/kintone/fieldMapping";
+import { TALENT_FIELDS, JOB_FIELDS, APPLICATION_FIELDS, RECOMMENDATION_FIELDS } from "../lib/kintone/fieldMapping";
+import { calculateTopMatches, TalentForMatching, JobForMatching } from "../lib/matching/calculateScore";
 import { seedData3 } from "./seed-data-large";
 import { getDb, closePool, query, schema } from "../lib/db/client";
 import { eq } from "drizzle-orm";
@@ -931,11 +932,11 @@ const filterValidOptions = (values: string[], validOptions: readonly string[]): 
   return values.filter(v => validOptions.includes(v as any));
 };
 
-// シードデータ作成（Yamada + 50人50案件を統合、推薦DBは作成しない）
+// シードデータ作成（Yamada + 50人50案件を統合、推薦DBも自動作成）
 export const createSeedData = async () => {
   console.log("\n🌱 シードデータを作成します\n");
   console.log("📦 統合データセット: Yamada（1人+5案件） + 大規模（50人+50案件）");
-  console.log("⚠️  推薦DBは「候補者抽出」ボタンで動的に作成されます\n");
+  console.log("✅ 推薦データ（マッチングスコア）も自動で作成されます\n");
   
   // seedData1とseedData3を統合
   const combinedAuthUsers = [...seedData1.authUsers, ...seedData3.authUsers];
@@ -1154,6 +1155,74 @@ export const createSeedData = async () => {
       console.log("✅ 応募履歴: 作成対象なし");
       }
 
+    // 5. 推薦データを作成（マッチングスコア計算）
+    console.log("\n" + "=".repeat(80));
+    console.log("🎯 Step 5: 推薦データを作成（マッチングスコア計算）");
+    console.log("=".repeat(80));
+
+    const recommendationClient = createRecommendationClient();
+
+    // マッチング計算用の人材データを準備
+    const talentsForMatching: TalentForMatching[] = seedData.talents.map((talent, i) => ({
+      id: talentRecordIds[i],
+      authUserId: authUserIds[i],
+      name: talent.氏名,
+      positions: [], // シードデータには職種の選択肢がない場合がある
+      skills: talent.言語_ツール,
+      experience: talent.主な実績_PR_職務経歴,
+      desiredRate: String(talent.希望単価_月額),
+    }));
+
+    // 全案件に対してマッチングスコアを計算し、推薦レコードを作成
+    const allRecommendationRecords: any[] = [];
+
+    for (let jobIndex = 0; jobIndex < seedData.jobs.length; jobIndex++) {
+      const job = seedData.jobs[jobIndex];
+      const jobId = jobIds[jobIndex];
+
+      // マッチング計算用の案件データを準備
+      const jobForMatching: JobForMatching = {
+        id: jobId,
+        jobId: jobId,
+        title: job.案件名,
+        positions: job.職種_ポジション || [],
+        skills: job.スキル || [],
+      };
+
+      // 上位10人のマッチング結果を取得
+      const topMatches = calculateTopMatches(talentsForMatching, jobForMatching, 10);
+
+      // 推薦レコードを作成
+      for (const match of topMatches) {
+        if (!match.talentAuthUserId) continue;
+
+        allRecommendationRecords.push({
+          [RECOMMENDATION_FIELDS.TALENT_ID]: { value: match.talentAuthUserId },
+          [RECOMMENDATION_FIELDS.JOB_ID]: { value: jobId },
+          [RECOMMENDATION_FIELDS.SCORE]: { value: match.score },
+        });
+      }
+
+      // 進捗表示（10件ごと）
+      if ((jobIndex + 1) % 10 === 0) {
+        console.log(`   処理中: ${jobIndex + 1}/${seedData.jobs.length}件の案件をスコアリング完了`);
+      }
+    }
+
+    // 推薦レコードを一括作成（100件ずつバッチ処理）
+    if (allRecommendationRecords.length > 0) {
+      const batchSize = 100;
+      for (let i = 0; i < allRecommendationRecords.length; i += batchSize) {
+        const batch = allRecommendationRecords.slice(i, i + batchSize);
+        await recommendationClient.record.addRecords({
+          app: appIds.recommendation,
+          records: batch,
+        });
+      }
+      console.log(`✅ ${allRecommendationRecords.length}件の推薦レコードを一括作成しました`);
+      console.log(`   （${seedData.jobs.length}案件 × 上位マッチ）`);
+    }
+
     // 完了メッセージ
     console.log("\n" + "=".repeat(80));
     console.log("🎉 シードデータの作成が完了しました！");
@@ -1163,7 +1232,7 @@ export const createSeedData = async () => {
     console.log(`  👨‍💼 人材: ${seedData.talents.length}件`);
     console.log(`  💼 案件: ${seedData.jobs.length}件`);
     console.log(`  📝 応募履歴: ${seedData.applications.length}件`);
-    console.log(`  🎯 推薦データ: 管理画面から「候補者抽出」で作成`);
+    console.log(`  🎯 推薦データ: ${allRecommendationRecords.length}件`);
     
     console.log("\n📝 ログイン情報:");
     // 最初の5人だけ表示
@@ -1175,11 +1244,10 @@ export const createSeedData = async () => {
       console.log(`  ... 他 ${seedData.authUsers.length - 5}人（パスワードはすべて password123）`);
     }
     
-    console.log("\n💡 推薦データの作成方法:");
+    console.log("\n💡 使い方:");
     console.log("  1. 管理画面にログイン: /admin/login");
-    console.log("  2. 案件を選択");
-    console.log("  3. 「候補者抽出」ボタンをクリック");
-    console.log("  4. 上位10人の候補者が表示されます");
+    console.log("  2. 案件を選択すると候補者一覧が自動で表示されます");
+    console.log("  3. 候補者を選択して「AIマッチ実行」でAI評価を実行できます");
     console.log("\n");
 
   } catch (error) {
