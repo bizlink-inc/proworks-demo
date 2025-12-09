@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Header } from "@/components/header"
 import { FullWidthLayout } from "@/components/layouts"
 import { DashboardFilters, type JobFilters } from "@/components/dashboard-filters"
@@ -9,7 +9,15 @@ import { JobDetailModal } from "@/components/job-detail-modal"
 import { ApplySuccessModal } from "@/components/apply-success-modal"
 import { useToast } from "@/hooks/use-toast"
 import { useApplicationStatusMonitor } from "@/hooks/use-application-status-monitor"
+import { ChevronDown } from "lucide-react"
 import type { Job } from "@/lib/kintone/types"
+
+// ソート選択肢の定義
+const SORT_OPTIONS = [
+  { value: "recommend", label: "おすすめ順" },
+  { value: "new", label: "新着順" },
+  { value: "price", label: "金額高い順" },
+] as const
 
 interface DashboardClientProps {
   user: {
@@ -28,7 +36,7 @@ export const DashboardClient = ({ user }: DashboardClientProps) => {
   const [page, setPage] = useState(1)
   const [filters, setFilters] = useState<JobFilters>({ 
     query: "", 
-    sort: "new",
+    sort: "recommend", // デフォルトをおすすめ順に変更
     remote: [],
     positions: [],
     location: "",
@@ -39,6 +47,19 @@ export const DashboardClient = ({ user }: DashboardClientProps) => {
     jobTitle: string
     appliedAt: string
   } | null>(null)
+  const [sortDropdownOpen, setSortDropdownOpen] = useState(false)
+  const sortDropdownRef = useRef<HTMLDivElement>(null)
+
+  // ドロップダウン外クリックで閉じる
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (sortDropdownRef.current && !sortDropdownRef.current.contains(event.target as Node)) {
+        setSortDropdownOpen(false)
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside)
+    return () => document.removeEventListener("mousedown", handleClickOutside)
+  }, [])
 
   const size = 21 // 3列×7行
   const totalPages = Math.ceil(total / size)
@@ -140,41 +161,104 @@ export const DashboardClient = ({ user }: DashboardClientProps) => {
       <FullWidthLayout>
         <DashboardFilters onSearch={handleSearch} currentSort={filters.sort} />
 
-        {/* ページネーション - 上部 */}
-        <div className="flex items-center gap-2 mb-6">
-          <span
-            style={{
-              fontSize: "var(--pw-text-sm)",
-              color: "var(--pw-text-primary)",
-              fontWeight: 600
-            }}
-          >
-            検索結果 <span style={{ fontSize: "var(--pw-text-xl)" }}>{total}</span>件
-          </span>
-          
-          {totalPages > 1 && (
-            <>
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-                <button
-                  key={p}
-                  onClick={() => setPage(p)}
-                  className="flex items-center justify-center transition-colors"
-                  style={{
-                    minWidth: "28px",
-                    height: "28px",
-                    padding: "0 6px",
-                    borderRadius: "4px",
-                    backgroundColor: p === page ? "#5a8bb5" : "transparent",
-                    color: p === page ? "#ffffff" : "#5a8bb5",
-                    fontSize: "var(--pw-text-sm)",
-                    fontWeight: 600
-                  }}
-                >
-                  {p}
-                </button>
-              ))}
-            </>
-          )}
+        {/* ページネーション・表示順 - 同じ行に配置（下に寄せる） */}
+        <div className="flex items-center justify-between mb-2 mt-8">
+          {/* 左側: 検索結果件数 + ページネーション */}
+          <div className="flex items-center gap-2">
+            <span
+              style={{
+                fontSize: "var(--pw-text-sm)",
+                color: "var(--pw-text-primary)",
+                fontWeight: 600
+              }}
+            >
+              検索結果 <span style={{ fontSize: "var(--pw-text-xl)" }}>{total}</span>件
+            </span>
+            
+            {totalPages > 1 && (
+              <>
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+                  <button
+                    key={p}
+                    onClick={() => setPage(p)}
+                    className="flex items-center justify-center transition-colors"
+                    style={{
+                      minWidth: "28px",
+                      height: "28px",
+                      padding: "0 6px",
+                      borderRadius: "4px",
+                      backgroundColor: p === page ? "#5a8bb5" : "transparent",
+                      color: p === page ? "#ffffff" : "#5a8bb5",
+                      fontSize: "var(--pw-text-sm)",
+                      fontWeight: 600
+                    }}
+                  >
+                    {p}
+                  </button>
+                ))}
+              </>
+            )}
+          </div>
+
+          {/* 右側: 表示順プルダウン */}
+          <div className="relative" ref={sortDropdownRef}>
+            <button
+              type="button"
+              onClick={() => setSortDropdownOpen(!sortDropdownOpen)}
+              className="flex items-center gap-1 cursor-pointer"
+            >
+              <span
+                style={{
+                  fontSize: "var(--pw-text-sm)",
+                  color: "#2c4a6b", // 濃い紺色
+                }}
+              >
+                表示順:
+              </span>
+              <span
+                style={{
+                  fontSize: "var(--pw-text-sm)",
+                  color: "#5a8bb5", // 案件タイトルの色（薄い青）
+                }}
+              >
+                {SORT_OPTIONS.find(opt => opt.value === filters.sort)?.label || "おすすめ順"}
+              </span>
+              <ChevronDown 
+                className="w-4 h-4" 
+                style={{ color: "#5a8bb5" }}
+              />
+            </button>
+            
+            {/* ドロップダウンメニュー（下側に表示） */}
+            {sortDropdownOpen && (
+              <div 
+                className="absolute right-0 top-full mt-1 bg-white border rounded-md shadow-lg z-50 min-w-[140px]"
+                style={{
+                  borderColor: "#e0e0e0",
+                }}
+              >
+                {SORT_OPTIONS.map((option) => (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => {
+                      setFilters({ ...filters, sort: option.value })
+                      setPage(1)
+                      setSortDropdownOpen(false)
+                    }}
+                    className="w-full text-left px-4 py-2 hover:bg-gray-50 transition-colors first:rounded-t-md last:rounded-b-md"
+                    style={{
+                      fontSize: "var(--pw-text-sm)",
+                      color: filters.sort === option.value ? "#5a8bb5" : "#333",
+                      fontWeight: filters.sort === option.value ? 600 : 400,
+                    }}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">

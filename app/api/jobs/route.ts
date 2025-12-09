@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getAllJobs } from "@/lib/kintone/services/job";
 import { getSession } from "@/lib/auth-server";
 import { getApplicationsByAuthUserId } from "@/lib/kintone/services/application";
+import { getRecommendationScoreMap } from "@/lib/kintone/services/recommendation";
 import { POSITION_MAPPING } from "@/components/dashboard-filters";
 
 export const GET = async (request: NextRequest) => {
@@ -9,7 +10,7 @@ export const GET = async (request: NextRequest) => {
     // クエリパラメータを取得
     const searchParams = request.nextUrl.searchParams;
     const query = searchParams.get("query") || "";
-    const sort = searchParams.get("sort") || "new";
+    const sort = searchParams.get("sort") || "recommend"; // デフォルトをおすすめ順に変更
     const remoteParam = searchParams.get("remote") || "";
     const positionsParam = searchParams.get("positions") || "";
     const location = searchParams.get("location") || "";
@@ -22,21 +23,33 @@ export const GET = async (request: NextRequest) => {
     // kintoneからすべての案件を取得
     let jobs = await getAllJobs();
 
-    // ログインしている場合、応募ステータスも取得
+    // ログインしている場合、応募ステータスと推薦スコアを取得
     let applicationsMap: Record<string, string> = {};
+    let recommendationScores: Record<string, number> = {};
+    let currentUserId: string | undefined;
+
     try {
       const session = await getSession();
       if (session?.user?.id) {
+        currentUserId = session.user.id;
+        
+        // 応募済み案件を取得
         const applications = await getApplicationsByAuthUserId(session.user.id);
         applicationsMap = applications.reduce((acc, app) => {
           acc[app.jobId] = app.status;
           return acc;
         }, {} as Record<string, string>);
+
+        // 推薦スコアを取得
+        recommendationScores = await getRecommendationScoreMap(session.user.id);
       }
     } catch (error) {
       // ログインしていない場合はスキップ
       console.log("User not logged in or error fetching applications");
     }
+
+    // 応募済み案件を完全に除外
+    jobs = jobs.filter((job) => !applicationsMap[job.id]);
 
     // キーワード検索（案件名、作業内容、環境、必須スキル、尚可スキルを対象）
     if (query) {
@@ -103,26 +116,54 @@ export const GET = async (request: NextRequest) => {
       });
     }
 
+    // 案件に推薦スコアと応募ステータスを追加
+    const jobsWithMetadata = jobs.map(job => ({
+      ...job,
+      recommendationScore: recommendationScores[job.id] || 0,
+      applicationStatus: applicationsMap[job.id] || null
+    }));
+
     // ソート処理
-    if (sort === "price") {
+    let sortedJobs = jobsWithMetadata;
+    
+    if (sort === "recommend") {
+      // おすすめ順
+      // ①登録情報マッチ（適合スコア）
+      // ②AIマッチ（将来拡張）
+      // ③管理者おすすめ（将来拡張）
+      sortedJobs = sortedJobs.sort((a, b) => {
+        // 推薦スコアの降順でソート
+        const scoreA = a.recommendationScore || 0;
+        const scoreB = b.recommendationScore || 0;
+        
+        if (scoreB !== scoreA) {
+          return scoreB - scoreA;
+        }
+        
+        // スコアが同じ場合は新着順（作成日時の降順）
+        const dateA = new Date(a.createdAt || 0).getTime();
+        const dateB = new Date(b.createdAt || 0).getTime();
+        return dateB - dateA;
+      });
+    } else if (sort === "new") {
+      // 新着順（作成日時の降順）
+      sortedJobs = sortedJobs.sort((a, b) => {
+        const dateA = new Date(a.createdAt || 0).getTime();
+        const dateB = new Date(b.createdAt || 0).getTime();
+        return dateB - dateA;
+      });
+    } else if (sort === "price") {
       // 単価が高い順（数値として比較）
-      jobs = jobs.sort((a, b) => {
+      sortedJobs = sortedJobs.sort((a, b) => {
         const rateA = typeof a.rate === 'string' ? parseInt(a.rate, 10) : (a.rate || 0);
         const rateB = typeof b.rate === 'string' ? parseInt(b.rate, 10) : (b.rate || 0);
         return rateB - rateA;
       });
     }
-    // 新着順はデフォルト（kintoneから取得した順序）
-
-    // 案件に応募ステータスを追加
-    const jobsWithStatus = jobs.map(job => ({
-      ...job,
-      applicationStatus: applicationsMap[job.id] || null
-    }));
 
     return NextResponse.json({
-      items: jobsWithStatus,
-      total: jobsWithStatus.length,
+      items: sortedJobs,
+      total: sortedJobs.length,
     });
   } catch (error) {
     console.error("案件一覧の取得に失敗:", error);

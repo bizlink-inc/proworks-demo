@@ -23,6 +23,7 @@ const convertJobRecord = (record: JobRecord): Job => {
     interviewCount: record.面談回数.value,
     remote: record.ドロップダウン_3?.value || '',
     isNew: record.新着フラグ?.value === '新着案件',
+    createdAt: record.作成日時?.value || '',
   };
 };
 

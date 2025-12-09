@@ -46,6 +46,7 @@ export type JobRecord = {
   案件期間: { value: string };
   掲載単価: { value: string };
   面談回数: { value: string };
+  作成日時: { value: string }; // kintone標準フィールド
 };
 
 // 応募履歴の型定義
@@ -107,7 +108,9 @@ export type Job = {
   interviewCount: string;
   remote?: string; // リモート可否（ドロップダウン_3）
   isNew?: boolean; // 新着フラグ
+  createdAt?: string; // 作成日時
   applicationStatus?: string | null; // ログインユーザーの応募ステータス
+  recommendationScore?: number; // おすすめスコア（推薦DBから取得）
 };
 
 export type Application = {

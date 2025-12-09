@@ -44,7 +44,7 @@ type DashboardFiltersProps = {
   currentSort?: string
 }
 
-export const DashboardFilters = ({ onSearch, currentSort = "new" }: DashboardFiltersProps) => {
+export const DashboardFilters = ({ onSearch, currentSort = "recommend" }: DashboardFiltersProps) => {
   const [query, setQuery] = useState("")
   const [sort, setSort] = useState(currentSort)
   const [remoteOptions, setRemoteOptions] = useState<string[]>([])

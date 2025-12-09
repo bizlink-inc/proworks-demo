@@ -346,17 +346,24 @@ iOS/Android両方のアプリ開発経験がある方を歓迎します。`,
   applications: [
     { auth_user_id: "seed_user_001", jobIndex: 0, 対応状況: "応募済み" },
     { auth_user_id: "seed_user_001", jobIndex: 1, 対応状況: "面談調整中" },
-    { auth_user_id: "seed_user_001", jobIndex: 2, 対応状況: "案件参画" },
-    { auth_user_id: "seed_user_001", jobIndex: 3, 対応状況: "面談予定" },
-    { auth_user_id: "seed_user_001", jobIndex: 4, 対応状況: "見送り" },
   ],
 
+  // 推薦データ（表示順確認用）
+  // ※ jobIndex 0, 1は応募済みなので案件一覧には表示されない
+  // ※ jobIndex 2, 3, 4が案件一覧に表示される
   recommendations: [
-    { talentIndex: 0, jobIndex: 0, score: 85 },
-    { talentIndex: 0, jobIndex: 1, score: 70 },
-    { talentIndex: 0, jobIndex: 2, score: 90 },
-    { talentIndex: 0, jobIndex: 3, score: 60 },
-    { talentIndex: 0, jobIndex: 4, score: 65 },
+    // 応募済み案件（案件一覧には表示されない）
+    { talentIndex: 0, jobIndex: 0, score: 85 },  // 応募済み
+    { talentIndex: 0, jobIndex: 1, score: 70 },  // 応募済み（面談調整中）
+    
+    // 案件一覧に表示される案件（表示順の確認用）
+    // 【おすすめ順での表示順】
+    // 1位: jobIndex 2 (スコア 90) - スタートアップ向け新規サービス開発
+    // 2位: jobIndex 4 (スコア 65) - データ基盤構築・運用案件
+    // 3位: jobIndex 3 (スコア 60) - ヘルスケアアプリ開発案件
+    { talentIndex: 0, jobIndex: 2, score: 90 },  // 1位: スタートアップ向け新規サービス開発
+    { talentIndex: 0, jobIndex: 3, score: 60 },  // 3位: ヘルスケアアプリ開発案件
+    { talentIndex: 0, jobIndex: 4, score: 65 },  // 2位: データ基盤構築・運用案件
   ],
 };
 
@@ -936,7 +943,8 @@ const filterValidOptions = (values: string[], validOptions: readonly string[]): 
 export const createSeedData = async () => {
   console.log("\n🌱 シードデータを作成します\n");
   console.log("📦 統合データセット: Yamada（1人+5案件） + 大規模（50人+50案件）");
-  console.log("✅ 推薦データ（マッチングスコア）も自動で作成されます\n");
+  console.log("✅ 推薦データ（マッチングスコア）も自動で作成されます");
+  console.log("✅ yamada用の推薦データ（表示順確認用）も作成されます\n");
   
   // seedData1とseedData3を統合
   const combinedAuthUsers = [...seedData1.authUsers, ...seedData3.authUsers];
@@ -950,7 +958,7 @@ export const createSeedData = async () => {
     talents: combinedTalents,
     jobs: combinedJobs,
     applications: combinedApplications,
-    recommendations: [], // 推薦DBは作成しない
+    recommendations: seedData1.recommendations, // seedData1の推薦データを使用（yamada用）
   };
 
   try {
@@ -1223,16 +1231,79 @@ export const createSeedData = async () => {
       console.log(`   （${seedData.jobs.length}案件 × 上位マッチ）`);
     }
 
+    // yamada用の推薦データを追加（表示順確認用）
+    if (seedData.recommendations.length > 0) {
+      console.log("\n" + "=".repeat(80));
+      console.log("⭐ yamada用の推薦データを追加（表示順確認用）");
+      console.log("=".repeat(80));
+
+      const yamadaAuthUserId = seedData1.authUsers[0].id;
+      const yamadaRecommendationRecords: any[] = [];
+
+      for (const recommendation of seedData.recommendations) {
+        // jobIndexがseedData1の範囲内かチェック（seedData1は最初の5件）
+        if (recommendation.jobIndex < seedData1.jobs.length) {
+          const jobId = jobIds[recommendation.jobIndex];
+          yamadaRecommendationRecords.push({
+            [RECOMMENDATION_FIELDS.TALENT_ID]: { value: yamadaAuthUserId },
+            [RECOMMENDATION_FIELDS.JOB_ID]: { value: jobId },
+            [RECOMMENDATION_FIELDS.SCORE]: { value: recommendation.score.toString() },
+          });
+        }
+      }
+
+      if (yamadaRecommendationRecords.length > 0) {
+        // 既存レコードをチェックして、存在する場合は更新、存在しない場合は追加
+        for (const rec of yamadaRecommendationRecords) {
+          const existingRecs = await recommendationClient.record.getRecords({
+            app: appIds.recommendation,
+            query: `${RECOMMENDATION_FIELDS.TALENT_ID} = "${yamadaAuthUserId}" and ${RECOMMENDATION_FIELDS.JOB_ID} = "${rec[RECOMMENDATION_FIELDS.JOB_ID].value}"`,
+          });
+
+          if (existingRecs.records.length > 0) {
+            // 更新
+            const existingId = (existingRecs.records[0] as any).$id.value;
+            await recommendationClient.record.updateRecord({
+              app: appIds.recommendation,
+              id: existingId,
+              record: rec,
+            });
+            console.log(`✅ yamada用推薦レコードを更新: 案件ID=${rec[RECOMMENDATION_FIELDS.JOB_ID].value}, スコア=${rec[RECOMMENDATION_FIELDS.SCORE].value}`);
+          } else {
+            // 追加
+            await recommendationClient.record.addRecord({
+              app: appIds.recommendation,
+              record: rec,
+            });
+            console.log(`✅ yamada用推薦レコードを追加: 案件ID=${rec[RECOMMENDATION_FIELDS.JOB_ID].value}, スコア=${rec[RECOMMENDATION_FIELDS.SCORE].value}`);
+          }
+        }
+        console.log(`\n📋 案件一覧での表示順（おすすめ順）:`);
+        console.log(`  ※ seed_yamada@example.com でログインすると以下の順番で表示されます:`);
+        console.log(`  1位: スタートアップ向け新規サービス開発 (スコア 90)`);
+        console.log(`  2位: データ基盤構築・運用案件 (スコア 65)`);
+        console.log(`  3位: ヘルスケアアプリ開発案件 (スコア 60)`);
+        console.log(`  ※ 応募済み案件（jobIndex 0, 1）は一覧に表示されません`);
+      }
+    }
+
     // 完了メッセージ
     console.log("\n" + "=".repeat(80));
     console.log("🎉 シードデータの作成が完了しました！");
     console.log("=".repeat(80));
+    const yamadaRecommendationCount = seedData.recommendations.length;
+    const totalRecommendationCount = allRecommendationRecords.length + yamadaRecommendationCount;
+    
     console.log("\n📊 作成されたデータ:");
     console.log(`  👤 Better Authユーザー: ${seedData.authUsers.length}件`);
     console.log(`  👨‍💼 人材: ${seedData.talents.length}件`);
     console.log(`  💼 案件: ${seedData.jobs.length}件`);
     console.log(`  📝 応募履歴: ${seedData.applications.length}件`);
-    console.log(`  🎯 推薦データ: ${allRecommendationRecords.length}件`);
+    console.log(`  🎯 推薦データ: ${totalRecommendationCount}件`);
+    if (yamadaRecommendationCount > 0) {
+      console.log(`     - マッチング計算: ${allRecommendationRecords.length}件`);
+      console.log(`     - yamada用（表示順確認用）: ${yamadaRecommendationCount}件`);
+    }
     
     console.log("\n📝 ログイン情報:");
     // 最初の5人だけ表示
@@ -1248,6 +1319,17 @@ export const createSeedData = async () => {
     console.log("  1. 管理画面にログイン: /admin/login");
     console.log("  2. 案件を選択すると候補者一覧が自動で表示されます");
     console.log("  3. 候補者を選択して「AIマッチ実行」でAI評価を実行できます");
+    
+    if (seedData.recommendations.length > 0) {
+      console.log("\n📋 表示順の確認方法:");
+      console.log("  - seed_yamada@example.com でログイン");
+      console.log("  - 案件一覧画面で「おすすめ順」を選択");
+      console.log("  - 以下の順番で表示されます:");
+      console.log("    1位: スタートアップ向け新規サービス開発 (スコア 90)");
+      console.log("    2位: データ基盤構築・運用案件 (スコア 65)");
+      console.log("    3位: ヘルスケアアプリ開発案件 (スコア 60)");
+    }
+    
     console.log("\n");
 
   } catch (error) {
@@ -1693,6 +1775,47 @@ const upsertYamadaSeedData = async () => {
       }
     }
 
+    // 5. 推薦DB の Upsert（人材ID + 案件ID で識別）
+    console.log("\n" + "=".repeat(80));
+    console.log("⭐ Step 5: 推薦DBを Upsert（表示順確認用）");
+    console.log("=".repeat(80));
+
+    const recommendationClient = createRecommendationClient();
+    
+    for (const recommendation of seedData.recommendations) {
+      const jobId = jobIds[recommendation.jobIndex];
+
+      // 人材ID と 案件ID で既存レコードを検索
+      const existingRecommendations = await recommendationClient.record.getRecords({
+        app: appIds.recommendation,
+        query: `${RECOMMENDATION_FIELDS.TALENT_ID} = "${YAMADA_AUTH_USER_ID}" and ${RECOMMENDATION_FIELDS.JOB_ID} = "${jobId}"`,
+      });
+
+      const recommendationRecord = {
+        [RECOMMENDATION_FIELDS.TALENT_ID]: { value: YAMADA_AUTH_USER_ID },
+        [RECOMMENDATION_FIELDS.JOB_ID]: { value: jobId },
+        [RECOMMENDATION_FIELDS.SCORE]: { value: recommendation.score.toString() },
+      };
+
+      if (existingRecommendations.records.length > 0) {
+        // 更新
+        const existingId = (existingRecommendations.records[0] as any).$id.value;
+        await recommendationClient.record.updateRecord({
+          app: appIds.recommendation,
+          id: existingId,
+          record: recommendationRecord,
+        });
+        console.log(`✅ 既存の推薦レコードを更新: 案件ID=${jobId}, スコア=${recommendation.score} (ID=${existingId})`);
+      } else {
+        // 新規作成
+        const result = await recommendationClient.record.addRecord({
+          app: appIds.recommendation,
+          record: recommendationRecord,
+        });
+        console.log(`✅ 新規推薦レコードを作成: 案件ID=${jobId}, スコア=${recommendation.score} (ID=${result.id})`);
+      }
+    }
+
     // 完了メッセージ
     console.log("\n" + "=".repeat(80));
     console.log("🎉 yamada シードデータの Upsert が完了しました！");
@@ -1702,10 +1825,18 @@ const upsertYamadaSeedData = async () => {
     console.log(`  👨‍💼 人材: 1件`);
     console.log(`  💼 案件: ${seedData.jobs.length}件`);
     console.log(`  📝 応募履歴: ${seedData.applications.length}件`);
+    console.log(`  ⭐ 推薦データ: ${seedData.recommendations.length}件`);
 
     console.log("\n📝 ログイン情報:");
     console.log(`  - 山田 太郎: seed_yamada@example.com / password123`);
     console.log(`  - auth_user_id: ${YAMADA_AUTH_USER_ID}`);
+
+    console.log("\n📋 案件一覧での表示順（おすすめ順）:");
+    console.log("  ※ 応募済み案件（jobIndex 0, 1）は一覧に表示されません");
+    console.log("  ※ 以下の順番で表示されます:");
+    console.log("  1位: スタートアップ向け新規サービス開発 (スコア 90)");
+    console.log("  2位: データ基盤構築・運用案件 (スコア 65)");
+    console.log("  3位: ヘルスケアアプリ開発案件 (スコア 60)");
 
     console.log("\n💡 Vercel 環境でも同じ auth_user_id でログインできます");
     console.log("\n");
