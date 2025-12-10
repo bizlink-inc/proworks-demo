@@ -46,6 +46,7 @@ export const DashboardClient = ({ user }: DashboardClientProps) => {
   const [applySuccess, setApplySuccess] = useState<{
     jobTitle: string
     appliedAt: string
+    missingFields?: string[]
   } | null>(null)
   const [sortDropdownOpen, setSortDropdownOpen] = useState(false)
   const sortDropdownRef = useRef<HTMLDivElement>(null)
@@ -139,10 +140,25 @@ export const DashboardClient = ({ user }: DashboardClientProps) => {
       const application = await res.json()
       console.log("[v0] 応募成功:", application)
 
+      // 応募成功後、ユーザー情報を取得して必須項目をチェック
+      let missingFields: string[] = []
+      try {
+        const userRes = await fetch("/api/me")
+        if (userRes.ok) {
+          const { checkRequiredFields } = await import("@/lib/utils/profile-validation")
+          const userData = await userRes.json()
+          missingFields = checkRequiredFields(userData)
+        }
+      } catch (error) {
+        console.error("ユーザー情報の取得に失敗:", error)
+        // エラーが発生しても応募成功モーダルは表示する
+      }
+
       setSelectedJobId(null)
       setApplySuccess({
         jobTitle,
         appliedAt: application.appliedAt,
+        missingFields: missingFields.length > 0 ? missingFields : undefined,
       })
     } catch (error) {
       console.error("[v0] 応募処理エラー:", error)
@@ -310,6 +326,7 @@ export const DashboardClient = ({ user }: DashboardClientProps) => {
           isOpen={true}
           jobTitle={applySuccess.jobTitle}
           appliedAt={applySuccess.appliedAt}
+          missingFields={applySuccess.missingFields}
           onClose={() => setApplySuccess(null)}
         />
       )}
