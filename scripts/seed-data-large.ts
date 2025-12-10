@@ -98,6 +98,15 @@ const randomPicks = <T>(arr: T[], count: number): T[] => {
   return shuffled.slice(0, count);
 };
 
+// 開発環境用の作成日時を生成する関数
+// 過去N日前の日時を生成（1週間以内の場合はnewタグがつく）
+const generateDevCreatedAt = (daysAgo: number): string => {
+  const now = new Date();
+  const targetDate = new Date(now.getTime() - daysAgo * 24 * 60 * 60 * 1000);
+  // kintoneのDATETIME形式: YYYY-MM-DDTHH:mm:ssZ
+  return targetDate.toISOString().replace(/\.\d{3}Z$/, 'Z');
+};
+
 // 人材データ生成
 const generateTalents = () => {
   const talents: any[] = [];
@@ -325,6 +334,8 @@ const generateJobs = () => {
         リモート: randomPick(["可", "条件付き可"]),
         外国籍: randomPick(["可", "不可"]),
         募集人数: 1 + Math.floor(Math.random() * 3),
+        // 最初の10件は1週間以内（newタグがつく）、残りは8-58日前
+        作成日時_開発環境: generateDevCreatedAt(index <= 10 ? Math.floor(Math.random() * 6) + 1 : 8 + Math.floor(Math.random() * 50)),
       });
       
       index++;

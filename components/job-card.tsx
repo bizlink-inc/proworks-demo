@@ -97,6 +97,29 @@ export function JobCard({ job, onViewDetail, showApplicationStatus = false, isEn
     >
       {/* 上部エリア：リボン（左上）+ バッジ（右上） */}
       <div className="p-4 pb-2 relative">
+        {/* 応募ステータスラベル（リボン風・左上）- 最優先表示 */}
+        {statusStyle && (
+          <div className="absolute top-0 left-2">
+            <svg width="80" height="40" style={{ display: "block" }}>
+              <path
+                d="M 0 0 L 80 0 L 80 32 Q 40 22, 0 32 Z"
+                fill={statusStyle.bgColor}
+              />
+              <text
+                x="40"
+                y="16"
+                textAnchor="middle"
+                fill={statusStyle.textColor}
+                fontSize="11"
+                fontWeight="600"
+                style={{ fontFamily: "Noto Sans JP" }}
+              >
+                {statusStyle.label}
+              </text>
+            </svg>
+          </div>
+        )}
+
         {/* 新着バッジ（リボン風・左上）- 応募ステータス表示時は非表示 */}
         {job.isNew && !showApplicationStatus && (
           <div className="absolute top-0 left-2">
@@ -120,33 +143,44 @@ export function JobCard({ job, onViewDetail, showApplicationStatus = false, isEn
           </div>
         )}
 
-        {/* 応募ステータスラベル（リボン風・左上） */}
-      {statusStyle && (
-          <div className="absolute top-0 left-2">
-          <svg width="80" height="40" style={{ display: "block" }}>
-            <path
-              d="M 0 0 L 80 0 L 80 32 Q 40 22, 0 32 Z"
-              fill={statusStyle.bgColor}
-            />
-            <text
-              x="40"
-              y="16"
-              textAnchor="middle"
-              fill={statusStyle.textColor}
+        {/* AIマッチバッジ（リボン風・左上、NEWバッジの右側）- 適合スコアが発行されている場合に表示 */}
+        {job.recommendationScore != null && job.recommendationScore > 0 && !showApplicationStatus && (
+          <div 
+            className="absolute top-0"
+            style={{ left: job.isNew ? "74px" : "8px" }}
+          >
+            <svg width="72" height="40" style={{ display: "block" }}>
+              <path
+                d="M 0 0 L 72 0 L 72 32 Q 36 23, 0 32 Z"
+                fill="#2196f3"
+              />
+              <text
+                x="36"
+                y="18"
+                textAnchor="middle"
+                fill="#ffffff"
                 fontSize="11"
-              fontWeight="600"
-              style={{ fontFamily: "Noto Sans JP" }}
-            >
-              {statusStyle.label}
-            </text>
-          </svg>
-        </div>
-      )}
+                fontWeight="700"
+                style={{ fontFamily: "Noto Sans JP" }}
+              >
+                AIマッチ
+              </text>
+            </svg>
+          </div>
+        )}
 
         {/* 案件特徴バッジ（右上に配置） */}
         <div 
           className="flex flex-wrap gap-2 justify-end mb-3 pt-1"
-          style={{ paddingLeft: (job.isNew && !showApplicationStatus) || statusStyle ? "70px" : "0" }}
+          style={{ 
+            paddingLeft: (() => {
+              if (statusStyle) return "88px";
+              const hasRecommendationScore = job.recommendationScore != null && job.recommendationScore > 0;
+              if (job.isNew && hasRecommendationScore) return "154px"; // NEW(58) + 間隔(8) + AIマッチ(72) + 余白(16)
+              if (job.isNew || hasRecommendationScore) return "88px"; // バッジ幅(72) + 余白(16)
+              return "0";
+            })()
+          }}
         >
           {features.map((feature, index) => (
             <span

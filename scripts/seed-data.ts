@@ -33,6 +33,15 @@ const generateId = (length: number = 32): string => {
   return result;
 };
 
+// 開発環境用の作成日時を生成する関数
+// 過去N日前の日時を生成（1週間以内の場合はnewタグがつく）
+const generateDevCreatedAt = (daysAgo: number): string => {
+  const now = new Date();
+  const targetDate = new Date(now.getTime() - daysAgo * 24 * 60 * 60 * 1000);
+  // kintoneのDATETIME形式: YYYY-MM-DDTHH:mm:ssZ
+  return targetDate.toISOString().replace(/\.\d{3}Z$/, 'Z');
+};
+
 // PostgreSQL データベース接続は lib/db/client.ts から取得
 
 // ダミーファイルをアップロードする関数
@@ -181,6 +190,7 @@ Web系エンジニアとして5年の実務経験があります。
       外国籍: "可",
       募集人数: 2,
       新着フラグ: "新着案件",
+      作成日時_開発環境: generateDevCreatedAt(2), // 2日前（newタグがつく）
     },
     {
       案件名: "金融系WebアプリケーションAPI開発",
@@ -221,6 +231,7 @@ Web系エンジニアとして5年の実務経験があります。
       外国籍: "不可",
       募集人数: 1,
       新着フラグ: "新着案件",
+      作成日時_開発環境: generateDevCreatedAt(3), // 3日前（newタグがつく）
     },
     {
       案件名: "スタートアップ向け新規サービス開発",
@@ -262,6 +273,7 @@ Web系エンジニアとして5年の実務経験があります。
       外国籍: "可",
       募集人数: 3,
       新着フラグ: "新着案件",
+      作成日時_開発環境: generateDevCreatedAt(5), // 5日前（newタグがつく）
     },
     {
       案件名: "ヘルスケアアプリ開発案件",
@@ -300,6 +312,7 @@ iOS/Android両方のアプリ開発経験がある方を歓迎します。`,
       リモート: "可",
       外国籍: "可",
       募集人数: 2,
+      作成日時_開発環境: generateDevCreatedAt(14), // 2週間前（newタグがつかない）
     },
     {
       案件名: "データ基盤構築・運用案件",
@@ -340,6 +353,7 @@ iOS/Android両方のアプリ開発経験がある方を歓迎します。`,
       リモート: "条件付き可",
       外国籍: "条件付き可",
       募集人数: 2,
+      作成日時_開発環境: generateDevCreatedAt(30), // 1ヶ月前（newタグがつかない）
     },
   ],
 
@@ -1125,6 +1139,7 @@ export const createSeedData = async () => {
           ドロップダウン_0: { value: job.外国籍 },
           数値: { value: job.募集人数 },
           新着フラグ: { value: job.新着フラグ || "" },
+          作成日時_開発環境: job.作成日時_開発環境 ? { value: job.作成日時_開発環境 } : undefined,
       };
       });
 

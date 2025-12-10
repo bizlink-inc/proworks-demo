@@ -47,6 +47,7 @@ export type JobRecord = {
   掲載単価: { value: string };
   面談回数: { value: string };
   作成日時: { value: string }; // kintone標準フィールド
+  作成日時_開発環境?: { value: string }; // 開発環境用の作成日時
 };
 
 // 応募履歴の型定義

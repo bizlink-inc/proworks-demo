@@ -1,8 +1,34 @@
 import { createJobClient, getAppIds } from "../client";
 import type { JobRecord, Job } from "../types";
 
+// 作成日時から1週間以内かどうかを判定する関数
+const isWithinOneWeek = (createdAt: string): boolean => {
+  if (!createdAt) {
+    return false;
+  }
+
+  const createdDate = new Date(createdAt);
+  const now = new Date();
+  const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+  return createdDate >= oneWeekAgo;
+};
+
+// 環境に応じて作成日時フィールドを取得する関数
+const getCreatedAt = (record: JobRecord): string => {
+  const isDevelopment = process.env.NODE_ENV === 'development';
+  
+  if (isDevelopment && record.作成日時_開発環境?.value) {
+    return record.作成日時_開発環境.value;
+  }
+  
+  return record.作成日時?.value || '';
+};
+
 // kintoneレコードをフロントエンド用の型に変換
 const convertJobRecord = (record: JobRecord): Job => {
+  const createdAt = getCreatedAt(record);
+  
   return {
     id: record.$id.value,
     title: record.案件名.value,
@@ -22,8 +48,8 @@ const convertJobRecord = (record: JobRecord): Job => {
     rate: record.掲載単価.value,
     interviewCount: record.面談回数.value,
     remote: record.ドロップダウン_3?.value || '',
-    isNew: record.新着フラグ?.value === '新着案件',
-    createdAt: record.作成日時?.value || '',
+    isNew: isWithinOneWeek(createdAt),
+    createdAt,
   };
 };
 
