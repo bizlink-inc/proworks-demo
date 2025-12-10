@@ -26,7 +26,18 @@ const formatRateValue = (rate?: string) => {
 }
 
 // 応募ステータスの色とラベルを取得（kintoneの値を表示用ラベルに変換）
-const getStatusStyle = (status?: string | null, isEnded?: boolean) => {
+const getStatusStyle = (status?: string | null, isEnded?: boolean, recruitmentStatus?: string) => {
+  // 案件の募集ステータスが「クローズ」の場合は「募集終了」として表示（最優先）
+  // 応募ステータスが「面談調整中」などでも、案件の募集ステータスが「クローズ」なら「募集終了」を表示
+  if (recruitmentStatus === "クローズ") {
+    return {
+      label: "募集終了",
+      bgColor: "#9ca3af",
+      borderColor: "#9ca3af",
+      textColor: "#ffffff"
+    }
+  }
+
   // 応募終了（見送り）の場合
   if (isEnded || status === "見送り") {
     return {
@@ -98,7 +109,7 @@ export function JobCard({ job, onViewDetail, showApplicationStatus = false, isEn
     : ""
   
   // 応募ステータスの枠線表示を制御（showApplicationStatusがfalseの場合は非表示）
-  const statusStyle = showApplicationStatus ? getStatusStyle(job.applicationStatus, isEnded) : null
+  const statusStyle = showApplicationStatus ? getStatusStyle(job.applicationStatus, isEnded, job.recruitmentStatus) : null
 
   return (
     <div

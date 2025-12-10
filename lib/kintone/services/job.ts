@@ -47,7 +47,8 @@ const convertJobRecord = (record: JobRecord): Job => {
     period: record.案件期間.value,
     rate: record.掲載単価.value,
     interviewCount: record.面談回数.value,
-    remote: record.ドロップダウン_3?.value || '',
+    remote: record.リモート可否?.value || '',
+    recruitmentStatus: record.募集ステータス?.value || '募集中',
     isNew: isWithinOneWeek(createdAt),
     createdAt,
   };

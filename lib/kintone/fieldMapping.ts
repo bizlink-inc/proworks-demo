@@ -53,6 +53,11 @@ export const JOB_FIELDS = {
   PERIOD: '案件期間',
   RATE: '掲載単価',
   INTERVIEW_COUNT: '面談回数',
+  RECRUITMENT_STATUS: '募集ステータス', // ラジオボタン: 募集中, クローズ
+  BUSINESS_FLOW: '商流', // ドロップダウン: 商流
+  CONTRACT_TYPE: '契約形態', // ドロップダウン: 契約形態
+  REMOTE: 'リモート可否', // ドロップダウン: リモート可否
+  FOREIGN_NATIONALITY: '外国籍', // ドロップダウン: 外国籍
 } as const;
 
 // 応募履歴DB（Application）のフィールドコード

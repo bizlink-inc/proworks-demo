@@ -100,9 +100,13 @@ export const ApplicationsClient = ({ user }: ApplicationsClientProps) => {
       }
     }
     
-    // 応募終了（見送り）の案件を分離
-    const endedApplications = filtered.filter((app) => app.status === "見送り")
-    const activeApplications = filtered.filter((app) => app.status !== "見送り")
+    // 応募終了（見送りまたは案件の募集ステータスがクローズ）の案件を分離
+    const endedApplications = filtered.filter((app) => 
+      app.status === "見送り" || app.job?.recruitmentStatus === "クローズ"
+    )
+    const activeApplications = filtered.filter((app) => 
+      app.status !== "見送り" && app.job?.recruitmentStatus !== "クローズ"
+    )
     
     // 通常の案件を応募した順（新しい順）でソート
     const sortedActive = [...activeApplications].sort((a, b) => {
@@ -288,14 +292,15 @@ export const ApplicationsClient = ({ user }: ApplicationsClientProps) => {
             {filteredApplications.map((app) => {
               if (!app.job) return null
 
-              // 応募ステータスを案件に設定
+              // 応募ステータスを案件に設定（募集ステータスも明示的に設定）
               const jobWithStatus: Job = {
                 ...app.job,
                 applicationStatus: app.status,
+                recruitmentStatus: app.job.recruitmentStatus, // 明示的に設定
               }
 
-              // 応募終了かどうか
-              const isEnded = app.status === "見送り"
+              // 応募終了かどうか（応募ステータスが「見送り」または案件の募集ステータスが「クローズ」）
+              const isEnded = app.status === "見送り" || app.job.recruitmentStatus === "クローズ"
 
               return (
                 <JobCard
@@ -319,3 +324,4 @@ export const ApplicationsClient = ({ user }: ApplicationsClientProps) => {
     </div>
   )
 }
+

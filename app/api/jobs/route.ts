@@ -23,6 +23,9 @@ export const GET = async (request: NextRequest) => {
     // kintoneからすべての案件を取得
     let jobs = await getAllJobs();
 
+    // 募集ステータスが「クローズ」の案件を除外（案件一覧には表示しない）
+    jobs = jobs.filter((job) => job.recruitmentStatus !== 'クローズ');
+
     // ログインしている場合、応募ステータスと推薦スコアを取得
     let applicationsMap: Record<string, string> = {};
     let recommendationScores: Record<string, number> = {};

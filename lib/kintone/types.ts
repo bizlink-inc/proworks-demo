@@ -46,6 +46,11 @@ export type JobRecord = {
   案件期間: { value: string };
   掲載単価: { value: string };
   面談回数: { value: string };
+  募集ステータス?: { value: string }; // ラジオボタン: 募集中, クローズ
+  商流?: { value: string }; // ドロップダウン: 商流
+  契約形態?: { value: string }; // ドロップダウン: 契約形態
+  リモート可否?: { value: string }; // ドロップダウン: リモート可否
+  外国籍?: { value: string }; // ドロップダウン: 外国籍
   作成日時: { value: string }; // kintone標準フィールド
   作成日時_開発環境?: { value: string }; // 開発環境用の作成日時
 };
@@ -108,7 +113,8 @@ export type Job = {
   period: string;
   rate: string;
   interviewCount: string;
-  remote?: string; // リモート可否（ドロップダウン_3）
+  remote?: string; // リモート可否
+  recruitmentStatus?: string; // 募集ステータス: 募集中, クローズ
   isNew?: boolean; // 新着フラグ
   createdAt?: string; // 作成日時
   applicationStatus?: string | null; // ログインユーザーの応募ステータス

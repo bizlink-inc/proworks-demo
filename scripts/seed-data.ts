@@ -236,7 +236,7 @@ Web系エンジニアとして5年の実務経験があります。
       ラジオボタン_0: "有",
       商流: "直",
       契約形態: "準委任",
-      リモート: "可",
+      リモート可否: "可",
       外国籍: "可",
       募集人数: 2,
       新着フラグ: "新着案件",
@@ -277,7 +277,7 @@ Web系エンジニアとして5年の実務経験があります。
       ラジオボタン_0: "有",
       商流: "元請け",
       契約形態: "準委任",
-      リモート: "条件付き可",
+      リモート可否: "条件付き可",
       外国籍: "不可",
       募集人数: 1,
       新着フラグ: "新着案件",
@@ -319,7 +319,7 @@ Web系エンジニアとして5年の実務経験があります。
       ラジオボタン_0: "有",
       商流: "直",
       契約形態: "業務委託",
-      リモート: "可",
+      リモート可否: "可",
       外国籍: "可",
       募集人数: 3,
       新着フラグ: "新着案件",
@@ -359,7 +359,7 @@ iOS/Android両方のアプリ開発経験がある方を歓迎します。`,
       ラジオボタン_0: "有",
       商流: "直",
       契約形態: "準委任",
-      リモート: "可",
+      リモート可否: "可",
       外国籍: "可",
       募集人数: 2,
       作成日時_開発環境: generateDevCreatedAt(14), // 2週間前（newタグがつかない）
@@ -400,10 +400,130 @@ iOS/Android両方のアプリ開発経験がある方を歓迎します。`,
       ラジオボタン_0: "有",
       商流: "元請け",
       契約形態: "準委任",
-      リモート: "条件付き可",
+      リモート可否: "条件付き可",
       外国籍: "条件付き可",
       募集人数: 2,
       作成日時_開発環境: generateDevCreatedAt(30), // 1ヶ月前（newタグがつかない）
+    },
+    // 3ヶ月前の応募履歴用の案件（jobIndex: 5, 6, 7）
+    {
+      案件名: "クラウドインフラ構築案件",
+      ルックアップ: "大手IT企業C社",
+      職種_ポジション: ["インフラエンジニア"],
+      スキル: ["AWS", "Terraform", "Kubernetes"],
+      概要: `大手IT企業のクラウドインフラ構築案件です。
+AWSを中心としたクラウドインフラの設計・構築・運用を担当していただきます。
+大規模システムのインフラ構築経験がある方を歓迎します。`,
+      環境: `【開発環境】
+・インフラ: AWS (EC2, ECS, RDS, S3, CloudFront)
+・IaC: Terraform, CloudFormation
+・コンテナ: Docker, Kubernetes (EKS)
+・その他: GitHub Actions, DataDog`,
+      必須スキル: `・AWSでのインフラ構築経験 3年以上
+・TerraformでのIaC実装経験
+・Docker/Kubernetesの運用経験
+・Linuxサーバーの運用経験`,
+      尚可スキル: `・マルチクラウド対応の経験
+・CI/CDパイプラインの構築経験
+・セキュリティ対策の知見
+・コスト最適化の経験`,
+      勤務地エリア: "東京都港区",
+      最寄駅: "新橋駅",
+      下限h: 150,
+      上限h: 180,
+      掲載単価: 80,
+      MAX単価: 85,
+      案件期間: "6ヶ月〜",
+      参画時期: "2026-03-01",
+      面談回数: "2回",
+      案件特徴: ["大手直案件", "長期案件", "リモート併用可", "最新技術導入"],
+      ラジオボタン: "募集中",
+      ラジオボタン_0: "有",
+      商流: "直",
+      契約形態: "準委任",
+      リモート可否: "可",
+      外国籍: "可",
+      募集人数: 2,
+      作成日時_開発環境: generateDevCreatedAt(95), // 3ヶ月前
+    },
+    {
+      案件名: "機械学習プラットフォーム開発案件",
+      ルックアップ: "AIベンチャーD社",
+      職種_ポジション: ["機械学習エンジニア", "データサイエンティスト"],
+      スキル: ["Python", "TensorFlow", "PyTorch"],
+      概要: `AIベンチャー企業の機械学習プラットフォーム開発案件です。
+機械学習モデルの開発・デプロイ・運用を担当していただきます。
+深層学習の実務経験がある方を歓迎します。`,
+      環境: `【開発環境】
+・言語: Python 3.11
+・MLフレームワーク: TensorFlow, PyTorch, scikit-learn
+・インフラ: AWS (SageMaker, EC2, S3)
+・その他: Jupyter, MLflow, GitHub`,
+      必須スキル: `・Pythonでの機械学習開発経験 2年以上
+・TensorFlowまたはPyTorchの使用経験
+・データ分析・前処理の経験
+・機械学習モデルの評価・改善経験`,
+      尚可スキル: `・深層学習の実務経験
+・MLOpsの経験
+・大規模データ処理の経験
+・論文実装の経験`,
+      勤務地エリア: "東京都文京区",
+      最寄駅: "後楽園駅",
+      下限h: 140,
+      上限h: 180,
+      掲載単価: 75,
+      MAX単価: 80,
+      案件期間: "6ヶ月〜",
+      参画時期: "2026-03-15",
+      面談回数: "2回",
+      案件特徴: ["スタートアップ", "新規開発案件", "リモート併用可", "最新技術導入"],
+      ラジオボタン: "募集中",
+      ラジオボタン_0: "有",
+      商流: "直",
+      契約形態: "準委任",
+      リモート可否: "可",
+      外国籍: "可",
+      募集人数: 1,
+      作成日時_開発環境: generateDevCreatedAt(100), // 3ヶ月前
+    },
+    {
+      案件名: "セキュリティ監視・運用案件",
+      ルックアップ: "セキュリティ企業E社",
+      職種_ポジション: ["セキュリティエンジニア"],
+      スキル: ["SIEM", "SOC", "セキュリティ監視"],
+      概要: `セキュリティ企業の監視・運用案件です。
+SOC（セキュリティオペレーションセンター）での監視・分析・対応を担当していただきます。
+セキュリティインシデント対応の経験がある方を歓迎します。`,
+      環境: `【開発環境】
+・SIEM: Splunk, QRadar
+・監視ツール: Wazuh, OSSEC
+・その他: ELK Stack, GitHub`,
+      必須スキル: `・セキュリティ監視の経験 2年以上
+・SIEMツールの使用経験
+・ログ分析の経験
+・インシデント対応の経験`,
+      尚可スキル: `・ペネトレーションテストの経験
+・脆弱性診断の経験
+・セキュリティ資格（CISSP, CEH等）
+・フォレンジックの経験`,
+      勤務地エリア: "東京都新宿区",
+      最寄駅: "新宿駅",
+      下限h: 150,
+      上限h: 180,
+      掲載単価: 78,
+      MAX単価: 83,
+      案件期間: "12ヶ月〜",
+      参画時期: "2026-04-01",
+      面談回数: "2回",
+      案件特徴: ["安定稼働", "長期案件", "大手直案件", "リモート併用可"],
+      ラジオボタン: "募集中",
+      ラジオボタン_0: "有",
+      商流: "直",
+      契約形態: "準委任",
+      リモート可否: "条件付き可",
+      外国籍: "不可",
+      募集人数: 2,
+      作成日時_開発環境: generateDevCreatedAt(120), // 約4ヶ月前
     },
   ],
 
@@ -415,10 +535,10 @@ iOS/Android両方のアプリ開発経験がある方を歓迎します。`,
     { auth_user_id: "seed_user_001", jobIndex: 4, 対応状況: "見送り", 作成日時_開発環境: generateDevCreatedAt(4) }, // 4日前
     { auth_user_id: "seed_user_001", jobIndex: 0, 対応状況: "応募済み", 作成日時_開発環境: generateDevCreatedAt(5) }, // 5日前（最古）
     
-    // 3ヶ月以上前の応募履歴（確認用：アプリ側では表示されない）
-    { auth_user_id: "seed_user_001", jobIndex: 0, 対応状況: "応募済み", 作成日時_開発環境: generateDevCreatedAt(95) }, // 約3ヶ月前（境界値）
-    { auth_user_id: "seed_user_001", jobIndex: 1, 対応状況: "見送り", 作成日時_開発環境: generateDevCreatedAt(100) }, // 約3.3ヶ月前（非表示）
-    { auth_user_id: "seed_user_001", jobIndex: 2, 対応状況: "案件参画", 作成日時_開発環境: generateDevCreatedAt(120) }, // 約4ヶ月前（非表示）
+    // 3ヶ月以上前の応募履歴（別案件で作成）
+    { auth_user_id: "seed_user_001", jobIndex: 5, 対応状況: "応募済み", 作成日時_開発環境: generateDevCreatedAt(95) }, // 約3ヶ月前
+    { auth_user_id: "seed_user_001", jobIndex: 6, 対応状況: "見送り", 作成日時_開発環境: generateDevCreatedAt(100) }, // 約3ヶ月前
+    { auth_user_id: "seed_user_001", jobIndex: 7, 対応状況: "案件参画", 作成日時_開発環境: generateDevCreatedAt(120) }, // 約4ヶ月前
   ],
 
   // 推薦データ（表示順確認用）
@@ -734,7 +854,7 @@ React Nativeを中心としたクロスプラットフォーム開発が得意�
       ラジオボタン_0: "有",
       商流: "直",
       契約形態: "準委任",
-      リモート: "可",
+      リモート可否: "可",
       外国籍: "可",
       募集人数: 2,
       新着フラグ: "新着案件",
@@ -775,7 +895,7 @@ React Nativeを中心としたクロスプラットフォーム開発が得意�
       ラジオボタン_0: "有",
       商流: "元請け",
       契約形態: "準委任",
-      リモート: "条件付き可",
+      リモート可否: "条件付き可",
       外国籍: "不可",
       募集人数: 1,
       新着フラグ: "新着案件",
@@ -817,7 +937,7 @@ React Nativeを中心としたクロスプラットフォーム開発が得意�
       ラジオボタン_0: "有",
       商流: "直",
       契約形態: "業務委託",
-      リモート: "可",
+      リモート可否: "可",
       外国籍: "可",
       募集人数: 3,
     },
@@ -856,7 +976,7 @@ iOS/Android両方のアプリ開発経験がある方を歓迎します。`,
       ラジオボタン_0: "有",
       商流: "直",
       契約形態: "準委任",
-      リモート: "可",
+      リモート可否: "可",
       外国籍: "可",
       募集人数: 2,
     },
@@ -897,7 +1017,7 @@ iOS/Android両方のアプリ開発経験がある方を歓迎します。`,
       ラジオボタン_0: "有",
       商流: "元請け",
       契約形態: "準委任",
-      リモート: "条件付き可",
+      リモート可否: "条件付き可",
       外国籍: "条件付き可",
       募集人数: 2,
     },
@@ -1013,9 +1133,25 @@ export const createSeedData = async () => {
   console.log("✅ 推薦データ（マッチングスコア）も自動で作成されます");
   console.log("✅ yamada用の推薦データ（表示順確認用）も作成されます\n");
   
-  // seedData1とseedData3を統合
-  const combinedAuthUsers = [...seedData1.authUsers, ...seedData3.authUsers];
-  const combinedTalents = [...seedData1.talents, ...seedData3.talents];
+  // seedData1とseedData3を統合（重複を除去）
+  // seedData1を優先し、seedData3から重複するユーザーIDとメールアドレスを除外
+  const seedData1UserIds = new Set(seedData1.authUsers.map(u => u.id));
+  const seedData1Emails = new Set(seedData1.authUsers.map(u => u.email));
+  
+  const uniqueSeedData3Users = seedData3.authUsers.filter(u => 
+    !seedData1UserIds.has(u.id) && !seedData1Emails.has(u.email)
+  );
+  
+  const combinedAuthUsers = [...seedData1.authUsers, ...uniqueSeedData3Users];
+  
+  // talentsも同様に重複を除去（auth_user_idでチェック）
+  const seedData1TalentIds = new Set(seedData1.talents.map(t => t.auth_user_id));
+  const uniqueSeedData3Talents = seedData3.talents.filter(t => 
+    !seedData1TalentIds.has(t.auth_user_id)
+  );
+  const combinedTalents = [...seedData1.talents, ...uniqueSeedData3Talents];
+  
+  // jobsとapplicationsは重複がない想定なのでそのまま統合
   const combinedJobs = [...seedData1.jobs, ...seedData3.jobs];
   const combinedApplications = [...seedData1.applications, ...seedData3.applications];
   
@@ -1027,6 +1163,12 @@ export const createSeedData = async () => {
     applications: combinedApplications,
     recommendations: seedData1.recommendations, // seedData1の推薦データを使用（yamada用）
   };
+  
+  console.log(`📊 統合結果:`);
+  console.log(`   ユーザー: ${seedData1.authUsers.length}人 (seedData1) + ${uniqueSeedData3Users.length}人 (seedData3重複除外後) = ${combinedAuthUsers.length}人`);
+  console.log(`   人材: ${seedData1.talents.length}人 (seedData1) + ${uniqueSeedData3Talents.length}人 (seedData3重複除外後) = ${combinedTalents.length}人`);
+  console.log(`   案件: ${combinedJobs.length}件`);
+  console.log(`   応募履歴: ${combinedApplications.length}件\n`);
 
   try {
     const appIds = getAppIds();
@@ -1052,21 +1194,38 @@ export const createSeedData = async () => {
     const db = getDb();
     
     try {
-      // 既存ユーザーのメールアドレスを取得
+      // 既存ユーザーのIDとメールアドレスを取得
       const existingEmails = new Map<string, string>();
+      const existingIds = new Map<string, string>();
       const existingRows = await db.select({ email: schema.user.email, id: schema.user.id }).from(schema.user);
       for (const row of existingRows) {
         existingEmails.set(row.email, row.id);
+        existingIds.set(row.id, row.id);
       }
 
-      // 新規ユーザーをフィルタリング
-      const newUsers = seedData.authUsers.filter(user => !existingEmails.has(user.email));
-      const skippedUsers = seedData.authUsers.filter(user => existingEmails.has(user.email));
+      // 新規ユーザーをフィルタリング（メールアドレスまたはユーザーIDで既存チェック）
+      const newUsers = seedData.authUsers.filter(user => {
+        // ユーザーIDが指定されている場合はIDでチェック、そうでない場合はメールアドレスでチェック
+        if (user.id) {
+          return !existingIds.has(user.id) && !existingEmails.has(user.email);
+        }
+        return !existingEmails.has(user.email);
+      });
+      const skippedUsers = seedData.authUsers.filter(user => {
+        if (user.id) {
+          return existingIds.has(user.id) || existingEmails.has(user.email);
+        }
+        return existingEmails.has(user.email);
+      });
       
       // スキップされるユーザーのIDを追加
       for (const user of skippedUsers) {
-        authUserIds.push(existingEmails.get(user.email)!);
-        console.log(`⚠️  ユーザー ${user.email} は既に存在します。スキップします。`);
+        // ユーザーIDが指定されている場合はIDを優先、そうでない場合はメールアドレスから取得
+        const existingId = user.id && existingIds.has(user.id) 
+          ? existingIds.get(user.id)! 
+          : existingEmails.get(user.email)!;
+        authUserIds.push(existingId);
+        console.log(`⚠️  ユーザー ${user.name} (${user.email}${user.id ? ` / ID: ${user.id}` : ''}) は既に存在します。スキップします。`);
       }
 
       if (newUsers.length > 0) {
@@ -1186,10 +1345,10 @@ export const createSeedData = async () => {
         案件特徴: { value: validFeatures },
           ラジオボタン: { value: job.ラジオボタン },
           ラジオボタン_0: { value: job.ラジオボタン_0 },
-          ドロップダウン: { value: job.商流 },
-          ドロップダウン_2: { value: job.契約形態 },
-          ドロップダウン_3: { value: job.リモート },
-          ドロップダウン_0: { value: job.外国籍 },
+          商流: { value: job.商流 },
+          契約形態: { value: job.契約形態 },
+          リモート可否: { value: job.リモート可否 },
+          外国籍: { value: job.外国籍 },
           数値: { value: job.募集人数 },
           新着フラグ: { value: job.新着フラグ || "" },
           作成日時_開発環境: job.作成日時_開発環境 ? { value: job.作成日時_開発環境 } : undefined,
@@ -1803,10 +1962,10 @@ const upsertYamadaSeedData = async () => {
         案件特徴: { value: job.案件特徴 },
         ラジオボタン: { value: job.ラジオボタン },
         ラジオボタン_0: { value: job.ラジオボタン_0 },
-        ドロップダウン: { value: job.商流 },
-        ドロップダウン_2: { value: job.契約形態 },
-        ドロップダウン_3: { value: job.リモート },
-        ドロップダウン_0: { value: job.外国籍 },
+        商流: { value: job.商流 },
+        契約形態: { value: job.契約形態 },
+        リモート可否: { value: job.リモート可否 },
+        外国籍: { value: job.外国籍 },
         数値: { value: job.募集人数 },
       };
 

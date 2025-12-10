@@ -30,6 +30,9 @@ export const GET = async (request: NextRequest) => {
     // 応募済み案件を除外
     jobs = jobs.filter((job) => !appliedJobIds.has(job.id));
 
+    // 募集ステータスが「クローズ」の案件を除外（案件一覧には表示しない）
+    jobs = jobs.filter((job) => job.recruitmentStatus !== 'クローズ');
+
     // 推薦DBからユーザーの推薦データを取得（担当者おすすめとAIマッチ情報を含む）
     const recommendationClient = createRecommendationClient();
     const appIds = getAppIds();
