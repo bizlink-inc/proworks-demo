@@ -295,32 +295,19 @@ export function JobDetailModal({ jobId, onClose, onApply }: JobDetailModalProps)
               <div style={{ borderTop: "1px solid #d5e5f0" }} />
             </div>
 
-            <div className="px-8 py-6 flex justify-center">
-            {isAlreadyApplied ? (
-                <Button
-                  disabled
-                  variant="pw-outline"
-                  className="w-full max-w-[260px]"
-                  style={{ 
-                    fontSize: "15px",
-                    backgroundColor: "#9ca3af",
-                    borderColor: "#9ca3af",
-                    color: "#ffffff",
-                  }}
-                >
-                応募済み
-              </Button>
-            ) : (
+            {/* 応募済みの場合はボタンを表示しない */}
+            {!isAlreadyApplied && (
+              <div className="px-8 py-6 flex justify-center">
                 <Button
                   variant="pw-primary"
                   onClick={handleApply}
                   className="w-full max-w-[260px]"
                   style={{ fontSize: "15px" }}
                 >
-                この案件に応募する
-              </Button>
+                  この案件に応募する
+                </Button>
+              </div>
             )}
-            </div>
           </div>
         ) : null}
       </DialogContent>

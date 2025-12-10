@@ -58,6 +58,7 @@ export type ApplicationRecord = {
   案件名: { value: string }; // ルックアップで取得
   対応状況: { value: string };
   作成日時: { value: string };
+  作成日時_開発環境?: { value: string }; // 開発環境用の作成日時
 };
 
 // フロントエンド用の型定義（valueを展開した形）

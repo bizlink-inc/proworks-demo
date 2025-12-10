@@ -63,6 +63,7 @@ export const APPLICATION_FIELDS = {
   JOB_TITLE: '案件名',
   STATUS: '対応状況',
   CREATED_AT: '作成日時',
+  CREATED_AT_DEV: '作成日時_開発環境', // 開発環境用の作成日時
 } as const;
 
 // 推薦DB（Recommendation）のフィールドコード

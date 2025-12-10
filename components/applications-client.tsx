@@ -32,24 +32,6 @@ const STATUS_FILTERS: { id: StatusFilter; kintoneValues: string[]; label: string
 // フィルター用の青色
 const filterBlue = "#3966a2"
 
-// ステータスの表示順序（ポジティブ→ネガティブ）
-// kintoneの値と変換後の値の両方に対応
-const STATUS_PRIORITY: Record<string, number> = {
-  "案件参画": 1,
-  "案件決定": 1, // 変換後の値
-  "面談調整中": 2,
-  "予定決定": 3,
-  "面談予定": 3, // 変換後の値
-  "応募済み": 4,
-  "見送り": 5,
-  "募集終了": 5, // 変換後の値
-}
-
-// ステータスの優先度を取得
-const getStatusPriority = (status: string | null | undefined): number => {
-  return STATUS_PRIORITY[status || "応募済み"] || 99
-}
-
 export const ApplicationsClient = ({ user }: ApplicationsClientProps) => {
   useApplicationStatusMonitor()
 
@@ -93,12 +75,26 @@ export const ApplicationsClient = ({ user }: ApplicationsClientProps) => {
       }
     }
     
-    // ステータスの優先度でソート（ポジティブ→ネガティブ順）
-    return [...filtered].sort((a, b) => {
-      const priorityA = getStatusPriority(a.status)
-      const priorityB = getStatusPriority(b.status)
-      return priorityA - priorityB
+    // 応募終了（見送り）の案件を分離
+    const endedApplications = filtered.filter((app) => app.status === "見送り")
+    const activeApplications = filtered.filter((app) => app.status !== "見送り")
+    
+    // 通常の案件を応募した順（新しい順）でソート
+    const sortedActive = [...activeApplications].sort((a, b) => {
+      const dateA = new Date(a.appliedAt || 0).getTime()
+      const dateB = new Date(b.appliedAt || 0).getTime()
+      return dateB - dateA // 降順（新しい順）
     })
+    
+    // 応募終了の案件も新しい順でソート（ただし最後に配置）
+    const sortedEnded = [...endedApplications].sort((a, b) => {
+      const dateA = new Date(a.appliedAt || 0).getTime()
+      const dateB = new Date(b.appliedAt || 0).getTime()
+      return dateB - dateA // 降順（新しい順）
+    })
+    
+    // 通常の案件の後に応募終了の案件を配置
+    return [...sortedActive, ...sortedEnded]
   }, [applications, activeFilter])
 
   // 応募詳細を見る

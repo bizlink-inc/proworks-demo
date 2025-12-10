@@ -2,15 +2,28 @@ import { createApplicationClient, getAppIds } from "../client";
 import type { ApplicationRecord, Application } from "../types";
 import { APPLICATION_FIELDS } from "../fieldMapping";
 
+// 環境に応じて作成日時フィールドを取得する関数
+const getCreatedAt = (record: ApplicationRecord): string => {
+  const isDevelopment = process.env.NODE_ENV === 'development';
+  
+  if (isDevelopment && record.作成日時_開発環境?.value) {
+    return record.作成日時_開発環境.value;
+  }
+  
+  return record[APPLICATION_FIELDS.CREATED_AT].value || '';
+};
+
 // kintoneレコードをフロントエンド用の型に変換
 const convertApplicationRecord = (record: ApplicationRecord): Application => {
+  const appliedAt = getCreatedAt(record);
+  
   return {
     id: record[APPLICATION_FIELDS.ID].value,
     authUserId: record[APPLICATION_FIELDS.AUTH_USER_ID].value,
     jobId: record[APPLICATION_FIELDS.JOB_ID].value,
     jobTitle: record[APPLICATION_FIELDS.JOB_TITLE].value,
     status: record[APPLICATION_FIELDS.STATUS].value,
-    appliedAt: record[APPLICATION_FIELDS.CREATED_AT].value,
+    appliedAt,
   };
 };
 

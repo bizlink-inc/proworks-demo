@@ -358,11 +358,17 @@ iOS/Android両方のアプリ開発経験がある方を歓迎します。`,
   ],
 
   applications: [
-    { auth_user_id: "seed_user_001", jobIndex: 0, 対応状況: "応募済み" },
-    { auth_user_id: "seed_user_001", jobIndex: 1, 対応状況: "面談調整中" },
-    { auth_user_id: "seed_user_001", jobIndex: 2, 対応状況: "予定決定" },
-    { auth_user_id: "seed_user_001", jobIndex: 3, 対応状況: "案件参画" },
-    { auth_user_id: "seed_user_001", jobIndex: 4, 対応状況: "見送り" },
+    // 応募した順（新しい順）: 案件決定、面談予定、面談調整中、募集終了、応募済み
+    { auth_user_id: "seed_user_001", jobIndex: 3, 対応状況: "案件参画", 作成日時_開発環境: generateDevCreatedAt(1) }, // 1日前（最新）
+    { auth_user_id: "seed_user_001", jobIndex: 2, 対応状況: "予定決定", 作成日時_開発環境: generateDevCreatedAt(2) }, // 2日前
+    { auth_user_id: "seed_user_001", jobIndex: 1, 対応状況: "面談調整中", 作成日時_開発環境: generateDevCreatedAt(3) }, // 3日前
+    { auth_user_id: "seed_user_001", jobIndex: 4, 対応状況: "見送り", 作成日時_開発環境: generateDevCreatedAt(4) }, // 4日前
+    { auth_user_id: "seed_user_001", jobIndex: 0, 対応状況: "応募済み", 作成日時_開発環境: generateDevCreatedAt(5) }, // 5日前（最古）
+    
+    // 3ヶ月以上前の応募履歴（確認用：アプリ側では表示されない）
+    { auth_user_id: "seed_user_001", jobIndex: 0, 対応状況: "応募済み", 作成日時_開発環境: generateDevCreatedAt(95) }, // 約3ヶ月前（境界値）
+    { auth_user_id: "seed_user_001", jobIndex: 1, 対応状況: "見送り", 作成日時_開発環境: generateDevCreatedAt(100) }, // 約3.3ヶ月前（非表示）
+    { auth_user_id: "seed_user_001", jobIndex: 2, 対応状況: "案件参画", 作成日時_開発環境: generateDevCreatedAt(120) }, // 約4ヶ月前（非表示）
   ],
 
   // 推薦データ（表示順確認用）
@@ -1153,16 +1159,23 @@ export const createSeedData = async () => {
     console.log("📝 Step 4: 応募履歴DBにレコードを作成");
     console.log("=".repeat(80));
 
-    const applicationRecords = seedData.applications.map((application) => {
+    const applicationRecords = seedData.applications.map((application: any) => {
       const authUserIndex = seedData.authUsers.findIndex(u => u.id === application.auth_user_id);
       const authUserId = authUserIds[authUserIndex];
       const jobId = jobIds[application.jobIndex];
 
-      return {
+      const record: any = {
         [APPLICATION_FIELDS.AUTH_USER_ID]: { value: authUserId },
         [APPLICATION_FIELDS.JOB_ID]: { value: jobId },
         [APPLICATION_FIELDS.STATUS]: { value: application.対応状況 },
       };
+
+      // 作成日時_開発環境が指定されている場合は追加
+      if (application.作成日時_開発環境) {
+        record[APPLICATION_FIELDS.CREATED_AT_DEV] = { value: application.作成日時_開発環境 };
+      }
+
+      return record;
     });
 
     if (applicationRecords.length > 0) {
@@ -1765,11 +1778,16 @@ const upsertYamadaSeedData = async () => {
         query: `${APPLICATION_FIELDS.AUTH_USER_ID} = "${YAMADA_AUTH_USER_ID}" and ${APPLICATION_FIELDS.JOB_ID} = "${jobId}"`,
       });
 
-      const applicationRecord = {
+      const applicationRecord: any = {
         [APPLICATION_FIELDS.AUTH_USER_ID]: { value: YAMADA_AUTH_USER_ID },
         [APPLICATION_FIELDS.JOB_ID]: { value: jobId },
         [APPLICATION_FIELDS.STATUS]: { value: application.対応状況 },
       };
+
+      // 作成日時_開発環境が指定されている場合は追加
+      if ((application as any).作成日時_開発環境) {
+        applicationRecord[APPLICATION_FIELDS.CREATED_AT_DEV] = { value: (application as any).作成日時_開発環境 };
+      }
 
       if (existingApplications.records.length > 0) {
         // 更新
