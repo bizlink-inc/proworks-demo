@@ -2,6 +2,7 @@
 
 import { Button } from "@/components/ui/button"
 import type { Job } from "@/lib/kintone/types"
+import { mapApplicationStatusToDisplay } from "@/lib/utils"
 
 type JobCardProps = {
   job: Job
@@ -23,12 +24,12 @@ const formatRateValue = (rate?: string) => {
   return numeric || rate
 }
 
-// 応募ステータスの色とラベルを取得（kintoneの値をそのまま表示）
+// 応募ステータスの色とラベルを取得（kintoneの値を表示用ラベルに変換）
 const getStatusStyle = (status?: string | null, isEnded?: boolean) => {
   // 応募終了（見送り）の場合
   if (isEnded || status === "見送り") {
     return {
-      label: "見送り",
+      label: "募集終了",
       bgColor: "#9ca3af",
       borderColor: "#9ca3af",
       textColor: "#ffffff"
@@ -37,33 +38,45 @@ const getStatusStyle = (status?: string | null, isEnded?: boolean) => {
 
   if (!status) return null
 
-  switch (status) {
-    case "案件参画":
+  // kintoneのステータス値を表示用ラベルに変換
+  const displayLabel = mapApplicationStatusToDisplay(status)
+  if (!displayLabel) return null
+
+  // 表示ラベルに基づいて色を決定
+  switch (displayLabel) {
+    case "案件決定":
       return {
-        label: "案件参画",
+        label: displayLabel,
         bgColor: "#d22852",
         borderColor: "#d22852",
         textColor: "#ffffff"
       }
     case "面談調整中":
       return {
-        label: "面談調整中",
+        label: displayLabel,
         bgColor: "#fa8212",
         borderColor: "#fa8212",
         textColor: "#ffffff"
       }
     case "面談予定":
       return {
-        label: "面談予定",
+        label: displayLabel,
         bgColor: "#2196f3",
         borderColor: "#2196f3",
         textColor: "#ffffff"
       }
     case "応募済み":
       return {
-        label: "応募済み",
+        label: displayLabel,
         bgColor: "#3f9c78",
         borderColor: "#3f9c78",
+        textColor: "#ffffff"
+      }
+    case "募集終了":
+      return {
+        label: displayLabel,
+        bgColor: "#9ca3af",
+        borderColor: "#9ca3af",
         textColor: "#ffffff"
       }
     default:

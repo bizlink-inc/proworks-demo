@@ -7,6 +7,7 @@ import { JobCard } from "@/components/job-card"
 import { JobDetailModal } from "@/components/job-detail-modal"
 import { useApplicationStatusMonitor } from "@/hooks/use-application-status-monitor"
 import type { Job } from "@/lib/kintone/types"
+import { mapApplicationStatusToDisplay } from "@/lib/utils"
 
 interface ApplicationsClientProps {
   user: {
@@ -16,28 +17,32 @@ interface ApplicationsClientProps {
   }
 }
 
-// ステータスフィルターの定義（kintoneの値をそのまま使用）
+// ステータスフィルターの定義（kintoneの値をキーとして使用、表示は変換後のラベル）
 type StatusFilter = "all" | "応募済み" | "面談調整中" | "面談予定" | "案件参画" | "見送り"
 
-const STATUS_FILTERS: { id: StatusFilter; label: string }[] = [
-  { id: "all", label: "すべて" },
-  { id: "案件参画", label: "案件参画" },
-  { id: "面談調整中", label: "面談調整中" },
-  { id: "面談予定", label: "面談予定" },
-  { id: "応募済み", label: "応募済み" },
-  { id: "見送り", label: "見送り" },
+const STATUS_FILTERS: { id: StatusFilter; kintoneValues: string[]; label: string }[] = [
+  { id: "all", kintoneValues: ["all"], label: "すべて" },
+  { id: "案件参画", kintoneValues: ["案件参画"], label: "案件決定" },
+  { id: "面談調整中", kintoneValues: ["面談調整中"], label: "面談調整中" },
+  { id: "面談予定", kintoneValues: ["予定決定", "面談予定"], label: "面談予定" }, // 予定決定と面談予定の両方に対応
+  { id: "応募済み", kintoneValues: ["応募済み"], label: "応募済み" },
+  { id: "見送り", kintoneValues: ["見送り"], label: "募集終了" },
 ]
 
 // フィルター用の青色
 const filterBlue = "#3966a2"
 
 // ステータスの表示順序（ポジティブ→ネガティブ）
+// kintoneの値と変換後の値の両方に対応
 const STATUS_PRIORITY: Record<string, number> = {
   "案件参画": 1,
+  "案件決定": 1, // 変換後の値
   "面談調整中": 2,
-  "面談予定": 3,
+  "予定決定": 3,
+  "面談予定": 3, // 変換後の値
   "応募済み": 4,
   "見送り": 5,
+  "募集終了": 5, // 変換後の値
 }
 
 // ステータスの優先度を取得
@@ -79,7 +84,13 @@ export const ApplicationsClient = ({ user }: ApplicationsClientProps) => {
     
     // フィルター適用
     if (activeFilter !== "all") {
-      filtered = applications.filter((app) => app.status === activeFilter)
+      const filterConfig = STATUS_FILTERS.find((f) => f.id === activeFilter)
+      if (filterConfig) {
+        // kintoneの値でフィルタリング
+        filtered = applications.filter((app) => 
+          filterConfig.kintoneValues.includes(app.status)
+        )
+      }
     }
     
     // ステータスの優先度でソート（ポジティブ→ネガティブ順）
@@ -190,7 +201,7 @@ export const ApplicationsClient = ({ user }: ApplicationsClientProps) => {
             >
               {activeFilter === "all"
                 ? "応募済みの案件はありません"
-                : `${STATUS_FILTERS.find((f) => f.id === activeFilter)?.label}の案件はありません`}
+                : `${STATUS_FILTERS.find((f) => f.id === activeFilter)?.label || ""}の案件はありません`}
             </p>
             <p
               className="mt-2"

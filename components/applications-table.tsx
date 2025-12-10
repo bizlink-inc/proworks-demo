@@ -5,21 +5,26 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { format } from "date-fns"
 import { FormSection } from "@/components/ui/form-section"
 import type { Application, Job } from "@/lib/kintone/types"
+import { mapApplicationStatusToDisplay } from "@/lib/utils"
 
 type ApplicationWithJob = Application & {
   job: Job | null
 }
 
 // ステータスに応じた色（案件一覧と統一）
-const getStatusColor = (status: string): string => {
-  switch (status) {
-    case "案件参画":
+const getStatusColor = (kintoneStatus: string): string => {
+  const displayStatus = mapApplicationStatusToDisplay(kintoneStatus) || kintoneStatus
+  
+  switch (displayStatus) {
+    case "案件決定":
       return "#d22852" // 赤
     case "面談予定":
     case "面談調整中":
       return "#fa8212" // オレンジ
     case "応募済み":
       return "#3f9c78" // 緑
+    case "募集終了":
+      return "#9ca3af" // グレー
     default:
       return "#686868" // グレー（その他）
   }
@@ -88,7 +93,7 @@ export const ApplicationsTable = () => {
                     className="w-2 h-2 rounded-full"
                     style={{ backgroundColor: getStatusColor(app.status) }}
                   />
-                  <span>{app.status}</span>
+                  <span>{mapApplicationStatusToDisplay(app.status) || app.status}</span>
                 </div>
               </TableCell>
               <TableCell>{format(new Date(app.appliedAt), "yyyy/MM/dd HH:mm")}</TableCell>

@@ -360,24 +360,21 @@ iOS/Android両方のアプリ開発経験がある方を歓迎します。`,
   applications: [
     { auth_user_id: "seed_user_001", jobIndex: 0, 対応状況: "応募済み" },
     { auth_user_id: "seed_user_001", jobIndex: 1, 対応状況: "面談調整中" },
+    { auth_user_id: "seed_user_001", jobIndex: 2, 対応状況: "予定決定" },
+    { auth_user_id: "seed_user_001", jobIndex: 3, 対応状況: "案件参画" },
+    { auth_user_id: "seed_user_001", jobIndex: 4, 対応状況: "見送り" },
   ],
 
   // 推薦データ（表示順確認用）
-  // ※ jobIndex 0, 1は応募済みなので案件一覧には表示されない
-  // ※ jobIndex 2, 3, 4が案件一覧に表示される
+  // ※ jobIndex 0-4はすべて応募済みなので案件一覧には表示されない
+  // ※ 応募済み案件の推薦データも作成（表示順の確認用）
   recommendations: [
     // 応募済み案件（案件一覧には表示されない）
     { talentIndex: 0, jobIndex: 0, score: 85 },  // 応募済み
-    { talentIndex: 0, jobIndex: 1, score: 70 },  // 応募済み（面談調整中）
-    
-    // 案件一覧に表示される案件（表示順の確認用）
-    // 【おすすめ順での表示順】
-    // 1位: jobIndex 2 (スコア 90) - スタートアップ向け新規サービス開発
-    // 2位: jobIndex 4 (スコア 65) - データ基盤構築・運用案件
-    // 3位: jobIndex 3 (スコア 60) - ヘルスケアアプリ開発案件
-    { talentIndex: 0, jobIndex: 2, score: 90 },  // 1位: スタートアップ向け新規サービス開発
-    { talentIndex: 0, jobIndex: 3, score: 60 },  // 3位: ヘルスケアアプリ開発案件
-    { talentIndex: 0, jobIndex: 4, score: 65 },  // 2位: データ基盤構築・運用案件
+    { talentIndex: 0, jobIndex: 1, score: 70 },  // 面談調整中
+    { talentIndex: 0, jobIndex: 2, score: 90 },  // 予定決定（面談予定）
+    { talentIndex: 0, jobIndex: 3, score: 60 },  // 案件参画（案件決定）
+    { talentIndex: 0, jobIndex: 4, score: 65 },  // 見送り（募集終了）
   ],
 };
 
@@ -1293,12 +1290,14 @@ export const createSeedData = async () => {
             console.log(`✅ yamada用推薦レコードを追加: 案件ID=${rec[RECOMMENDATION_FIELDS.JOB_ID].value}, スコア=${rec[RECOMMENDATION_FIELDS.SCORE].value}`);
           }
         }
-        console.log(`\n📋 案件一覧での表示順（おすすめ順）:`);
-        console.log(`  ※ seed_yamada@example.com でログインすると以下の順番で表示されます:`);
-        console.log(`  1位: スタートアップ向け新規サービス開発 (スコア 90)`);
-        console.log(`  2位: データ基盤構築・運用案件 (スコア 65)`);
-        console.log(`  3位: ヘルスケアアプリ開発案件 (スコア 60)`);
-        console.log(`  ※ 応募済み案件（jobIndex 0, 1）は一覧に表示されません`);
+        console.log(`\n📋 応募済み案件のステータス:`);
+        console.log(`  ※ seed_yamada@example.com でログインすると応募済み案件一覧に以下が表示されます:`);
+        console.log(`  - jobIndex 0: 応募済み（大手ECサイトのフロントエンド刷新案件）`);
+        console.log(`  - jobIndex 1: 面談調整中（金融系WebアプリケーションAPI開発）`);
+        console.log(`  - jobIndex 2: 面談予定（スタートアップ向け新規サービス開発）`);
+        console.log(`  - jobIndex 3: 案件決定（ヘルスケアアプリ開発案件）`);
+        console.log(`  - jobIndex 4: 募集終了（データ基盤構築・運用案件）`);
+        console.log(`  ※ 各ステータスが1件ずつ表示されます`);
       }
     }
 
@@ -1336,13 +1335,14 @@ export const createSeedData = async () => {
     console.log("  3. 候補者を選択して「AIマッチ実行」でAI評価を実行できます");
     
     if (seedData.recommendations.length > 0) {
-      console.log("\n📋 表示順の確認方法:");
+      console.log("\n📋 応募済み案件の確認方法:");
       console.log("  - seed_yamada@example.com でログイン");
-      console.log("  - 案件一覧画面で「おすすめ順」を選択");
-      console.log("  - 以下の順番で表示されます:");
-      console.log("    1位: スタートアップ向け新規サービス開発 (スコア 90)");
-      console.log("    2位: データ基盤構築・運用案件 (スコア 65)");
-      console.log("    3位: ヘルスケアアプリ開発案件 (スコア 60)");
+      console.log("  - 応募済み案件一覧画面で各ステータスが1件ずつ表示されます:");
+      console.log("    - 応募済み: 大手ECサイトのフロントエンド刷新案件");
+      console.log("    - 面談調整中: 金融系WebアプリケーションAPI開発");
+      console.log("    - 面談予定: スタートアップ向け新規サービス開発");
+      console.log("    - 案件決定: ヘルスケアアプリ開発案件");
+      console.log("    - 募集終了: データ基盤構築・運用案件");
     }
     
     console.log("\n");
@@ -1846,12 +1846,14 @@ const upsertYamadaSeedData = async () => {
     console.log(`  - 山田 太郎: seed_yamada@example.com / password123`);
     console.log(`  - auth_user_id: ${YAMADA_AUTH_USER_ID}`);
 
-    console.log("\n📋 案件一覧での表示順（おすすめ順）:");
-    console.log("  ※ 応募済み案件（jobIndex 0, 1）は一覧に表示されません");
-    console.log("  ※ 以下の順番で表示されます:");
-    console.log("  1位: スタートアップ向け新規サービス開発 (スコア 90)");
-    console.log("  2位: データ基盤構築・運用案件 (スコア 65)");
-    console.log("  3位: ヘルスケアアプリ開発案件 (スコア 60)");
+    console.log("\n📋 応募済み案件のステータス:");
+    console.log("  ※ seed_yamada@example.com でログインすると応募済み案件一覧に以下が表示されます:");
+    console.log("  - jobIndex 0: 応募済み（大手ECサイトのフロントエンド刷新案件）");
+    console.log("  - jobIndex 1: 面談調整中（金融系WebアプリケーションAPI開発）");
+    console.log("  - jobIndex 2: 面談予定（スタートアップ向け新規サービス開発）");
+    console.log("  - jobIndex 3: 案件決定（ヘルスケアアプリ開発案件）");
+    console.log("  - jobIndex 4: 募集終了（データ基盤構築・運用案件）");
+    console.log("  ※ 各ステータスが1件ずつ表示されます");
 
     console.log("\n💡 Vercel 環境でも同じ auth_user_id でログインできます");
     console.log("\n");
