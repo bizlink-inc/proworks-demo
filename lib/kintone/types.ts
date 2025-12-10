@@ -113,6 +113,8 @@ export type Job = {
   createdAt?: string; // 作成日時
   applicationStatus?: string | null; // ログインユーザーの応募ステータス
   recommendationScore?: number; // おすすめスコア（推薦DBから取得）
+  staffRecommend?: boolean; // 担当者おすすめフラグ
+  aiMatched?: boolean; // AIマッチフラグ
 };
 
 export type Application = {
@@ -130,6 +132,9 @@ export type RecommendationRecord = {
   人材ID: { value: string };
   案件ID: { value: string };
   適合スコア: { value: string };
+  担当者おすすめ?: { value: string };
+  AIマッチ実行状況?: { value: string };
+  AI総合スコア?: { value: string };
 };
 
 export type Recommendation = {
@@ -137,5 +142,8 @@ export type Recommendation = {
   talentId: string;
   jobId: string;
   score: number;
+  staffRecommend?: boolean;
+  aiMatched?: boolean;
+  aiOverallScore?: number;
 };
 

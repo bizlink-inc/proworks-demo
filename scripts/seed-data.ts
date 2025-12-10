@@ -106,6 +106,16 @@ const seedData1 = {
     createdAt: new Date(),
     updatedAt: new Date(),
   },
+    {
+    id: "seed_user_002",
+    name: "田中 花子",
+    email: "seed_hanako@example.com",
+      password: "password123",
+    emailVerified: false,
+    image: null,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
   ],
 
   talents: [
@@ -147,6 +157,46 @@ Web系エンジニアとして5年の実務経験があります。
 ・技術選定やアーキテクチャ設計にも関わりたい`,
     NG企業: "特になし",
     その他要望: "リモート中心で、フレックスタイム制の案件を希望します。",
+  },
+    {
+    auth_user_id: "seed_user_002",
+    姓: "田中",
+    名: "花子",
+    氏名: "田中 花子",
+    セイ: "タナカ",
+    メイ: "ハナコ",
+    メールアドレス: "seed_hanako@example.com",
+    電話番号: "090-2345-6789",
+    生年月日: "1992-05-20",
+    郵便番号: "160-0001",
+    住所: "東京都新宿区西新宿1-1-1",
+    言語_ツール: "JavaScript, TypeScript, React, Next.js, Node.js, Python, Django, AWS",
+    主な実績_PR_職務経歴: `【経歴概要】
+フルスタックエンジニアとして6年の実務経験があります。
+フロントエンドからバックエンド、インフラまで幅広く対応可能です。
+特にReact/Next.jsとAWSを使った開発が得意です。
+
+【主なプロジェクト】
+・スタートアップでの新規サービス立ち上げ（Next.js + Node.js + AWS）
+・ECプラットフォームのフルスタック開発
+・サーバーレスアーキテクチャへの移行プロジェクト
+
+【アピールポイント】
+・0→1のサービス立ち上げ経験豊富
+・AWSを使ったインフラ構築・運用経験
+・技術選定からデプロイまで一貫して対応可能`,
+    ポートフォリオリンク: "https://github.com/hanako-tanaka",
+    稼働可能時期: "2025-12-01",
+    希望単価_月額: 75,
+    希望勤務日数: "週5",
+    希望出社頻度: "週1",
+    希望勤務スタイル: ["リモート", "ハイブリッド"],
+    希望案件_作業内容: `・Next.js/Node.jsでのフルスタック開発
+・AWSを使ったインフラ構築
+・新規サービスの技術選定・設計
+・GraphQL APIの設計・実装`,
+    NG企業: "特になし",
+    その他要望: "フルリモートで働ける環境を希望します。",
   },
   ],
 
@@ -1333,13 +1383,25 @@ export const createSeedData = async () => {
     }
     
     console.log("\n📝 ログイン情報:");
-    // 最初の5人だけ表示
-    const usersToShow = seedData.authUsers.slice(0, 5);
-    for (const user of usersToShow) {
+    // 固定シードユーザー（山田太郎、田中花子）を表示
+    const fixedUsers = seedData.authUsers.filter(u => 
+      u.id === "seed_user_001" || u.id === "seed_user_002"
+    );
+    for (const user of fixedUsers) {
       console.log(`  - ${user.name}: ${user.email} / ${user.password}`);
     }
-    if (seedData.authUsers.length > 5) {
-      console.log(`  ... 他 ${seedData.authUsers.length - 5}人（パスワードはすべて password123）`);
+    // その他のユーザー
+    const otherUsers = seedData.authUsers.filter(u => 
+      u.id !== "seed_user_001" && u.id !== "seed_user_002"
+    );
+    if (otherUsers.length > 0) {
+      const usersToShow = otherUsers.slice(0, 3);
+      for (const user of usersToShow) {
+        console.log(`  - ${user.name}: ${user.email} / ${user.password}`);
+      }
+      if (otherUsers.length > 3) {
+        console.log(`  ... 他 ${otherUsers.length - 3}人（パスワードはすべて password123）`);
+      }
     }
     
     console.log("\n💡 使い方:");
@@ -1357,6 +1419,11 @@ export const createSeedData = async () => {
       console.log("    - 案件決定: ヘルスケアアプリ開発案件");
       console.log("    - 募集終了: データ基盤構築・運用案件");
     }
+    
+    console.log("\n📋 おすすめ案件カルーセルの確認方法:");
+    console.log("  - seed_hanako@example.com でログイン");
+    console.log("  - 応募済み案件が0件の場合、おすすめ案件がカルーセルで表示されます");
+    console.log("  - 優先順位: 担当者おすすめ > AIマッチ > New > その他");
     
     console.log("\n");
 

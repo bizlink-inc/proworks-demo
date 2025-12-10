@@ -5,6 +5,7 @@ import { Header } from "@/components/header"
 import { FullWidthLayout } from "@/components/layouts"
 import { JobCard } from "@/components/job-card"
 import { JobDetailModal } from "@/components/job-detail-modal"
+import { JobCarousel } from "@/components/job-carousel"
 import { useApplicationStatusMonitor } from "@/hooks/use-application-status-monitor"
 import type { Job } from "@/lib/kintone/types"
 import { mapApplicationStatusToDisplay } from "@/lib/utils"
@@ -37,6 +38,8 @@ export const ApplicationsClient = ({ user }: ApplicationsClientProps) => {
 
   const [applications, setApplications] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [recommendedJobs, setRecommendedJobs] = useState<Job[]>([])
+  const [recommendedJobsLoading, setRecommendedJobsLoading] = useState(false)
   const [selectedJobId, setSelectedJobId] = useState<string | null>(null)
   const [activeFilter, setActiveFilter] = useState<StatusFilter>("all")
 
@@ -59,6 +62,28 @@ export const ApplicationsClient = ({ user }: ApplicationsClientProps) => {
 
     fetchApplications()
   }, [])
+
+  // おすすめ案件を取得（応募済み案件が0件の場合のみ）
+  useEffect(() => {
+    const fetchRecommendedJobs = async () => {
+      if (applications.length > 0 || loading) return
+
+      try {
+        setRecommendedJobsLoading(true)
+        const res = await fetch("/api/recommended-jobs")
+        if (res.ok) {
+          const data = await res.json()
+          setRecommendedJobs(data.items || [])
+        }
+      } catch (error) {
+        console.error("Failed to fetch recommended jobs:", error)
+      } finally {
+        setRecommendedJobsLoading(false)
+      }
+    }
+
+    fetchRecommendedJobs()
+  }, [applications.length, loading])
 
   // フィルタリングとソートされた応募一覧
   const filteredApplications = useMemo(() => {
@@ -184,31 +209,80 @@ export const ApplicationsClient = ({ user }: ApplicationsClientProps) => {
             <p style={{ color: "var(--pw-text-gray)" }}>読み込み中...</p>
           </div>
         ) : filteredApplications.length === 0 ? (
-          <div
-            className="text-center py-12 rounded-lg"
-            style={{ backgroundColor: "#ffffff", border: "1px solid var(--pw-border-light)" }}
-          >
-            <p
-              style={{
-                fontSize: "var(--pw-text-lg)",
-                color: "var(--pw-text-navy)",
-                fontWeight: 600,
-              }}
+          // 応募済み案件が0件の場合、おすすめ案件をカルーセルで表示
+          activeFilter === "all" && applications.length === 0 ? (
+            <div
+              className="py-12 rounded-lg"
+              style={{ backgroundColor: "#ffffff", border: "1px solid var(--pw-border-light)" }}
             >
-              {activeFilter === "all"
-                ? "応募済みの案件はありません"
-                : `${STATUS_FILTERS.find((f) => f.id === activeFilter)?.label || ""}の案件はありません`}
-            </p>
-            <p
-              className="mt-2"
-              style={{
-                fontSize: "var(--pw-text-sm)",
-                color: "var(--pw-text-gray)",
-              }}
+              {/* メッセージ表示 */}
+              <div className="text-center mb-8">
+                <p
+                  style={{
+                    fontSize: "var(--pw-text-lg)",
+                    color: "var(--pw-text-navy)",
+                    fontWeight: 600,
+                  }}
+                >
+                  応募済みの案件はありません
+                </p>
+                <p
+                  className="mt-2"
+                  style={{
+                    fontSize: "var(--pw-text-sm)",
+                    color: "var(--pw-text-gray)",
+                  }}
+                >
+                  気になる案件を探して、応募してみましょう！
+                </p>
+              </div>
+
+              {/* おすすめ案件カルーセル */}
+              {recommendedJobsLoading ? (
+                <div className="text-center py-12">
+                  <p style={{ color: "var(--pw-text-gray)" }}>おすすめ案件を読み込み中...</p>
+                </div>
+              ) : recommendedJobs.length > 0 ? (
+                <div className="px-4">
+                  <h2
+                    className="mb-6 text-center"
+                    style={{
+                      fontSize: "var(--pw-text-xl)",
+                      color: "var(--pw-text-navy)",
+                      fontWeight: 700,
+                    }}
+                  >
+                    おすすめ案件
+                  </h2>
+                  <JobCarousel jobs={recommendedJobs} onViewDetail={handleViewDetail} />
+                </div>
+              ) : null}
+            </div>
+          ) : (
+            <div
+              className="text-center py-12 rounded-lg"
+              style={{ backgroundColor: "#ffffff", border: "1px solid var(--pw-border-light)" }}
             >
-              気になる案件を探して、応募してみましょう！
-            </p>
-          </div>
+              <p
+                style={{
+                  fontSize: "var(--pw-text-lg)",
+                  color: "var(--pw-text-navy)",
+                  fontWeight: 600,
+                }}
+              >
+                {`${STATUS_FILTERS.find((f) => f.id === activeFilter)?.label || ""}の案件はありません`}
+              </p>
+              <p
+                className="mt-2"
+                style={{
+                  fontSize: "var(--pw-text-sm)",
+                  color: "var(--pw-text-gray)",
+                }}
+              >
+                気になる案件を探して、応募してみましょう！
+              </p>
+            </div>
+          )
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredApplications.map((app) => {

@@ -9,6 +9,7 @@ type JobCardProps = {
   onViewDetail: (jobId: string) => void
   showApplicationStatus?: boolean // 応募ステータスの枠線を表示するかどうか（デフォルト: false）
   isEnded?: boolean // 応募終了かどうか（デフォルト: false）
+  hideDetailButton?: boolean // 詳細を見るボタンを非表示にするかどうか（デフォルト: false）
 }
 
 // 仕様書: 案件カード > フォント・カラー
@@ -84,7 +85,7 @@ const getStatusStyle = (status?: string | null, isEnded?: boolean) => {
   }
 }
 
-export function JobCard({ job, onViewDetail, showApplicationStatus = false, isEnded = false }: JobCardProps) {
+export function JobCard({ job, onViewDetail, showApplicationStatus = false, isEnded = false, hideDetailButton = false }: JobCardProps) {
   const rateValue = formatRateValue(job.rate)
   const features = job.features?.slice(0, 3) ?? []
   const positions = job.position ?? []
@@ -369,26 +370,28 @@ export function JobCard({ job, onViewDetail, showApplicationStatus = false, isEn
       </div>
 
       {/* 詳細を見るボタン */}
-      <div className="px-4 pb-4 pt-3 flex justify-center">
-        <Button
-          variant={isEnded ? "pw-outline" : "pw-primary"}
-          className="w-full max-w-[180px]"
-          onClick={() => !isEnded && onViewDetail(job.id)}
-          disabled={isEnded}
-          style={{ 
-            fontSize: "14px", 
-            borderRadius: "4px",
-            ...(isEnded ? {
-              backgroundColor: "#9ca3af",
-              borderColor: "#9ca3af",
-              color: "#ffffff",
-              cursor: "not-allowed",
-            } : {})
-          }}
-        >
-          詳細を見る
-        </Button>
-      </div>
+      {!hideDetailButton && (
+        <div className="px-4 pb-4 pt-3 flex justify-center">
+          <Button
+            variant={isEnded ? "pw-outline" : "pw-primary"}
+            className="w-full max-w-[180px]"
+            onClick={() => !isEnded && onViewDetail(job.id)}
+            disabled={isEnded}
+            style={{ 
+              fontSize: "14px", 
+              borderRadius: "4px",
+              ...(isEnded ? {
+                backgroundColor: "#9ca3af",
+                borderColor: "#9ca3af",
+                color: "#ffffff",
+                cursor: "not-allowed",
+              } : {})
+            }}
+          >
+            詳細を見る
+          </Button>
+        </div>
+      )}
     </div>
   )
 }
