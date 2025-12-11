@@ -3,17 +3,7 @@ import { getDb } from "@/lib/db/client";
 import * as schema from "@/lib/db/schema";
 import { eq, and, gt } from "drizzle-orm";
 
-// Vercel 環境では機能しない
-const isVercel = process.env.VERCEL === "1" || process.env.VERCEL === "true";
-
 export const GET = async (request: NextRequest) => {
-  // Vercel 環境では機能しないことを返す
-  if (isVercel) {
-    return NextResponse.redirect(
-      new URL("/auth/signin?error=demo_environment", request.url)
-    );
-  }
-
   try {
     const db = getDb();
 

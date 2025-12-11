@@ -1,7 +1,6 @@
 import type React from "react"
 import type { Metadata } from "next"
 import { Noto_Sans_JP } from "next/font/google"
-import { Analytics } from "@vercel/analytics/next"
 import { Toaster } from "@/components/ui/toaster"
 import { NotificationProvider } from "@/lib/notification-context"
 import "./globals.css"
@@ -30,7 +29,6 @@ export default function RootLayout({
         <NotificationProvider>
           {children}
           <Toaster />
-          <Analytics />
         </NotificationProvider>
       </body>
     </html>

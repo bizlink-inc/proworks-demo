@@ -1,22 +1,30 @@
 /**
- * メール送信ユーティリティ（SendGrid版）
+ * メール送信ユーティリティ（Amazon SES版）
  * 
  * - 開発環境: コンソールに出力
- * - 本番環境: SendGrid を使用して実際にメールを送信
+ * - 本番環境: Amazon SES を使用して実際にメールを送信
  * 
- * @see docs/SENDGRID_ARCHITECTURE.md - アーキテクチャ詳細
+ * @see docs/02_インフラ・アーキテクチャ/AmazonSES_アーキテクチャ.md - アーキテクチャ詳細
  */
-import sgMail from "@sendgrid/mail";
+import { SESClient, SendEmailCommand } from "@aws-sdk/client-ses";
 
 // 環境判定
 const isDevelopment = process.env.NODE_ENV === "development";
 
-// SendGrid クライアント初期化（本番環境のみ）
-if (!isDevelopment && process.env.SENDGRID_API_KEY) {
-  sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+// SES クライアント初期化（本番環境のみ）
+let sesClient: SESClient | null = null;
+
+if (!isDevelopment) {
+  sesClient = new SESClient({
+    region: process.env.AWS_SES_REGION || "ap-northeast-1",
+    credentials: process.env.AWS_ACCESS_KEY_ID ? {
+      accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+      secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
+    } : undefined, // IAMロールを使用する場合はundefined
+  });
 }
 
-// 送信元メールアドレス（SendGrid で認証済みのドメインのアドレス）
+// 送信元メールアドレス
 const FROM_EMAIL = process.env.EMAIL_FROM || "PRO WORKS <noreply@proworks.jp>";
 
 // メール送信結果の型
@@ -216,7 +224,7 @@ export const sendEmailChangeVerificationEmail = async (
 
 /**
  * 汎用メール送信関数
- * 開発環境ではコンソール出力、本番環境では SendGrid で送信
+ * 開発環境ではコンソール出力、本番環境では Amazon SES で送信
  */
 type SendEmailParams = {
   to: string;
@@ -238,32 +246,46 @@ const sendEmail = async ({ to, subject, html, text }: SendEmailParams): Promise<
     return { success: true };
   }
 
-  // 本番環境: SendGrid で送信
-  if (!process.env.SENDGRID_API_KEY) {
-    console.error("❌ SendGrid API キーが設定されていません。SENDGRID_API_KEY を確認してください。");
+  // 本番環境: Amazon SES で送信
+  if (!sesClient) {
+    console.error("❌ Amazon SES クライアントが初期化されていません");
     return { success: false, error: "メール送信サービスが設定されていません" };
   }
 
   try {
-    const msg = {
-      to,
-      from: FROM_EMAIL,
-      subject,
-      text,
-      html,
-    };
+    const command = new SendEmailCommand({
+      Source: FROM_EMAIL,
+      Destination: {
+        ToAddresses: [to],
+      },
+      Message: {
+        Subject: {
+          Data: subject,
+          Charset: "UTF-8",
+        },
+        Body: {
+          Html: {
+            Data: html,
+            Charset: "UTF-8",
+          },
+          Text: {
+            Data: text,
+            Charset: "UTF-8",
+          },
+        },
+      },
+    });
 
-    await sgMail.send(msg);
+    await sesClient.send(command);
 
     console.log(`✅ メール送信成功: ${to} - ${subject}`);
     return { success: true };
   } catch (error: unknown) {
-    console.error("❌ SendGrid メール送信エラー:", error);
+    console.error("❌ Amazon SES メール送信エラー:", error);
     
-    // SendGrid エラーの詳細をログ出力
-    if (error && typeof error === "object" && "response" in error) {
-      const sgError = error as { response?: { body?: unknown } };
-      console.error("SendGrid エラー詳細:", sgError.response?.body);
+    // エラー詳細をログ出力
+    if (error && typeof error === "object") {
+      console.error("SES エラー詳細:", JSON.stringify(error, null, 2));
     }
 
     return { 

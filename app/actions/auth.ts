@@ -1,18 +1,10 @@
 "use server"
 
-import { auth, isVercel } from "@/lib/auth"
+import { auth } from "@/lib/auth"
 import { redirect } from "next/navigation"
 import { headers } from "next/headers"
 
 export const handleSignIn = async (email: string, password: string) => {
-  // Vercel 環境では別の認証フローを使用
-  if (isVercel) {
-    return {
-      success: false,
-      error: "この環境ではサインインAPIを使用してください。"
-    }
-  }
-
   try {
     await auth.api.signInEmail({
       body: {
@@ -32,14 +24,6 @@ export const handleSignIn = async (email: string, password: string) => {
 }
 
 export const handleSignUp = async (email: string, password: string, name: string) => {
-  // Vercel 環境では別の認証フローを使用
-  if (isVercel) {
-    return {
-      success: false,
-      error: "この環境ではサインアップAPIを使用してください。"
-    }
-  }
-
   try {
     await auth.api.signUpEmail({
       body: {
@@ -60,11 +44,6 @@ export const handleSignUp = async (email: string, password: string, name: string
 }
 
 export const handleSignOut = async () => {
-  // Vercel 環境では別の認証フローを使用
-  if (isVercel) {
-    redirect("/auth/signin")
-  }
-
   await auth.api.signOut({
     headers: await headers(),
   })

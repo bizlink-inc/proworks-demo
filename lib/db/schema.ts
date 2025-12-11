@@ -1,6 +1,6 @@
 /**
  * PostgreSQL 用のスキーマ定義
- * ローカル開発環境と Cloud Run (Cloud SQL) の両方で使用
+ * ローカル開発環境と AWS App Runner (RDS PostgreSQL) の両方で使用
  */
 import { pgTable, text, timestamp, boolean } from "drizzle-orm/pg-core";
 

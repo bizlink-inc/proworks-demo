@@ -5,18 +5,7 @@ import { eq } from "drizzle-orm";
 import { randomBytes } from "crypto";
 import { sendEmailChangeVerificationEmail, logEmailToConsole } from "@/lib/email";
 
-// Vercel 環境では機能しない
-const isVercel = process.env.VERCEL === "1" || process.env.VERCEL === "true";
-
 export const POST = async (request: NextRequest) => {
-  // Vercel 環境では機能しないことを返す
-  if (isVercel) {
-    return NextResponse.json(
-      { error: "この機能はデモ環境では利用できません" },
-      { status: 503 }
-    );
-  }
-
   try {
     const { getSession } = await import("@/lib/auth-server");
     const db = getDb();
@@ -125,7 +114,7 @@ export const POST = async (request: NextRequest) => {
     if (process.env.NODE_ENV === "development") {
       logEmailToConsole("email-change", newEmail, verificationUrl);
     } else {
-      // 本番環境: Resend でメール送信
+      // 本番環境: Amazon SES でメール送信
       const result = await sendEmailChangeVerificationEmail(newEmail, verificationUrl);
       if (!result.success) {
         console.error(`❌ メールアドレス変更確認メール送信失敗: ${newEmail}`, result.error);

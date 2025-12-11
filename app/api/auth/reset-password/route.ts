@@ -4,18 +4,7 @@ import * as schema from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { hashPassword } from "better-auth/crypto";
 
-// Vercel 環境では機能しない
-const isVercel = process.env.VERCEL === "1" || process.env.VERCEL === "true";
-
 export const POST = async (request: NextRequest) => {
-  // Vercel 環境では機能しないことを返す
-  if (isVercel) {
-    return NextResponse.json(
-      { error: "この機能はデモ環境では利用できません" },
-      { status: 503 }
-    );
-  }
-
   try {
     const db = getDb();
 

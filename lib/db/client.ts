@@ -1,6 +1,6 @@
 /**
  * PostgreSQL データベースクライアント
- * ローカル開発環境と Cloud Run の両方で使用
+ * ローカル開発環境と AWS App Runner の両方で使用
  */
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
