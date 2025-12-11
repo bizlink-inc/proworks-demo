@@ -20,8 +20,11 @@ let pool: Pool | null = null;
 
 const getPool = (): Pool => {
   if (!pool) {
+    const connectionString = getDatabaseUrl();
     pool = new Pool({
-      connectionString: getDatabaseUrl(),
+      connectionString,
+      // RDS接続時にSSL証明書の検証をスキップ（開発環境用）
+      ssl: connectionString.includes("rds.amazonaws.com") ? { rejectUnauthorized: false } : false,
     });
   }
   return pool;

@@ -67,3 +67,14 @@ fields-data.json
 /playwright-report/
 /blob-report/
 /playwright/.cache/
+
+# RDS access management
+.rds-temp-rule.json
+
+# AWS resources (機密情報を含む)
+.aws-resources.env
+.aws-resources.env.bak
+aws-resources.txt
+apprunner-*-env.json
+apprunner-env-vars.json
+apprunner-update-env.json
