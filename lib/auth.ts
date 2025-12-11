@@ -90,7 +90,10 @@ const auth = betterAuth({
       "http://localhost:3000",
       "http://192.168.100.5:3000",
       appUrl,
-    ].filter(Boolean),
+      // AWS App Runner URLs
+      "https://shqzybdxje.ap-northeast-1.awsapprunner.com",
+      process.env.APP_RUNNER_URL,
+    ].filter(Boolean) as string[],
   });
 
 export { auth, generateRandomPassword };
