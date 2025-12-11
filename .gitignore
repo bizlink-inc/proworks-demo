@@ -62,6 +62,9 @@ fields-data.json
 # E2E test data
 .e2e-test-data/
 
+# Test coverage
+/coverage/
+
 # Playwright
 /test-results/
 /playwright-report/
