@@ -1,0 +1,106 @@
+name: Deploy to AWS App Runner
+
+on:
+  push:
+    branches:
+      - develop
+      - main
+
+env:
+  AWS_REGION: ap-northeast-1
+  AWS_ACCOUNT_ID: "217797467306"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # コードチェックアウト
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # AWS認証
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      # ECRログイン
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      # 環境名とサービス名を決定
+      - name: Set environment variables
+        id: set-env
+        run: |
+          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+            echo "ENV_NAME=prod" >> $GITHUB_ENV
+            echo "SERVICE_NAME=proworks-prod" >> $GITHUB_ENV
+            echo "ECR_REPOSITORY=proworks-prod" >> $GITHUB_ENV
+          else
+            echo "ENV_NAME=dev" >> $GITHUB_ENV
+            echo "SERVICE_NAME=proworks-dev" >> $GITHUB_ENV
+            echo "ECR_REPOSITORY=proworks-dev" >> $GITHUB_ENV
+          fi
+
+      # Dockerイメージビルド
+      - name: Build Docker image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: ${{ env.ECR_REPOSITORY }}
+        run: |
+          docker build \
+            --tag $ECR_REGISTRY/$ECR_REPOSITORY:${{ github.sha }} \
+            --tag $ECR_REGISTRY/$ECR_REPOSITORY:latest \
+            .
+
+      # ECRにプッシュ
+      - name: Push Docker image to ECR
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: ${{ env.ECR_REPOSITORY }}
+        run: |
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:${{ github.sha }}
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+
+      # App RunnerサービスARNを取得
+      - name: Get App Runner service ARN
+        id: get-service-arn
+        run: |
+          SERVICE_ARN=$(aws apprunner list-services \
+            --query "ServiceSummaryList[?ServiceName=='${{ env.SERVICE_NAME }}'].ServiceArn" \
+            --output text)
+          echo "SERVICE_ARN=$SERVICE_ARN" >> $GITHUB_OUTPUT
+          if [ -z "$SERVICE_ARN" ]; then
+            echo "❌ App Runnerサービス '${{ env.SERVICE_NAME }}' が見つかりません"
+            exit 1
+          fi
+          echo "✅ App RunnerサービスARN: $SERVICE_ARN"
+
+      # App Runnerにデプロイ（ソース設定を更新）
+      - name: Deploy to App Runner
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: ${{ env.ECR_REPOSITORY }}
+          SERVICE_ARN: ${{ steps.get-service-arn.outputs.SERVICE_ARN }}
+        run: |
+          echo "🚀 App Runnerサービスを更新中..."
+          aws apprunner update-service \
+            --service-arn "$SERVICE_ARN" \
+            --source-configuration "{\"ImageRepository\":{\"ImageIdentifier\":\"$ECR_REGISTRY/$ECR_REPOSITORY:${{ github.sha }}\",\"ImageRepositoryType\":\"ECR\",\"ImageConfiguration\":{\"Port\":\"8080\"}}}"
+
+          echo "✅ デプロイリクエストを送信しました"
+          echo "   サービス: ${{ env.SERVICE_NAME }}"
+          echo "   イメージ: $ECR_REGISTRY/$ECR_REPOSITORY:${{ github.sha }}"
+
+      # デプロイ結果を出力
+      - name: Show deployment result
+        run: |
+          echo "🚀 Deployed to AWS App Runner"
+          echo "Environment: ${{ env.ENV_NAME }}"
+          echo "Service: ${{ env.SERVICE_NAME }}"
+          echo "Image: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}"
+
