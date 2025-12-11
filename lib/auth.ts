@@ -23,10 +23,13 @@ const getDatabaseUrl = (): string => {
 };
 
 // PostgreSQL プールを作成
-  const pool = new Pool({
-    connectionString: getDatabaseUrl(),
-  });
-  const db = drizzle(pool, { schema });
+const connectionString = getDatabaseUrl();
+const pool = new Pool({
+  connectionString,
+  // RDS接続時にSSL証明書の検証をスキップ（AWS RDSへの接続に必要）
+  ssl: connectionString.includes("rds.amazonaws.com") ? { rejectUnauthorized: false } : false,
+});
+const db = drizzle(pool, { schema });
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
   const isDevelopment = process.env.NODE_ENV === "development";
@@ -94,8 +97,11 @@ export { auth, generateRandomPassword };
 
 // データベース接続を取得する関数（他のファイルで使用）
 export const getDb = () => {
+  const connString = getDatabaseUrl();
   const pool = new Pool({
-    connectionString: getDatabaseUrl(),
+    connectionString: connString,
+    // RDS接続時にSSL証明書の検証をスキップ（AWS RDSへの接続に必要）
+    ssl: connString.includes("rds.amazonaws.com") ? { rejectUnauthorized: false } : false,
   });
   return drizzle(pool, { schema });
 };
