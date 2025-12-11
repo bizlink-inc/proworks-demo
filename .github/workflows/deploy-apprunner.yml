@@ -80,6 +80,45 @@ jobs:
           fi
           echo "✅ App RunnerサービスARN: $SERVICE_ARN"
 
+      # App Runnerサービスが更新可能な状態になるまで待機
+      - name: Wait for App Runner service to be ready
+        env:
+          SERVICE_ARN: ${{ steps.get-service-arn.outputs.SERVICE_ARN }}
+        run: |
+          echo "⏳ App Runnerサービスが更新可能な状態になるまで待機中..."
+          MAX_WAIT=300  # 最大5分待機
+          ELAPSED=0
+          
+          while [ $ELAPSED -lt $MAX_WAIT ]; do
+            STATUS=$(aws apprunner describe-service \
+              --service-arn "$SERVICE_ARN" \
+              --query "Service.Status" \
+              --output text 2>/dev/null || echo "UNKNOWN")
+            
+            if [ "$STATUS" = "RUNNING" ]; then
+              # 進行中の操作があるか確認
+              OPERATIONS=$(aws apprunner list-operations \
+                --service-arn "$SERVICE_ARN" \
+                --max-results 1 \
+                --query "OperationSummaryList[?Status=='IN_PROGRESS']" \
+                --output json 2>/dev/null || echo "[]")
+              
+              if [ "$OPERATIONS" = "[]" ]; then
+                echo "✅ サービスは更新可能な状態です"
+                break
+              fi
+            fi
+            
+            echo "   現在のステータス: $STATUS (${ELAPSED}秒経過)"
+            sleep 10
+            ELAPSED=$((ELAPSED + 10))
+          done
+          
+          if [ $ELAPSED -ge $MAX_WAIT ]; then
+            echo "⚠️  タイムアウト: サービスが更新可能な状態になりませんでした"
+            exit 1
+          fi
+
       # App Runnerにデプロイ（ソース設定を更新）
       - name: Deploy to App Runner
         env:
@@ -91,7 +130,7 @@ jobs:
           aws apprunner update-service \
             --service-arn "$SERVICE_ARN" \
             --source-configuration "{\"ImageRepository\":{\"ImageIdentifier\":\"$ECR_REGISTRY/$ECR_REPOSITORY:${{ github.sha }}\",\"ImageRepositoryType\":\"ECR\",\"ImageConfiguration\":{\"Port\":\"8080\"}}}"
-
+          
           echo "✅ デプロイリクエストを送信しました"
           echo "   サービス: ${{ env.SERVICE_NAME }}"
           echo "   イメージ: $ECR_REGISTRY/$ECR_REPOSITORY:${{ github.sha }}"
