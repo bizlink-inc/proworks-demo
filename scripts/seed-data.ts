@@ -1201,14 +1201,19 @@ export const createSeedData = async () => {
     const authUserIds: string[] = [];
     const db = getDb();
     
+    // 既存ユーザーのIDとメールアドレスを取得（tryブロック外で定義）
+    const existingEmails = new Map<string, string>();
+    const existingIds = new Map<string, string>();
+    const existingEmailsForMapping = new Map<string, string>();
+    const existingIdsForMapping = new Map<string, string>();
+    
     try {
-      // 既存ユーザーのIDとメールアドレスを取得
-      const existingEmails = new Map<string, string>();
-      const existingIds = new Map<string, string>();
       const existingRows = await db.select({ email: schema.user.email, id: schema.user.id }).from(schema.user);
       for (const row of existingRows) {
         existingEmails.set(row.email, row.id);
         existingIds.set(row.id, row.id);
+        existingEmailsForMapping.set(row.email, row.id);
+        existingIdsForMapping.set(row.id, row.id);
       }
 
       // 新規ユーザーをフィルタリング（メールアドレスまたはユーザーIDで既存チェック）
@@ -1289,6 +1294,17 @@ export const createSeedData = async () => {
       
       console.log(`\n✅ 合計 ${authUserIds.length}人のユーザーを処理しました`);
       
+      // auth_user_idマッピングを作成（seedData.authUsersの順序で）
+      // seedData.authUsersの各ユーザーに対応するIDをマッピング
+      const authUserIdMap = new Map<string, string>();
+      for (let i = 0; i < seedData.authUsers.length; i++) {
+        const user = seedData.authUsers[i];
+        const userId = user.id || authUserIds[i] || existingEmails.get(user.email);
+        if (userId) {
+          authUserIdMap.set(user.id || user.email, userId);
+        }
+      }
+      
     } catch (error) {
       console.error("ユーザー作成エラー:", error);
       throw error;
@@ -1299,31 +1315,60 @@ export const createSeedData = async () => {
     console.log(`👨‍💼 Step 2: 人材DBにレコードを作成 (${seedData.talents.length}人)`);
     console.log("=".repeat(80));
 
-    const talentRecords = seedData.talents.map((talent, i) => ({
-      [TALENT_FIELDS.AUTH_USER_ID]: { value: authUserIds[i] },
-      [TALENT_FIELDS.LAST_NAME]: { value: talent.姓 },
-      [TALENT_FIELDS.FIRST_NAME]: { value: talent.名 },
-      [TALENT_FIELDS.FULL_NAME]: { value: talent.氏名 },
-      [TALENT_FIELDS.LAST_NAME_KANA]: { value: talent.セイ },
-      [TALENT_FIELDS.FIRST_NAME_KANA]: { value: talent.メイ },
-      [TALENT_FIELDS.EMAIL]: { value: talent.メールアドレス },
-      [TALENT_FIELDS.PHONE]: { value: talent.電話番号 },
-      [TALENT_FIELDS.BIRTH_DATE]: { value: talent.生年月日 },
-      [TALENT_FIELDS.POSTAL_CODE]: { value: talent.郵便番号 },
-      [TALENT_FIELDS.ADDRESS]: { value: talent.住所 },
-      [TALENT_FIELDS.SKILLS]: { value: talent.言語_ツール },
-      [TALENT_FIELDS.EXPERIENCE]: { value: talent.主な実績_PR_職務経歴 },
-      [TALENT_FIELDS.RESUME_FILES]: { value: [] },
-      [TALENT_FIELDS.PORTFOLIO_URL]: { value: talent.ポートフォリオリンク },
-      [TALENT_FIELDS.AVAILABLE_FROM]: { value: talent.稼働可能時期 },
-      [TALENT_FIELDS.DESIRED_RATE]: { value: talent.希望単価_月額 },
-      [TALENT_FIELDS.DESIRED_WORK_DAYS]: { value: talent.希望勤務日数 },
-      [TALENT_FIELDS.DESIRED_COMMUTE]: { value: talent.希望出社頻度 },
-      [TALENT_FIELDS.DESIRED_WORK_STYLE]: { value: talent.希望勤務スタイル },
-      [TALENT_FIELDS.DESIRED_WORK]: { value: talent.希望案件_作業内容 },
-      [TALENT_FIELDS.NG_COMPANIES]: { value: talent.NG企業 },
-      [TALENT_FIELDS.OTHER_REQUESTS]: { value: talent.その他要望 },
-    }));
+    const talentRecords = seedData.talents.map((talent) => {
+      // talentのauth_user_idに対応するユーザーIDを検索
+      // 1. seedData.authUsersから該当するユーザーを検索（auth_user_idまたはメールアドレスで）
+      const matchingUser = seedData.authUsers.find(u => 
+        u.id === talent.auth_user_id || u.email === talent.メールアドレス
+      );
+      
+      let userId: string | undefined;
+      if (matchingUser) {
+        // マッチしたユーザーのIDを取得
+        if (matchingUser.id && existingIdsForMapping.has(matchingUser.id)) {
+          userId = existingIdsForMapping.get(matchingUser.id);
+        } else if (existingEmailsForMapping.has(matchingUser.email)) {
+          userId = existingEmailsForMapping.get(matchingUser.email);
+        } else {
+          // 新規作成されたユーザーのIDを検索
+          const userIndex = seedData.authUsers.indexOf(matchingUser);
+          userId = authUserIds[userIndex];
+        }
+      } else {
+        // マッチしない場合は、auth_user_idを直接使用
+        userId = talent.auth_user_id;
+      }
+
+      if (!userId) {
+        throw new Error(`ユーザーIDが見つかりません: ${talent.氏名} (${talent.メールアドレス})`);
+      }
+
+      return {
+        [TALENT_FIELDS.AUTH_USER_ID]: { value: userId },
+        [TALENT_FIELDS.LAST_NAME]: { value: talent.姓 },
+        [TALENT_FIELDS.FIRST_NAME]: { value: talent.名 },
+        [TALENT_FIELDS.FULL_NAME]: { value: talent.氏名 },
+        [TALENT_FIELDS.LAST_NAME_KANA]: { value: talent.セイ },
+        [TALENT_FIELDS.FIRST_NAME_KANA]: { value: talent.メイ },
+        [TALENT_FIELDS.EMAIL]: { value: talent.メールアドレス },
+        [TALENT_FIELDS.PHONE]: { value: talent.電話番号 },
+        [TALENT_FIELDS.BIRTH_DATE]: { value: talent.生年月日 },
+        [TALENT_FIELDS.POSTAL_CODE]: { value: talent.郵便番号 },
+        [TALENT_FIELDS.ADDRESS]: { value: talent.住所 },
+        [TALENT_FIELDS.SKILLS]: { value: talent.言語_ツール },
+        [TALENT_FIELDS.EXPERIENCE]: { value: talent.主な実績_PR_職務経歴 },
+        [TALENT_FIELDS.RESUME_FILES]: { value: [] },
+        [TALENT_FIELDS.PORTFOLIO_URL]: { value: talent.ポートフォリオリンク },
+        [TALENT_FIELDS.AVAILABLE_FROM]: { value: talent.稼働可能時期 },
+        [TALENT_FIELDS.DESIRED_RATE]: { value: talent.希望単価_月額 },
+        [TALENT_FIELDS.DESIRED_WORK_DAYS]: { value: talent.希望勤務日数 },
+        [TALENT_FIELDS.DESIRED_COMMUTE]: { value: talent.希望出社頻度 },
+        [TALENT_FIELDS.DESIRED_WORK_STYLE]: { value: talent.希望勤務スタイル },
+        [TALENT_FIELDS.DESIRED_WORK]: { value: talent.希望案件_作業内容 },
+        [TALENT_FIELDS.NG_COMPANIES]: { value: talent.NG企業 },
+        [TALENT_FIELDS.OTHER_REQUESTS]: { value: talent.その他要望 },
+      };
+    });
 
     const talentCreateResult = await talentClient.record.addRecords({
       app: appIds.talent,
@@ -1388,8 +1433,30 @@ export const createSeedData = async () => {
     console.log("=".repeat(80));
 
     const applicationRecords = seedData.applications.map((application: any) => {
-      const authUserIndex = seedData.authUsers.findIndex(u => u.id === application.auth_user_id);
-      const authUserId = authUserIds[authUserIndex];
+      // auth_user_idに対応するユーザーIDを検索
+      const matchingUser = seedData.authUsers.find(u => u.id === application.auth_user_id);
+      let authUserId: string | undefined;
+      
+      if (matchingUser) {
+        // マッチしたユーザーのIDを取得
+        if (matchingUser.id && existingIdsForMapping.has(matchingUser.id)) {
+          authUserId = existingIdsForMapping.get(matchingUser.id);
+        } else if (existingEmailsForMapping.has(matchingUser.email)) {
+          authUserId = existingEmailsForMapping.get(matchingUser.email);
+        } else {
+          // 新規作成されたユーザーのIDを検索
+          const userIndex = seedData.authUsers.indexOf(matchingUser);
+          authUserId = authUserIds[userIndex];
+        }
+      } else {
+        // マッチしない場合は、auth_user_idを直接使用
+        authUserId = application.auth_user_id;
+      }
+
+      if (!authUserId) {
+        throw new Error(`ユーザーIDが見つかりません: auth_user_id=${application.auth_user_id}`);
+      }
+
       const jobId = jobIds[application.jobIndex];
 
       const record: any = {
@@ -1424,15 +1491,62 @@ export const createSeedData = async () => {
     const recommendationClient = createRecommendationClient();
 
     // マッチング計算用の人材データを準備
-    const talentsForMatching: TalentForMatching[] = seedData.talents.map((talent, i) => ({
-      id: talentRecordIds[i],
-      authUserId: authUserIds[i],
-      name: talent.氏名,
-      positions: [], // シードデータには職種の選択肢がない場合がある
-      skills: talent.言語_ツール,
-      experience: talent.主な実績_PR_職務経歴,
-      desiredRate: String(talent.希望単価_月額),
-    }));
+    // talentRecordIdsとauthUserIdのマッピングを作成
+    const talentAuthUserIdMap = new Map<string, string>();
+    for (let i = 0; i < seedData.talents.length; i++) {
+      const talent = seedData.talents[i];
+      const matchingUser = seedData.authUsers.find(u => 
+        u.id === talent.auth_user_id || u.email === talent.メールアドレス
+      );
+      
+      let userId: string | undefined;
+      if (matchingUser) {
+        if (matchingUser.id && existingIdsForMapping.has(matchingUser.id)) {
+          userId = existingIdsForMapping.get(matchingUser.id);
+        } else if (existingEmailsForMapping.has(matchingUser.email)) {
+          userId = existingEmailsForMapping.get(matchingUser.email);
+        } else {
+          const userIndex = seedData.authUsers.indexOf(matchingUser);
+          userId = authUserIds[userIndex];
+        }
+      } else {
+        userId = talent.auth_user_id;
+      }
+      
+      if (userId && talentRecordIds[i]) {
+        talentAuthUserIdMap.set(talentRecordIds[i], userId);
+      }
+    }
+
+    const talentsForMatching: TalentForMatching[] = seedData.talents.map((talent, i) => {
+      const matchingUser = seedData.authUsers.find(u => 
+        u.id === talent.auth_user_id || u.email === talent.メールアドレス
+      );
+      
+      let userId: string | undefined;
+      if (matchingUser) {
+        if (matchingUser.id && existingIdsForMapping.has(matchingUser.id)) {
+          userId = existingIdsForMapping.get(matchingUser.id);
+        } else if (existingEmailsForMapping.has(matchingUser.email)) {
+          userId = existingEmailsForMapping.get(matchingUser.email);
+        } else {
+          const userIndex = seedData.authUsers.indexOf(matchingUser);
+          userId = authUserIds[userIndex];
+        }
+      } else {
+        userId = talent.auth_user_id;
+      }
+
+      return {
+        id: talentRecordIds[i],
+        authUserId: userId || talent.auth_user_id,
+        name: talent.氏名,
+        positions: [], // シードデータには職種の選択肢がない場合がある
+        skills: talent.言語_ツール,
+        experience: talent.主な実績_PR_職務経歴,
+        desiredRate: String(talent.希望単価_月額),
+      };
+    });
 
     // 全案件に対してマッチングスコアを計算し、推薦レコードを作成
     const allRecommendationRecords: any[] = [];
@@ -1490,7 +1604,23 @@ export const createSeedData = async () => {
       console.log("⭐ yamada用の推薦データを追加（表示順確認用）");
       console.log("=".repeat(80));
 
-      const yamadaAuthUserId = seedData1.authUsers[0].id;
+      // yamadaのauth_user_idを正しく取得
+      const yamadaUser = seedData1.authUsers[0];
+      let yamadaAuthUserId: string | undefined;
+      
+      if (yamadaUser.id && existingIdsForMapping.has(yamadaUser.id)) {
+        yamadaAuthUserId = existingIdsForMapping.get(yamadaUser.id);
+      } else if (existingEmailsForMapping.has(yamadaUser.email)) {
+        yamadaAuthUserId = existingEmailsForMapping.get(yamadaUser.email);
+      } else {
+        const userIndex = seedData.authUsers.findIndex(u => u.id === yamadaUser.id || u.email === yamadaUser.email);
+        yamadaAuthUserId = userIndex >= 0 ? authUserIds[userIndex] : yamadaUser.id;
+      }
+
+      if (!yamadaAuthUserId) {
+        throw new Error(`yamadaのユーザーIDが見つかりません: ${yamadaUser.email}`);
+      }
+
       const yamadaRecommendationRecords: any[] = [];
 
       for (const recommendation of seedData.recommendations) {
