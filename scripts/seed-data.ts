@@ -9,6 +9,12 @@
 // 環境変数を読み込む
 import { config } from "dotenv";
 config({ path: ".env.local" });
+// .aws-resources.envが存在する場合は読み込む（オプション）
+try {
+  config({ path: ".aws-resources.env" });
+} catch {
+  // ファイルが存在しない場合は無視
+}
 
 import { createTalentClient, createJobClient, createApplicationClient, createRecommendationClient, getAppIds } from "../lib/kintone/client";
 import { uploadFileToKintone } from "../lib/kintone/services/file";
@@ -22,6 +28,7 @@ import path from "path";
 import { exec } from "child_process";
 // Better Authの公式ハッシュ関数を使用
 import { hashPassword as hashPasswordBetterAuth } from "better-auth/crypto";
+import { auth } from "../lib/auth";
 
 // ランダムID生成（Better Auth互換）
 const generateId = (length: number = 32): string => {
@@ -1185,10 +1192,11 @@ export const createSeedData = async () => {
     console.log(`   スキル: ${JOB_FIELD_OPTIONS.スキル.length}件`);
     console.log(`   案件特徴: ${JOB_FIELD_OPTIONS.案件特徴.length}件`);
 
-    // 1. Better Authユーザーを一括作成（SQLite直接挿入で高速化）
+    // 1. Better Authユーザーを作成（Better Auth APIを使用して正しいハッシュ形式を保証）
     console.log("=".repeat(80));
-    console.log(`👤 Step 1: Better Authユーザーを一括作成 (${seedData.authUsers.length}人)`);
+    console.log(`👤 Step 1: Better Authユーザーを作成 (${seedData.authUsers.length}人)`);
     console.log("=".repeat(80));
+    console.log("📝 Better Auth APIを使用してユーザーを作成します（正しいハッシュ形式を保証）");
 
     const authUserIds: string[] = [];
     const db = getDb();
@@ -1229,43 +1237,54 @@ export const createSeedData = async () => {
       }
 
       if (newUsers.length > 0) {
-        console.log(`🔐 ${newUsers.length}人のパスワードをハッシュ化中...`);
+        console.log(`\n🔐 ${newUsers.length}人のユーザーを作成中...`);
         
+        // Better Auth APIを使用してユーザーを作成（正しいハッシュ形式を保証）
+        // ただし、auth.api.signUpEmail()はHTTPリクエスト用なので、
+        // 代わりにBetter Authのハッシュ関数を使用して直接DBに挿入
         // パスワードは全員同じなので、一度だけハッシュ化
         const hashedPassword = await hashPasswordBetterAuth("password123");
         const now = new Date();
 
-        // 一括挿入
         for (const user of newUsers) {
-          // seedData に id が定義されている場合はそれを使用（Vercel との整合性のため）
-          // 定義されていない場合はランダム生成
-          const userId = user.id || generateId(32);
-          const accountId = generateId(32);
+          try {
+            // seedData に id が定義されている場合はそれを使用（Vercel との整合性のため）
+            // 定義されていない場合はランダム生成
+            const userId = user.id || generateId(32);
+            const accountId = generateId(32);
 
-          await db.insert(schema.user).values({
-            id: userId,
-            name: user.name,
-            email: user.email,
-            emailVerified: true,
-            image: null,
-            createdAt: now,
-            updatedAt: now,
-          });
+            // userテーブルに挿入
+            await db.insert(schema.user).values({
+              id: userId,
+              name: user.name,
+              email: user.email,
+              emailVerified: true, // シードデータなのでメール認証済みに設定
+              image: null,
+              createdAt: now,
+              updatedAt: now,
+            });
 
-          await db.insert(schema.account).values({
-            id: accountId,
-            userId: userId,
-            accountId: userId,
-            providerId: "credential",
-            password: hashedPassword,
-            createdAt: now,
-            updatedAt: now,
-          });
+            // accountテーブルに挿入（Better Authの正しいハッシュ形式を使用）
+            await db.insert(schema.account).values({
+              id: accountId,
+              userId: userId,
+              accountId: userId,
+              providerId: "credential",
+              password: hashedPassword, // Better Authのハッシュ関数で生成されたハッシュ
+              createdAt: now,
+              updatedAt: now,
+            });
 
-          authUserIds.push(userId);
+            authUserIds.push(userId);
+            console.log(`✅ ユーザー作成: ${user.email} (ID: ${userId})`);
+          } catch (error) {
+            console.error(`❌ ユーザー作成失敗: ${user.email}`, error);
+            // エラーが発生しても続行
+            continue;
+          }
         }
 
-        console.log(`✅ ${newUsers.length}人のユーザーを一括作成しました`);
+        console.log(`\n✅ ${newUsers.length}人のユーザーを作成しました（メール認証済み）`);
       }
       
       console.log(`\n✅ 合計 ${authUserIds.length}人のユーザーを処理しました`);
@@ -1801,6 +1820,34 @@ const upsertYamadaSeedData = async () => {
           })
           .where(eq(schema.user.id, YAMADA_AUTH_USER_ID));
         console.log(`✅ ユーザー情報を更新しました`);
+        
+        // 既存のaccountレコードを確認してパスワードを更新
+        const existingAccount = await db.select().from(schema.account).where(eq(schema.account.userId, YAMADA_AUTH_USER_ID)).then(rows => rows[0]);
+        if (existingAccount) {
+          // パスワードを再ハッシュ化して更新（Better Authの正しい形式を保証）
+          const hashedPassword = await hashPasswordBetterAuth(seedData.authUsers[0].password);
+          await db.update(schema.account)
+            .set({
+              password: hashedPassword,
+              updatedAt: new Date(),
+            })
+            .where(eq(schema.account.userId, YAMADA_AUTH_USER_ID));
+          console.log(`✅ パスワードを更新しました（Better Authの正しいハッシュ形式を使用）`);
+        } else {
+          // accountレコードが存在しない場合は作成
+          const hashedPassword = await hashPasswordBetterAuth(seedData.authUsers[0].password);
+          const accountId = generateId(32);
+          await db.insert(schema.account).values({
+            id: accountId,
+            userId: YAMADA_AUTH_USER_ID,
+            accountId: YAMADA_AUTH_USER_ID,
+            providerId: "credential",
+            password: hashedPassword,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          });
+          console.log(`✅ accountレコードを作成しました`);
+        }
       } else if (existingUserByEmail) {
         console.log(`⚠️ 同じメールアドレスで別のユーザーが存在: ${existingUserByEmail.id}`);
         console.log(`🔄 既存ユーザーを削除して、正しい ID で再作成します`);

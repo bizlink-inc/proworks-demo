@@ -18,6 +18,7 @@
     "seed:create": "npm run rds:access:add && npm run db:create && npm run db:schema && npm run seed:delete && npx tsx scripts/seed-data.ts create && npm run rds:access:remove",
     "seed:delete": "npx tsx scripts/seed-data.ts delete",
     "seed:upsert": "npm run rds:access:add && npx tsx scripts/seed-data.ts upsert && npm run rds:access:remove",
+    "seed:check": "npx tsx scripts/check-seed-user.ts",
     "kintone:fields:get": "./scripts/kintone-fields/manage-fields.sh get",
     "kintone:fields:add": "./scripts/kintone-fields/manage-fields.sh add",
     "kintone:fields:deploy": "./scripts/kintone-fields/manage-fields.sh deploy",

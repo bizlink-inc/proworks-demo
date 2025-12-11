@@ -4,7 +4,14 @@
 import { config } from "dotenv";
 import { Pool } from "pg";
 
+// 環境変数を読み込む
 config({ path: ".env.local" });
+// .aws-resources.envが存在する場合は読み込む（オプション）
+try {
+  config({ path: ".aws-resources.env" });
+} catch {
+  // ファイルが存在しない場合は無視
+}
 
 const createDatabase = async () => {
   const databaseUrl = process.env.DATABASE_URL;

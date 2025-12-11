@@ -12,7 +12,12 @@ import * as path from "path";
 
 // 環境変数を読み込む
 config({ path: ".env.local" });
-config({ path: ".aws-resources.env" });
+// .aws-resources.envが存在する場合は読み込む（オプション）
+try {
+  config({ path: ".aws-resources.env" });
+} catch {
+  // ファイルが存在しない場合は無視
+}
 
 const RDS_SG_ID = process.env.RDS_SG_ID || "sg-05ca0ab3613477baf";
 const PORT = 5432;
