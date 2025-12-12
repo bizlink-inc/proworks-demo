@@ -39,22 +39,30 @@ const verifyBasicAuth = (authHeader: string | null): boolean => {
 
 /**
  * Basic認証が必要かどうかを判定
- * 本番環境（App Runner）でのみ有効
+ * App Runner環境（本番・開発）で有効、ローカル開発環境では環境変数で制御
  */
 const isBasicAuthRequired = (request: NextRequest): boolean => {
-  // 環境変数で制御可能にする（デフォルトは本番環境で有効）
-  // Edge Runtimeではprocess.env.NODE_ENVは使えないため、URLで判定
   const hostname = request.nextUrl.hostname;
   const isAppRunner = hostname.includes("awsapprunner.com");
+  const isLocalhost = hostname === "localhost" || hostname === "127.0.0.1";
   
-  // 環境変数BASIC_AUTH_ENABLEDで明示的に無効化されていない場合、App Runnerでは有効
-  // ローカル開発環境では無効（.env.localでBASIC_AUTH_ENABLED=trueと設定すれば有効化可能）
-  if (!isAppRunner) {
-    return false; // ローカル開発環境ではデフォルトで無効
+  // ローカル開発環境の場合
+  if (isLocalhost) {
+    // 環境変数BASIC_AUTH_ENABLEDで明示的に有効化されていない場合、無効
+    // Edge Runtimeではprocess.envはビルド時に静的に解決される必要があるため、
+    // 環境変数による制御は限定的
+    return false;
   }
 
-  // App Runner環境ではデフォルトで有効（環境変数で無効化可能）
-  return true;
+  // App Runner環境（本番・開発）ではデフォルトで有効
+  // 開発環境もApp Runner上で動いているため、Basic認証を有効化
+  if (isAppRunner) {
+    return true;
+  }
+
+  // その他の環境（カスタムドメインなど）でも有効化可能
+  // 必要に応じて環境変数で制御
+  return false;
 };
 
 export const middleware = (request: NextRequest) => {
