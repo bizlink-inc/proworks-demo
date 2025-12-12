@@ -175,18 +175,6 @@ const AdminLoginPage = () => {
               )}
             </button>
           </form>
-
-          {/* ヒント */}
-          <div className="mt-6 pt-6 border-t border-[var(--pw-border-lighter)]">
-            <p className="text-xs text-[var(--pw-text-light-gray)] text-center">
-              デモ用認証情報
-            </p>
-            <div className="mt-2 bg-[var(--pw-bg-light-blue)] rounded-lg p-3">
-              <p className="text-xs text-[var(--pw-text-gray)] font-mono text-center">
-                admin@example.com / admin123
-              </p>
-            </div>
-          </div>
         </div>
 
         {/* フッター */}
