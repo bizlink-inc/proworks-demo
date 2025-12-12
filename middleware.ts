@@ -39,7 +39,8 @@ const verifyBasicAuth = (authHeader: string | null): boolean => {
 
 /**
  * Basic認証が必要かどうかを判定
- * 環境変数BASIC_AUTH_ENABLEDで制御可能（デフォルトは本番環境（App Runner）でのみ有効）
+ * App Runner上で、かつ開発環境（NODE_ENV !== "production"）の場合のみ有効
+ * ローカル環境では無効、本番環境でも無効
  */
 const isBasicAuthRequired = (request: NextRequest): boolean => {
   // 環境変数BASIC_AUTH_ENABLEDが明示的に設定されている場合
@@ -51,12 +52,13 @@ const isBasicAuthRequired = (request: NextRequest): boolean => {
     return false; // 環境変数で無効化されている場合は常に無効
   }
 
-  // 環境変数が設定されていない場合、ホスト名で判定（デフォルト動作）
+  // 環境変数が設定されていない場合、App Runner上かつ開発環境の場合のみ有効
   const hostname = request.nextUrl.hostname;
   const isAppRunner = hostname.includes("awsapprunner.com");
+  const isDevelopment = process.env.NODE_ENV !== "production";
   
-  // App Runner環境ではデフォルトで有効、それ以外では無効
-  return isAppRunner;
+  // App Runner上で、かつ開発環境の場合のみ有効
+  return isAppRunner && isDevelopment;
 };
 
 export const middleware = (request: NextRequest) => {
