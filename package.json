@@ -5,7 +5,6 @@
   "scripts": {
     "build": "npx next build",
     "dev": "npx next dev",
-    "dev:basic-auth": "BASIC_AUTH_ENABLED=true npx next dev",
     "lint": "eslint .",
     "start": "npx next start",
     "db:push": "npx drizzle-kit push",
