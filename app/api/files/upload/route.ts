@@ -34,13 +34,17 @@ export const POST = async (request: NextRequest) => {
     // ファイル形式チェック
     const allowedTypes = [
       'application/pdf',
-      'application/msword',
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // .docx
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // .xlsx
     ];
     
-    if (!allowedTypes.includes(file.type)) {
+    // 拡張子でもチェック（MIME Typeが正しく設定されていない場合に備える）
+    const allowedExtensions = ['.pdf', '.docx', '.xlsx'];
+    const fileExtension = file.name.toLowerCase().substring(file.name.lastIndexOf('.'));
+    
+    if (!allowedTypes.includes(file.type) && !allowedExtensions.includes(fileExtension)) {
       return NextResponse.json(
-        { error: "対応していないファイル形式です。PDF、Word形式のファイルをアップロードしてください。" },
+        { error: "対応していないファイル形式です。PDF、Word (.docx)、Excel (.xlsx) 形式のファイルをアップロードしてください。" },
         { status: 400 }
       );
     }

@@ -26,12 +26,16 @@ export const uploadFileToKintone = async (
     // ファイル形式チェック
     const allowedTypes = [
       'application/pdf',
-      'application/msword',
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // .docx
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // .xlsx
     ];
     
-    if (!allowedTypes.includes(file.type)) {
-      throw new Error('対応していないファイル形式です。PDF、Word形式のファイルをアップロードしてください。');
+    // 拡張子でもチェック（MIME Typeが正しく設定されていない場合に備える）
+    const allowedExtensions = ['.pdf', '.docx', '.xlsx'];
+    const fileExtension = file.name.toLowerCase().substring(file.name.lastIndexOf('.'));
+    
+    if (!allowedTypes.includes(file.type) && !allowedExtensions.includes(fileExtension)) {
+      throw new Error('対応していないファイル形式です。PDF、Word (.docx)、Excel (.xlsx) 形式のファイルをアップロードしてください。');
     }
 
     // ファイルサイズチェック（10MB）

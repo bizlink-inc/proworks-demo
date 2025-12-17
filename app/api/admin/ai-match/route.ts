@@ -10,6 +10,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { verifyAdminSession } from "@/lib/admin-auth";
 import { createTalentClient, createJobClient, createRecommendationClient, getAppIds } from "@/lib/kintone/client";
 import { executeAIMatch, AIMatchResult } from "@/lib/gemini/client";
+import { downloadFileFromKintone } from "@/lib/kintone/services/file";
+import { extractTextFromFile } from "@/lib/kintone/services/text-extraction";
 
 // リクエスト型
 type AIMatchRequestBody = {
@@ -26,6 +28,7 @@ type TalentRecord = {
   言語_ツール: { value: string };
   主な実績_PR_職務経歴: { value: string };
   希望案件_作業内容: { value: string };
+  職務経歴書データ?: { value: Array<{ fileKey: string; name: string; size: string }> };
 };
 
 // 案件レコード型
@@ -127,6 +130,7 @@ export const POST = async (request: NextRequest) => {
     const talentsResponse = await talentClient.record.getAllRecords({
       app: appIds.talent,
       condition: talentCondition,
+      fields: ["$id", "auth_user_id", "氏名", "複数選択", "言語_ツール", "主な実績_PR_職務経歴", "希望案件_作業内容", "職務経歴書データ"],
     });
 
     const talents = talentsResponse as TalentRecord[];
@@ -156,89 +160,140 @@ export const POST = async (request: NextRequest) => {
       recMap.set(rec.人材ID.value, rec.$id.value);
     });
 
-    // 4. 各人材に対してAI評価を実行
+    // 4. 各人材に対してAI評価を実行（3個まで並列処理）
     console.log(`🤖 AI評価を実行: ${talentAuthUserIds.length}人`);
     const results: AIMatchResultResponse[] = [];
 
-    for (const authUserId of talentAuthUserIds) {
-      const talent = talentMap.get(authUserId);
+    // 3個ずつ処理するためのチャンクに分割
+    const chunkSize = 3;
+    for (let i = 0; i < talentAuthUserIds.length; i += chunkSize) {
+      const chunk = talentAuthUserIds.slice(i, i + chunkSize);
       
-      if (!talent) {
-        console.warn(`⚠️ 人材が見つかりません: ${authUserId}`);
-        continue;
-      }
+      // チャンク内の人材を並列処理
+      const chunkResults = await Promise.allSettled(
+        chunk.map(async (authUserId) => {
+          const talent = talentMap.get(authUserId);
+          
+          if (!talent) {
+            console.warn(`⚠️ 人材が見つかりません: ${authUserId}`);
+            return null;
+          }
 
-      console.log(`  → ${talent.氏名?.value || "(名前なし)"} のAI評価を実行中...`);
+          console.log(`  → ${talent.氏名?.value || "(名前なし)"} のAI評価を実行中...`);
 
-      // AI評価を実行
-      const aiResult = await executeAIMatch({
-        job: {
-          title: jobRecord.案件名?.value || "",
-          positions: jobRecord.職種_ポジション?.value || [],
-          skills: jobRecord.スキル?.value || [],
-          requiredSkills: jobRecord.必須スキル?.value || "",
-          preferredSkills: jobRecord.尚可スキル?.value || "",
-          description: jobRecord.概要?.value || "",
-          environment: jobRecord.環境?.value || "",
-          notes: jobRecord.備考?.value || "",
-        },
-        talent: {
-          name: talent.氏名?.value || "",
-          positions: talent.複数選択?.value || [],
-          skills: talent.言語_ツール?.value || "",
-          experience: talent.主な実績_PR_職務経歴?.value || "",
-          desiredWork: talent.希望案件_作業内容?.value || "",
-        },
-      });
+          // 職務経歴テキストを取得（ファイル優先、フォールバック付き）
+          let experienceText = talent.主な実績_PR_職務経歴?.value || "";
 
-      // 5. 推薦DBに結果を保存
-      const now = new Date().toISOString();
-      const existingRecId = recMap.get(authUserId);
+          // ファイルフィールドにファイルがある場合、テキスト抽出を試行
+          if (talent.職務経歴書データ?.value && talent.職務経歴書データ.value.length > 0) {
+            const file = talent.職務経歴書データ.value[0]; // 1ファイルのみ
+            
+            try {
+              console.log(`    📄 ファイルからテキスト抽出を試行: ${file.name}`);
+              
+              // ファイルをダウンロード
+              const { blob } = await downloadFileFromKintone(file.fileKey);
+              const buffer = Buffer.from(await blob.arrayBuffer());
+              
+              // テキスト抽出
+              const extractedText = await extractTextFromFile(
+                buffer,
+                file.name,
+                blob.type
+              );
+              
+              if (extractedText && extractedText.trim().length > 0) {
+                experienceText = extractedText;
+                console.log(`    ✅ テキスト抽出成功: ${extractedText.length}文字`);
+              } else {
+                console.warn(`    ⚠️ テキスト抽出結果が空のため、既存テキストフィールドを使用`);
+              }
+            } catch (error) {
+              // エラー時は既存テキストフィールドを使用（フォールバック）
+              console.warn(`    ⚠️ テキスト抽出に失敗、既存テキストフィールドを使用:`, error);
+            }
+          }
 
-      const updateData = {
-        AIマッチ実行状況: { value: "実行済み" },
-        AI技術スキルスコア: { value: aiResult.skillScore.toString() },
-        AI開発工程スコア: { value: aiResult.processScore.toString() },
-        AIインフラスコア: { value: aiResult.infraScore.toString() },
-        AI業務知識スコア: { value: aiResult.domainScore.toString() },
-        AIチーム開発スコア: { value: aiResult.teamScore.toString() },
-        AIツール環境スコア: { value: aiResult.toolScore.toString() },
-        AI総合スコア: { value: aiResult.overallScore.toString() },
-        AI評価結果: { value: aiResult.resultText },
-        AI実行日時: { value: now },
-      };
+          // AI評価を実行
+          const aiResult = await executeAIMatch({
+            job: {
+              title: jobRecord.案件名?.value || "",
+              positions: jobRecord.職種_ポジション?.value || [],
+              skills: jobRecord.スキル?.value || [],
+              requiredSkills: jobRecord.必須スキル?.value || "",
+              preferredSkills: jobRecord.尚可スキル?.value || "",
+              description: jobRecord.概要?.value || "",
+              environment: jobRecord.環境?.value || "",
+              notes: jobRecord.備考?.value || "",
+            },
+            talent: {
+              name: talent.氏名?.value || "",
+              positions: talent.複数選択?.value || [],
+              skills: talent.言語_ツール?.value || "",
+              experience: experienceText,
+              desiredWork: talent.希望案件_作業内容?.value || "",
+            },
+          });
 
-      let recommendationId: string;
+          // 推薦DBに結果を保存
+          const now = new Date().toISOString();
+          const existingRecId = recMap.get(authUserId);
 
-      if (existingRecId) {
-        // 既存レコードを更新
-        await recommendationClient.record.updateRecord({
-          app: appIds.recommendation,
-          id: parseInt(existingRecId, 10),
-          record: updateData,
-        });
-        recommendationId = existingRecId;
-        console.log(`    ✅ 更新完了 (ID: ${existingRecId})`);
-      } else {
-        // 新規レコードを作成
-        const createResult = await recommendationClient.record.addRecord({
-          app: appIds.recommendation,
-          record: {
-            人材ID: { value: authUserId },
-            案件ID: { value: jobId },
-            適合スコア: { value: "0" },
-            ...updateData,
-          },
-        });
-        recommendationId = createResult.id;
-        console.log(`    ✅ 作成完了 (ID: ${createResult.id})`);
-      }
+          const updateData = {
+            AIマッチ実行状況: { value: "実行済み" },
+            AI技術スキルスコア: { value: aiResult.skillScore.toString() },
+            AI開発工程スコア: { value: aiResult.processScore.toString() },
+            AIインフラスコア: { value: aiResult.infraScore.toString() },
+            AI業務知識スコア: { value: aiResult.domainScore.toString() },
+            AIチーム開発スコア: { value: aiResult.teamScore.toString() },
+            AIツール環境スコア: { value: aiResult.toolScore.toString() },
+            AI総合スコア: { value: aiResult.overallScore.toString() },
+            AI評価結果: { value: aiResult.resultText },
+            AI実行日時: { value: now },
+          };
 
-      results.push({
-        talentAuthUserId: authUserId,
-        talentName: talent.氏名?.value || "(名前なし)",
-        result: aiResult,
-        recommendationId,
+          let recommendationId: string;
+
+          if (existingRecId) {
+            // 既存レコードを更新
+            await recommendationClient.record.updateRecord({
+              app: appIds.recommendation,
+              id: parseInt(existingRecId, 10),
+              record: updateData,
+            });
+            recommendationId = existingRecId;
+            console.log(`    ✅ 更新完了 (ID: ${existingRecId})`);
+          } else {
+            // 新規レコードを作成
+            const createResult = await recommendationClient.record.addRecord({
+              app: appIds.recommendation,
+              record: {
+                人材ID: { value: authUserId },
+                案件ID: { value: jobId },
+                適合スコア: { value: "0" },
+                ...updateData,
+              },
+            });
+            recommendationId = createResult.id;
+            console.log(`    ✅ 作成完了 (ID: ${createResult.id})`);
+          }
+
+          return {
+            talentAuthUserId: authUserId,
+            talentName: talent.氏名?.value || "(名前なし)",
+            result: aiResult,
+            recommendationId,
+          };
+        })
+      );
+
+      // 結果を処理
+      chunkResults.forEach((result) => {
+        if (result.status === 'fulfilled' && result.value !== null) {
+          results.push(result.value);
+        } else if (result.status === 'rejected') {
+          console.error('AI評価エラー:', result.reason);
+        }
       });
     }
 

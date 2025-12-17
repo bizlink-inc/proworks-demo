@@ -27,7 +27,7 @@ interface UploadingFile {
 
 export const FileUpload: React.FC<FileUploadProps> = ({
   onUploadSuccess,
-  maxFiles = 10,
+  maxFiles = 1,
   currentFileCount = 0,
   disabled = false,
 }) => {
@@ -38,13 +38,17 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   // ファイル形式チェック
   const validateFile = (file: File): string | null => {
     const allowedTypes = [
-      'application/pdf',
-      'application/msword',
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+      "application/pdf",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document", // .docx
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", // .xlsx
     ];
-    
-    if (!allowedTypes.includes(file.type)) {
-      return "対応していないファイル形式です。PDF、Word形式のファイルをアップロードしてください。";
+
+    // 拡張子でもチェック（MIME Typeが正しく設定されていない場合に備える）
+    const allowedExtensions = [".pdf", ".docx", ".xlsx"];
+    const fileExtension = file.name.toLowerCase().substring(file.name.lastIndexOf("."));
+
+    if (!allowedTypes.includes(file.type) && !allowedExtensions.includes(fileExtension)) {
+      return "対応していないファイル形式です。PDF、Word (.docx)、Excel (.xlsx) 形式のファイルをアップロードしてください。";
     }
 
     const maxSize = 10 * 1024 * 1024; // 10MB
@@ -178,17 +182,17 @@ export const FileUpload: React.FC<FileUploadProps> = ({
       {/* シンプルなファイル選択エリア */}
       <div className="flex items-center gap-4">
         <p className="text-sm" style={{ color: "var(--pw-text-gray)" }}>
-          ※アップロード可能形式：PDF / Word (.doc, .docx)（最大10MB）
+          ※アップロード可能形式：PDF / Word (.docx) / Excel (.xlsx)（最大10MB、1ファイルのみ）
         </p>
       </div>
       
       <button
         type="button"
-        disabled={disabled}
+        disabled={disabled || currentFileCount >= maxFiles}
         onClick={handleFileSelect}
         className={`
           inline-flex items-center px-4 py-2 border rounded-[var(--pw-radius-sm)] text-sm transition-colors
-          ${disabled ? "opacity-50 cursor-not-allowed" : "hover:bg-gray-50"}
+          ${disabled || currentFileCount >= maxFiles ? "opacity-50 cursor-not-allowed" : "hover:bg-gray-50"}
         `}
         style={{
           borderColor: "var(--pw-button-primary)",
@@ -203,8 +207,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
       <input
         ref={fileInputRef}
         type="file"
-        multiple
-        accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        accept=".pdf,.docx,.xlsx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         onChange={(e) => {
           if (e.target.files) {
             handleFiles(e.target.files);

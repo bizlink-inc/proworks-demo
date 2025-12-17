@@ -172,12 +172,13 @@ export const WorkHistoryForm = ({ user, onUpdate }: WorkHistoryFormProps) => {
                 size: file.fileSize,
                 contentType: file.contentType,
               };
+              // 1ファイルのみなので、既存ファイルを置き換える
               setFormData({ 
                 ...formData, 
-                resumeFiles: [...formData.resumeFiles, newFile] 
+                resumeFiles: [newFile] 
               });
             }}
-            maxFiles={10}
+            maxFiles={1}
             currentFileCount={formData.resumeFiles.length}
             disabled={loading}
           />

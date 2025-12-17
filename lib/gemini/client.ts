@@ -4,7 +4,11 @@
  * Google Gemini 2.0 Flash を使用したAIマッチング評価
  */
 
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+// APIキーは関数実行時に取得（スクリプトから dotenv でロードされる可能性に対応）
+const getGeminiApiKey = (): string => {
+  return process.env.GEMINI_API_KEY || "";
+};
+
 const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
 
 export type AIMatchRequest = {
@@ -212,6 +216,7 @@ ${parsed.evaluation?.toolComment || "評価なし"}
  */
 export const executeAIMatch = async (request: AIMatchRequest): Promise<AIMatchResult> => {
   const prompt = generatePrompt(request);
+  const GEMINI_API_KEY = getGeminiApiKey();
   
   try {
     const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {

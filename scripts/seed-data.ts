@@ -1315,6 +1315,39 @@ export const createSeedData = async () => {
     console.log(`👨‍💼 Step 2: 人材DBにレコードを作成 (${seedData.talents.length}人)`);
     console.log("=".repeat(80));
 
+    // 2-0. 田中 花子 用の職務経歴書PDFをアップロード（テスト用）
+    // Backend_Engineer_Resume_sample.pdf を kintone にアップロードし、
+    // 田中 花子（auth_user_id = seed_user_002）のみファイルを紐付け、テキストは空にする
+    const hanakoAuthUserId = "seed_user_002";
+    let hanakoResumeFiles: Array<{ fileKey: string; name: string; size: string }> = [];
+
+    try {
+      const resumePath = path.join(process.cwd(), "test-file", "Backend_Engineer_Resume_sample.pdf");
+      if (fs.existsSync(resumePath)) {
+        console.log(`📄 田中 花子 用レジュメファイルを読み込み中: ${resumePath}`);
+        const fileBuffer = fs.readFileSync(resumePath);
+        const resumeFile = new File([fileBuffer], "Backend_Engineer_Resume_sample.pdf", {
+          type: "application/pdf",
+        });
+
+        console.log("📤 田中 花子 用レジュメファイルをkintoneにアップロード中...");
+        const uploadResult = await uploadFileToKintone(resumeFile);
+
+        hanakoResumeFiles = [
+          {
+            fileKey: uploadResult.fileKey,
+            name: uploadResult.fileName,
+            size: uploadResult.fileSize.toString(),
+          },
+        ];
+        console.log(`✅ アップロード成功: ${uploadResult.fileName} (${uploadResult.fileKey})`);
+      } else {
+        console.log(`⚠️ 田中 花子 用レジュメファイルが見つかりません: ${resumePath}`);
+      }
+    } catch (uploadError) {
+      console.error("❌ 田中 花子 用レジュメファイルのアップロードに失敗しました（処理は継続します）:", uploadError);
+    }
+
     const talentRecords = seedData.talents.map((talent) => {
       // talentのauth_user_idに対応するユーザーIDを検索
       // 1. seedData.authUsersから該当するユーザーを検索（auth_user_idまたはメールアドレスで）
@@ -1343,6 +1376,12 @@ export const createSeedData = async () => {
         throw new Error(`ユーザーIDが見つかりません: ${talent.氏名} (${talent.メールアドレス})`);
       }
 
+      // 田中 花子（auth_user_id = seed_user_002）はテキストを空にし、
+      // 職務経歴書ファイルのみを設定する
+      const isHanako = talent.auth_user_id === hanakoAuthUserId;
+      const experienceValue = isHanako ? "" : talent.主な実績_PR_職務経歴;
+      const resumeFilesValue = isHanako ? hanakoResumeFiles : [];
+
       return {
         [TALENT_FIELDS.AUTH_USER_ID]: { value: userId },
         [TALENT_FIELDS.LAST_NAME]: { value: talent.姓 },
@@ -1356,8 +1395,8 @@ export const createSeedData = async () => {
         [TALENT_FIELDS.POSTAL_CODE]: { value: talent.郵便番号 },
         [TALENT_FIELDS.ADDRESS]: { value: talent.住所 },
         [TALENT_FIELDS.SKILLS]: { value: talent.言語_ツール },
-        [TALENT_FIELDS.EXPERIENCE]: { value: talent.主な実績_PR_職務経歴 },
-        [TALENT_FIELDS.RESUME_FILES]: { value: [] },
+        [TALENT_FIELDS.EXPERIENCE]: { value: experienceValue },
+        [TALENT_FIELDS.RESUME_FILES]: { value: resumeFilesValue },
         [TALENT_FIELDS.PORTFOLIO_URL]: { value: talent.ポートフォリオリンク },
         [TALENT_FIELDS.AVAILABLE_FROM]: { value: talent.稼働可能時期 },
         [TALENT_FIELDS.DESIRED_RATE]: { value: talent.希望単価_月額 },
@@ -1564,23 +1603,91 @@ export const createSeedData = async () => {
         skills: job.スキル || [],
       };
 
-      // 上位10人のマッチング結果を取得
-      const topMatches = calculateTopMatches(talentsForMatching, jobForMatching, 10);
+      // 特定案件（大手ECサイトのフロントエンド刷新案件）は
+      // 山田太郎 → 田中花子 の順になるようにスコアを再調整する
+      const isTargetFrontendJob =
+        job.案件名 === "大手ECサイトのフロントエンド刷新案件";
 
-      // 推薦レコードを作成
-      for (const match of topMatches) {
-        if (!match.talentAuthUserId) continue;
+      if (isTargetFrontendJob) {
+        // すべての人材を対象にスコアを計算（件数分取得）
+        const allMatches = calculateTopMatches(
+          talentsForMatching,
+          jobForMatching,
+          talentsForMatching.length
+        );
 
-        allRecommendationRecords.push({
-          [RECOMMENDATION_FIELDS.TALENT_ID]: { value: match.talentAuthUserId },
-          [RECOMMENDATION_FIELDS.JOB_ID]: { value: jobId },
-          [RECOMMENDATION_FIELDS.SCORE]: { value: match.score },
-        });
+        const yamadaAuthUserId = "seed_user_001";
+        const hanakoAuthUserIdForRec = "seed_user_002";
+
+        const yamadaMatch = allMatches.find(
+          (m) => m.talentAuthUserId === yamadaAuthUserId
+        );
+        const hanakoMatch = allMatches.find(
+          (m) => m.talentAuthUserId === hanakoAuthUserIdForRec
+        );
+
+        const otherMatches = allMatches.filter(
+          (m) =>
+            m.talentAuthUserId !== yamadaAuthUserId &&
+            m.talentAuthUserId !== hanakoAuthUserIdForRec
+        );
+
+        const reorderedMatches: typeof allMatches = [];
+
+        if (yamadaMatch) {
+          reorderedMatches.push({
+            ...yamadaMatch,
+            // 山田太郎を1位に固定（十分高いスコアにする）
+            score: Math.max(yamadaMatch.score, 100),
+          });
+        }
+
+        if (hanakoMatch) {
+          const yamadaScore = reorderedMatches[0]?.score ?? 100;
+          reorderedMatches.push({
+            ...hanakoMatch,
+            // 田中花子は2位に来るように、山田より少し低いスコアを付与
+            score: Math.max(
+              hanakoMatch.score,
+              yamadaScore > 0 ? yamadaScore - 1 : 95
+            ),
+          });
+        }
+
+        // 残りは元のスコア順のまま後ろに付ける
+        reorderedMatches.push(...otherMatches);
+
+        const finalMatches = reorderedMatches.slice(0, 10);
+
+        for (const match of finalMatches) {
+          if (!match.talentAuthUserId) continue;
+
+          allRecommendationRecords.push({
+            [RECOMMENDATION_FIELDS.TALENT_ID]: { value: match.talentAuthUserId },
+            [RECOMMENDATION_FIELDS.JOB_ID]: { value: jobId },
+            [RECOMMENDATION_FIELDS.SCORE]: { value: match.score },
+          });
+        }
+      } else {
+        // その他の案件は通常通り上位10件を計算
+        const topMatches = calculateTopMatches(talentsForMatching, jobForMatching, 10);
+
+        for (const match of topMatches) {
+          if (!match.talentAuthUserId) continue;
+
+          allRecommendationRecords.push({
+            [RECOMMENDATION_FIELDS.TALENT_ID]: { value: match.talentAuthUserId },
+            [RECOMMENDATION_FIELDS.JOB_ID]: { value: jobId },
+            [RECOMMENDATION_FIELDS.SCORE]: { value: match.score },
+          });
+        }
       }
 
       // 進捗表示（10件ごと）
       if ((jobIndex + 1) % 10 === 0) {
-        console.log(`   処理中: ${jobIndex + 1}/${seedData.jobs.length}件の案件をスコアリング完了`);
+        console.log(
+          `   処理中: ${jobIndex + 1}/${seedData.jobs.length}件の案件をスコアリング完了`
+        );
       }
     }
 
