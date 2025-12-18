@@ -8,8 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
-import { FormSection } from "@/components/ui/form-section";
-import { SupportTag } from "@/components/ui/support-tag";
+import { FieldRow } from "@/components/ui/field-row";
 import type { Talent } from "@/lib/kintone/types";
 import { DROPDOWN_OPTIONS } from "@/lib/kintone/fieldMapping";
 
@@ -77,205 +76,215 @@ export const PreferencesForm = ({ user, onUpdate }: PreferencesFormProps) => {
   };
 
   return (
-    <FormSection title="希望条件" description="あなたの希望する働き方や条件を入力してください">
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <div>
-          <div className="flex items-center gap-2 mb-2">
-            <Label htmlFor="availableFrom">稼働可能時期</Label>
-            <SupportTag variant="required">必須</SupportTag>
-          </div>
-          <Input
-            id="availableFrom"
-            type="date"
-            value={formData.availableFrom}
-            onChange={(e) =>
-              setFormData({ ...formData, availableFrom: e.target.value })
-            }
-            required
-          />
-        </div>
-
-        <div>
-          <div className="flex items-center gap-2 mb-2">
-            <Label htmlFor="desiredRate">希望単価（月額・万円単位）</Label>
-            <SupportTag variant="optional">任意</SupportTag>
-          </div>
-          <Input
-            id="desiredRate"
-            type="number"
-            placeholder="例: 60"
-            value={formData.desiredRate}
-            onChange={(e) =>
-              setFormData({ ...formData, desiredRate: e.target.value })
-            }
-          />
-          <p className="text-xs text-[var(--pw-text-gray)] mt-1">万円単位で入力してください（60 = 60万円）</p>
-        </div>
-
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <div className="flex items-center gap-2 mb-2">
-              <Label htmlFor="desiredWorkDays">希望勤務日数</Label>
-              <SupportTag variant="required">必須</SupportTag>
-            </div>
-            <select
-              id="desiredWorkDays"
-              value={formData.desiredWorkDays}
-              onChange={(e) =>
-                setFormData({ ...formData, desiredWorkDays: e.target.value })
-              }
-              className="w-full px-3 py-2 border rounded-[var(--pw-radius-sm)] focus:outline-none focus:ring-0"
-              style={{
-                borderColor: "var(--pw-border-gray)",
-                fontSize: "var(--pw-text-sm)",
-              }}
-              required
-            >
-              <option value="">選択してください</option>
-              {DROPDOWN_OPTIONS.DESIRED_WORK_DAYS.map((option) => (
-                <option key={option} value={option}>
-                  {option}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <div className="flex items-center gap-2 mb-2">
-              <Label htmlFor="desiredCommute">希望出社頻度</Label>
-              <SupportTag variant="optional">任意</SupportTag>
-            </div>
-            <select
-              id="desiredCommute"
-              value={formData.desiredCommute}
-              onChange={(e) =>
-                setFormData({ ...formData, desiredCommute: e.target.value })
-              }
-              className="w-full px-3 py-2 border rounded-[var(--pw-radius-sm)] focus:outline-none focus:ring-0"
-              style={{
-                borderColor: "var(--pw-border-gray)",
-                fontSize: "var(--pw-text-sm)",
-              }}
-            >
-              <option value="">選択してください</option>
-              {DROPDOWN_OPTIONS.DESIRED_COMMUTE.map((option) => (
-                <option key={option} value={option}>
-                  {option}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        <div className="space-y-4">
-          <div className="flex items-center gap-2">
-            <Label>希望勤務スタイル</Label>
-            <SupportTag variant="optional">任意</SupportTag>
-          </div>
-          <div className="space-y-2">
-            {workStyleOptions.map((style) => (
-              <div key={style} className="flex items-center space-x-2">
-                <Checkbox
-                  id={`workstyle-${style}`}
-                  checked={formData.desiredWorkStyle.includes(style)}
-                  onCheckedChange={() => toggleWorkStyle(style)}
-                />
-                <Label
-                  htmlFor={`workstyle-${style}`}
-                  className="cursor-pointer"
-                >
-                  {style}
-                </Label>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div>
-          <div className="flex items-center gap-2 mb-2">
-            <Label htmlFor="desiredWorkHours">希望作業時間（1日あたり）</Label>
-            <SupportTag variant="required">必須</SupportTag>
-          </div>
-          <select
-            id="desiredWorkHours"
-            value={formData.desiredWorkHours}
-            onChange={(e) =>
-              setFormData({ ...formData, desiredWorkHours: e.target.value })
-            }
-            className="w-full px-3 py-2 border rounded-[var(--pw-radius-sm)] focus:outline-none focus:ring-0"
-            style={{
-              borderColor: "var(--pw-border-gray)",
-              fontSize: "var(--pw-text-sm)",
-            }}
-            required
+    <form onSubmit={handleSubmit} className="space-y-6">
+      <div
+        className="rounded-[var(--pw-radius-sm)] shadow-sm"
+        style={{
+          backgroundColor: "var(--pw-bg-white)",
+          border: "1px solid var(--pw-border-lighter)",
+        }}
+      >
+        <div className="px-6 py-5">
+          <h2
+            className="font-semibold"
+            style={{ fontSize: "var(--pw-text-xl)", color: "var(--pw-text-primary)" }}
           >
-            <option value="">選択してください</option>
-            {DROPDOWN_OPTIONS.DESIRED_WORK_HOURS.map((option) => (
-              <option key={option} value={option}>
-                {option}
-              </option>
-            ))}
-          </select>
-          <p className="text-xs text-[var(--pw-text-gray)] mt-1">1日あたりの稼働可能な時間を選択してください</p>
+            希望条件
+          </h2>
+          <p
+            className="mt-2"
+            style={{ fontSize: "var(--pw-text-sm)", color: "var(--pw-text-gray)" }}
+          >
+            あなたの希望する働き方や条件を入力してください
+          </p>
         </div>
 
-        <div>
-          <div className="flex items-center gap-2 mb-2">
-            <Label htmlFor="desiredWork">希望案件・作業内容</Label>
-            <SupportTag variant="optional">任意</SupportTag>
+        <div className="mx-6" style={{ borderTop: "1px solid var(--pw-border-lighter)" }} />
+
+        <div className="px-6">
+            <FieldRow
+              label="稼働可能時期"
+              required
+              isEmpty={!formData.availableFrom}
+              className="border-t-0"
+            >
+              <Input
+                id="availableFrom"
+                type="date"
+                value={formData.availableFrom}
+                onChange={(e) =>
+                  setFormData({ ...formData, availableFrom: e.target.value })
+                }
+                required
+              />
+            </FieldRow>
+
+            <FieldRow label="希望単価（月額・万円単位）">
+              <div>
+                <Input
+                  id="desiredRate"
+                  type="number"
+                  placeholder="例: 60"
+                  value={formData.desiredRate}
+                  onChange={(e) =>
+                    setFormData({ ...formData, desiredRate: e.target.value })
+                  }
+                />
+                <p className="text-xs text-[var(--pw-text-gray)] mt-1">
+                  万円単位で入力してください（60 = 60万円）
+                </p>
+              </div>
+            </FieldRow>
+
+            <FieldRow
+              label="希望勤務日数・希望出社頻度"
+              required
+              isEmpty={!formData.desiredWorkDays}
+            >
+              <div className="grid grid-cols-2 gap-4">
+                <select
+                  id="desiredWorkDays"
+                  value={formData.desiredWorkDays}
+                  onChange={(e) =>
+                    setFormData({ ...formData, desiredWorkDays: e.target.value })
+                  }
+                  className="w-full px-3 py-2 border rounded-[var(--pw-radius-sm)] focus:outline-none focus:ring-0"
+                  style={{
+                    borderColor: "var(--pw-border-gray)",
+                    fontSize: "var(--pw-text-sm)",
+                  }}
+                  required
+                >
+                  <option value="">選択してください</option>
+                  {DROPDOWN_OPTIONS.DESIRED_WORK_DAYS.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
+
+                <select
+                  id="desiredCommute"
+                  value={formData.desiredCommute}
+                  onChange={(e) =>
+                    setFormData({ ...formData, desiredCommute: e.target.value })
+                  }
+                  className="w-full px-3 py-2 border rounded-[var(--pw-radius-sm)] focus:outline-none focus:ring-0"
+                  style={{
+                    borderColor: "var(--pw-border-gray)",
+                    fontSize: "var(--pw-text-sm)",
+                  }}
+                >
+                  <option value="">選択してください</option>
+                  {DROPDOWN_OPTIONS.DESIRED_COMMUTE.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </FieldRow>
+
+            <FieldRow label="希望勤務スタイル">
+              <div className="space-y-2">
+                {workStyleOptions.map((style) => (
+                  <div key={style} className="flex items-center space-x-2">
+                    <Checkbox
+                      id={`workstyle-${style}`}
+                      checked={formData.desiredWorkStyle.includes(style)}
+                      onCheckedChange={() => toggleWorkStyle(style)}
+                    />
+                    <Label
+                      htmlFor={`workstyle-${style}`}
+                      className="cursor-pointer"
+                    >
+                      {style}
+                    </Label>
+                  </div>
+                ))}
+              </div>
+            </FieldRow>
+
+            <FieldRow
+              label="希望作業時間（1日あたり）"
+              required
+              isEmpty={!formData.desiredWorkHours}
+            >
+              <div>
+                <select
+                  id="desiredWorkHours"
+                  value={formData.desiredWorkHours}
+                  onChange={(e) =>
+                    setFormData({ ...formData, desiredWorkHours: e.target.value })
+                  }
+                  className="w-full px-3 py-2 border rounded-[var(--pw-radius-sm)] focus:outline-none focus:ring-0"
+                  style={{
+                    borderColor: "var(--pw-border-gray)",
+                    fontSize: "var(--pw-text-sm)",
+                  }}
+                  required
+                >
+                  <option value="">選択してください</option>
+                  {DROPDOWN_OPTIONS.DESIRED_WORK_HOURS.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-xs text-[var(--pw-text-gray)] mt-1">
+                  1日あたりの稼働可能な時間を選択してください
+                </p>
+              </div>
+            </FieldRow>
+
+            <FieldRow label="希望案件・作業内容">
+              <Textarea
+                id="desiredWork"
+                placeholder="希望する案件の種類や作業内容を記載してください"
+                rows={4}
+                value={formData.desiredWork}
+                onChange={(e) =>
+                  setFormData({ ...formData, desiredWork: e.target.value })
+                }
+              />
+            </FieldRow>
+
+            <FieldRow label="NG企業">
+              <Textarea
+                id="ngCompanies"
+                placeholder="参画を希望しない企業があれば記載してください"
+                rows={3}
+                value={formData.ngCompanies}
+                onChange={(e) =>
+                  setFormData({ ...formData, ngCompanies: e.target.value })
+                }
+              />
+            </FieldRow>
+
+            <FieldRow label="その他要望">
+              <Textarea
+                id="otherRequests"
+                placeholder="その他のご要望があれば記載してください"
+                rows={3}
+                value={formData.otherRequests}
+                onChange={(e) =>
+                  setFormData({ ...formData, otherRequests: e.target.value })
+                }
+              />
+            </FieldRow>
+
+            <div className="flex justify-center py-6">
+              <Button
+                type="submit"
+                variant="pw-primary"
+                disabled={loading}
+                style={{ fontSize: "var(--pw-text-md)" }}
+              >
+                {loading ? "保存中..." : "希望条件を更新する"}
+              </Button>
+            </div>
           </div>
-          <Textarea
-            id="desiredWork"
-            placeholder="希望する案件の種類や作業内容を記載してください"
-            rows={4}
-            value={formData.desiredWork}
-            onChange={(e) =>
-              setFormData({ ...formData, desiredWork: e.target.value })
-            }
-          />
         </div>
-
-        <div>
-          <div className="flex items-center gap-2 mb-2">
-            <Label htmlFor="ngCompanies">NG企業</Label>
-            <SupportTag variant="optional">任意</SupportTag>
-          </div>
-          <Textarea
-            id="ngCompanies"
-            placeholder="参画を希望しない企業があれば記載してください"
-            rows={3}
-            value={formData.ngCompanies}
-            onChange={(e) =>
-              setFormData({ ...formData, ngCompanies: e.target.value })
-            }
-          />
-        </div>
-
-        <div>
-          <div className="flex items-center gap-2 mb-2">
-            <Label htmlFor="otherRequests">その他要望</Label>
-            <SupportTag variant="optional">任意</SupportTag>
-          </div>
-          <Textarea
-            id="otherRequests"
-            placeholder="その他のご要望があれば記載してください"
-            rows={3}
-            value={formData.otherRequests}
-            onChange={(e) =>
-              setFormData({ ...formData, otherRequests: e.target.value })
-            }
-          />
-        </div>
-
-        <Button
-          type="submit"
-          variant="pw-primary"
-          disabled={loading}
-          style={{ fontSize: "var(--pw-text-md)" }}
-        >
-          {loading ? "保存中..." : "希望条件を更新する"}
-        </Button>
-      </form>
-    </FormSection>
+    </form>
   );
 };

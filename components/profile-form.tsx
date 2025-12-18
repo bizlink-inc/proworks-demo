@@ -4,10 +4,8 @@ import type React from "react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { FormSection } from "@/components/ui/form-section";
-import { SupportTag } from "@/components/ui/support-tag";
+import { FieldRow } from "@/components/ui/field-row";
 import type { Talent } from "@/lib/kintone/types";
 
 type ProfileFormProps = {
@@ -76,156 +74,154 @@ export const ProfileForm = ({ user, onUpdate }: ProfileFormProps) => {
   };
 
   return (
-    <FormSection title="基本情報" description="あなたの基本情報を入力してください">
     <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-            <div className="flex items-center gap-2 mb-2">
-          <Label htmlFor="lastName">姓</Label>
-              <SupportTag variant="required">必須</SupportTag>
-            </div>
-          <Input
-            id="lastName"
-            value={formData.lastName || ""}
-            onChange={(e) =>
-              setFormData({ ...formData, lastName: e.target.value })
-            }
-            required
-          />
-        </div>
-        <div>
-            <div className="flex items-center gap-2 mb-2">
-          <Label htmlFor="firstName">名</Label>
-              <SupportTag variant="required">必須</SupportTag>
-            </div>
-          <Input
-            id="firstName"
-            value={formData.firstName || ""}
-            onChange={(e) =>
-              setFormData({ ...formData, firstName: e.target.value })
-            }
-            required
-          />
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-            <div className="flex items-center gap-2 mb-2">
-          <Label htmlFor="lastNameKana">姓（フリガナ）</Label>
-              <SupportTag variant="optional">任意</SupportTag>
-            </div>
-          <Input
-            id="lastNameKana"
-            placeholder="ヤマダ"
-            value={formData.lastNameKana || ""}
-            onChange={(e) =>
-              setFormData({ ...formData, lastNameKana: e.target.value })
-            }
-          />
-        </div>
-        <div>
-            <div className="flex items-center gap-2 mb-2">
-          <Label htmlFor="firstNameKana">名（フリガナ）</Label>
-              <SupportTag variant="optional">任意</SupportTag>
-            </div>
-          <Input
-            id="firstNameKana"
-            placeholder="タロウ"
-            value={formData.firstNameKana || ""}
-            onChange={(e) =>
-              setFormData({ ...formData, firstNameKana: e.target.value })
-            }
-          />
-        </div>
-      </div>
-
-        <div>
-          <div className="flex items-center gap-2 mb-2">
-        <Label htmlFor="email">メールアドレス</Label>
-            <SupportTag variant="required">必須</SupportTag>
-          </div>
-          <Input
-          id="email"
-          type="email"
-          value={formData.email || ""}
-          onChange={(e) =>
-            setFormData({ ...formData, email: e.target.value })
-          }
-            required
-          />
-      </div>
-
-      <div>
-          <div className="flex items-center gap-2 mb-2">
-        <Label htmlFor="birthDate">生年月日</Label>
-            <SupportTag variant="optional">任意</SupportTag>
-          </div>
-        <Input
-          id="birthDate"
-          type="date"
-          value={formData.birthDate || ""}
-          onChange={(e) =>
-            setFormData({ ...formData, birthDate: e.target.value })
-          }
-        />
-      </div>
-
-      <div>
-          <div className="flex items-center gap-2 mb-2">
-        <Label htmlFor="phone">電話番号</Label>
-            <SupportTag variant="optional">任意</SupportTag>
-          </div>
-        <Input
-          id="phone"
-          type="tel"
-          placeholder="090-1234-5678"
-          value={formData.phone || ""}
-          onChange={(e) =>
-            setFormData({ ...formData, phone: e.target.value })
-          }
-        />
-      </div>
-
-      <div>
-          <div className="flex items-center gap-2 mb-2">
-        <Label htmlFor="postalCode">郵便番号</Label>
-            <SupportTag variant="optional">任意</SupportTag>
-          </div>
-        <Input
-          id="postalCode"
-          placeholder="123-4567"
-          value={formData.postalCode || ""}
-          onChange={(e) =>
-            setFormData({ ...formData, postalCode: e.target.value })
-          }
-        />
-      </div>
-
-      <div>
-          <div className="flex items-center gap-2 mb-2">
-        <Label htmlFor="address">住所</Label>
-            <SupportTag variant="optional">任意</SupportTag>
-          </div>
-        <Input
-          id="address"
-          placeholder="東京都渋谷区..."
-          value={formData.address || ""}
-          onChange={(e) =>
-            setFormData({ ...formData, address: e.target.value })
-          }
-        />
-      </div>
-
-      <Button
-        type="submit"
-          variant="pw-primary"
-        disabled={loading}
-          style={{ fontSize: "var(--pw-text-md)" }}
+      <div
+        className="rounded-[var(--pw-radius-sm)] shadow-sm"
+        style={{
+          backgroundColor: "var(--pw-bg-white)",
+          border: "1px solid var(--pw-border-lighter)",
+        }}
       >
-          {loading ? "保存中..." : "プロフィールを更新する"}
-      </Button>
+        <div className="px-6 py-5">
+          <h2
+            className="font-semibold"
+            style={{ fontSize: "var(--pw-text-xl)", color: "var(--pw-text-primary)" }}
+          >
+            基本情報
+          </h2>
+          <p
+            className="mt-2"
+            style={{ fontSize: "var(--pw-text-sm)", color: "var(--pw-text-gray)" }}
+          >
+            あなたの基本情報を入力してください
+          </p>
+        </div>
+
+        <div className="mx-6" style={{ borderTop: "1px solid var(--pw-border-lighter)" }} />
+
+        <div className="px-6">
+            <FieldRow
+              label="姓・名"
+              required
+              isEmpty={!formData.lastName || !formData.firstName}
+              className="border-t-0"
+            >
+              <div className="grid grid-cols-2 gap-4">
+                <Input
+                  id="lastName"
+                  placeholder="姓"
+                  value={formData.lastName || ""}
+                  onChange={(e) =>
+                    setFormData({ ...formData, lastName: e.target.value })
+                  }
+                  required
+                />
+                <Input
+                  id="firstName"
+                  placeholder="名"
+                  value={formData.firstName || ""}
+                  onChange={(e) =>
+                    setFormData({ ...formData, firstName: e.target.value })
+                  }
+                  required
+                />
+              </div>
+            </FieldRow>
+
+            <FieldRow label="姓（フリガナ）・名（フリガナ）">
+              <div className="grid grid-cols-2 gap-4">
+                <Input
+                  id="lastNameKana"
+                  placeholder="ヤマダ"
+                  value={formData.lastNameKana || ""}
+                  onChange={(e) =>
+                    setFormData({ ...formData, lastNameKana: e.target.value })
+                  }
+                />
+                <Input
+                  id="firstNameKana"
+                  placeholder="タロウ"
+                  value={formData.firstNameKana || ""}
+                  onChange={(e) =>
+                    setFormData({ ...formData, firstNameKana: e.target.value })
+                  }
+                />
+              </div>
+            </FieldRow>
+
+            <FieldRow
+              label="メールアドレス"
+              required
+              isEmpty={!formData.email}
+            >
+              <Input
+                id="email"
+                type="email"
+                value={formData.email || ""}
+                onChange={(e) =>
+                  setFormData({ ...formData, email: e.target.value })
+                }
+                required
+              />
+            </FieldRow>
+
+            <FieldRow label="生年月日">
+              <Input
+                id="birthDate"
+                type="date"
+                value={formData.birthDate || ""}
+                onChange={(e) =>
+                  setFormData({ ...formData, birthDate: e.target.value })
+                }
+              />
+            </FieldRow>
+
+            <FieldRow label="電話番号">
+              <Input
+                id="phone"
+                type="tel"
+                placeholder="090-1234-5678"
+                value={formData.phone || ""}
+                onChange={(e) =>
+                  setFormData({ ...formData, phone: e.target.value })
+                }
+              />
+            </FieldRow>
+
+            <FieldRow label="郵便番号">
+              <Input
+                id="postalCode"
+                placeholder="123-4567"
+                value={formData.postalCode || ""}
+                onChange={(e) =>
+                  setFormData({ ...formData, postalCode: e.target.value })
+                }
+              />
+            </FieldRow>
+
+            <FieldRow label="住所">
+              <Input
+                id="address"
+                placeholder="東京都渋谷区..."
+                value={formData.address || ""}
+                onChange={(e) =>
+                  setFormData({ ...formData, address: e.target.value })
+                }
+              />
+            </FieldRow>
+
+            <div className="flex justify-center py-6">
+              <Button
+                type="submit"
+                variant="pw-primary"
+                disabled={loading}
+                style={{ fontSize: "var(--pw-text-md)" }}
+              >
+                {loading ? "保存中..." : "プロフィールを更新する"}
+              </Button>
+            </div>
+          </div>
+        </div>
     </form>
-    </FormSection>
   );
 };

@@ -8,48 +8,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { FileUpload } from "@/components/file-upload";
 import { FileList } from "@/components/file-list";
-import { SupportTag } from "@/components/ui/support-tag";
+import { FieldRow } from "@/components/ui/field-row";
 import type { Talent } from "@/lib/kintone/types";
 
 type WorkHistoryFormProps = {
   user: Talent;
   onUpdate: (user: Talent) => void;
-};
-
-const FieldSection = ({
-  label,
-  required = false,
-  isEmpty = false,
-  children,
-}: {
-  label: string;
-  required?: boolean;
-  isEmpty?: boolean;
-  children: React.ReactNode;
-}) => {
-  return (
-    <section className="py-6">
-      <div className="flex flex-col gap-1 mb-4">
-        <div className="flex items-center gap-3">
-          {required && <SupportTag>必須</SupportTag>}
-          <div>
-            <p
-              className="font-semibold"
-              style={{ fontSize: "var(--pw-text-md)", color: "var(--pw-text-primary)" }}
-            >
-              {label}
-            </p>
-          </div>
-        </div>
-        {required && isEmpty && (
-          <p style={{ fontSize: "var(--pw-text-xs)", color: "var(--pw-alert-error)" }}>
-            ※未入力です
-          </p>
-        )}
-      </div>
-      {children}
-    </section>
-  );
 };
 
 export const WorkHistoryForm = ({ user, onUpdate }: WorkHistoryFormProps) => {
@@ -126,76 +90,78 @@ export const WorkHistoryForm = ({ user, onUpdate }: WorkHistoryFormProps) => {
         <div className="mx-6" style={{ borderTop: "1px solid var(--pw-border-lighter)" }} />
 
         <div className="px-6">
-          <FieldSection label="言語・ツールの経験" required isEmpty={!formData.skills}>
-        <Textarea
-          id="skills"
-          placeholder="JavaScript, TypeScript, React, Next.js, Python, AWS など"
-          rows={4}
-          value={formData.skills}
-          onChange={(e) =>
-            setFormData({ ...formData, skills: e.target.value })
-          }
-        />
-            <p className="text-xs mt-2" style={{ color: "var(--pw-text-gray)" }}>
-          使用経験のある言語やツールを記載してください
-        </p>
-          </FieldSection>
+          <FieldRow label="言語・ツールの経験" required isEmpty={!formData.skills} className="border-t-0">
+            <div>
+              <Textarea
+                id="skills"
+                placeholder="JavaScript, TypeScript, React, Next.js, Python, AWS など"
+                rows={4}
+                value={formData.skills}
+                onChange={(e) =>
+                  setFormData({ ...formData, skills: e.target.value })
+                }
+              />
+              <p className="text-xs mt-2" style={{ color: "var(--pw-text-gray)" }}>
+                使用経験のある言語やツールを記載してください
+              </p>
+            </div>
+          </FieldRow>
 
-          <FieldSection label="主な実績・PR・職務経歴" required isEmpty={!formData.experience}>
-        <Textarea
-          id="experience"
+          <FieldRow label="主な実績・PR・職務経歴" required isEmpty={!formData.experience}>
+            <Textarea
+              id="experience"
               placeholder="職務経歴・実績・アピールポイントなどをできるだけ具体的にご入力ください。"
-          rows={8}
-          value={formData.experience}
-          onChange={(e) =>
-            setFormData({ ...formData, experience: e.target.value })
-          }
-        />
-          </FieldSection>
+              rows={8}
+              value={formData.experience}
+              onChange={(e) =>
+                setFormData({ ...formData, experience: e.target.value })
+              }
+            />
+          </FieldRow>
 
-          <FieldSection label="経歴書アップロード">
-        <div className="space-y-4">
-          <FileList
-            files={formData.resumeFiles}
-            onFileDeleted={(fileKey) => {
-              const updatedFiles = formData.resumeFiles.filter(file => file.fileKey !== fileKey);
-              setFormData({ ...formData, resumeFiles: updatedFiles });
-            }}
-            disabled={loading}
-          />
-          
-          <FileUpload
-            onUploadSuccess={(file) => {
-              const newFile = {
-                fileKey: file.fileKey,
-                name: file.fileName,
-                size: file.fileSize,
-                contentType: file.contentType,
-              };
-              // 1ファイルのみなので、既存ファイルを置き換える
-              setFormData({ 
-                ...formData, 
-                resumeFiles: [newFile] 
-              });
-            }}
-            maxFiles={1}
-            currentFileCount={formData.resumeFiles.length}
-            disabled={loading}
-          />
-        </div>
-          </FieldSection>
+          <FieldRow label="経歴書アップロード">
+            <div className="space-y-4">
+              <FileList
+                files={formData.resumeFiles}
+                onFileDeleted={(fileKey) => {
+                  const updatedFiles = formData.resumeFiles.filter(file => file.fileKey !== fileKey);
+                  setFormData({ ...formData, resumeFiles: updatedFiles });
+                }}
+                disabled={loading}
+              />
+              
+              <FileUpload
+                onUploadSuccess={(file) => {
+                  const newFile = {
+                    fileKey: file.fileKey,
+                    name: file.fileName,
+                    size: file.fileSize,
+                    contentType: file.contentType,
+                  };
+                  // 1ファイルのみなので、既存ファイルを置き換える
+                  setFormData({ 
+                    ...formData, 
+                    resumeFiles: [newFile] 
+                  });
+                }}
+                maxFiles={1}
+                currentFileCount={formData.resumeFiles.length}
+                disabled={loading}
+              />
+            </div>
+          </FieldRow>
 
-          <FieldSection label="ポートフォリオ・GitHubのURL">
-        <Input
-          id="portfolioUrl"
-          type="url"
-          placeholder="https://github.com/username"
-          value={formData.portfolioUrl}
-          onChange={(e) =>
-            setFormData({ ...formData, portfolioUrl: e.target.value })
-          }
-        />
-          </FieldSection>
+          <FieldRow label="ポートフォリオ・GitHubのURL">
+            <Input
+              id="portfolioUrl"
+              type="url"
+              placeholder="https://github.com/username"
+              value={formData.portfolioUrl}
+              onChange={(e) =>
+                setFormData({ ...formData, portfolioUrl: e.target.value })
+              }
+            />
+          </FieldRow>
 
           <div className="flex justify-center py-6">
             <Button
