@@ -96,11 +96,50 @@ const getStatusStyle = (status?: string | null, isEnded?: boolean, recruitmentSt
   }
 }
 
+// 1段に収まるかどうかを判定する関数（案件特徴用）
+const getDisplayableFeatures = (features: string[], maxWidth: number = 300): string[] => {
+  if (features.length === 0) return []
+  if (features.length <= 2) return features.slice(0, 2)
+  
+  // 3つ表示した場合に1段に収まるかチェック
+  // 簡易的な判定：各タグの文字数から推定
+  const totalChars = features.slice(0, 3).reduce((sum, f) => sum + f.length, 0)
+  // タグのpaddingやborderを考慮して、おおよそ1文字=8pxと仮定
+  const estimatedWidth = totalChars * 8 + (3 * 24) + (2 * 8) // 文字幅 + padding + gap
+  if (estimatedWidth <= maxWidth) {
+    return features.slice(0, 3)
+  }
+  return features.slice(0, 2)
+}
+
+// 必須スキルを1段に収まるように最大3個まで取得
+const getDisplayableSkills = (skills: string[], maxWidth: number = 400): string[] => {
+  if (skills.length === 0) return []
+  if (skills.length <= 2) return skills.slice(0, 2)
+  
+  // 3つ表示した場合に1段に収まるかチェック
+  const totalChars = skills.slice(0, 3).reduce((sum, s) => sum + s.length, 0)
+  // 「 ／ 」の区切り文字も考慮（各2文字）
+  const estimatedWidth = totalChars * 8 + (2 * 2 * 8) + 20 // 文字幅 + 区切り文字 + 余白
+  if (estimatedWidth <= maxWidth) {
+    return skills.slice(0, 3)
+  }
+  // 2つでも収まらない場合は1つだけ
+  if (skills.length >= 2) {
+    const twoChars = skills.slice(0, 2).reduce((sum, s) => sum + s.length, 0)
+    const twoWidth = twoChars * 8 + (1 * 2 * 8) + 20
+    if (twoWidth <= maxWidth) {
+      return skills.slice(0, 2)
+    }
+  }
+  return skills.slice(0, 1)
+}
+
 export function JobCard({ job, onViewDetail, showApplicationStatus = false, isEnded = false, hideDetailButton = false }: JobCardProps) {
   const rateValue = formatRateValue(job.rate)
-  const features = job.features?.slice(0, 3) ?? []
-  const positions = job.position ?? []
-  const skills = job.skills?.slice(0, 3) ?? []
+  const features = getDisplayableFeatures(job.features ?? [])
+  const positions = (job.position ?? []).slice(0, 3) // 最大3個まで
+  const skills = getDisplayableSkills(job.skills ?? [])
   const locationValue = (job.location && job.location.trim().length > 0)
     ? job.location.trim()
     : "リモート"
@@ -113,7 +152,7 @@ export function JobCard({ job, onViewDetail, showApplicationStatus = false, isEn
 
   return (
     <div
-      className="bg-white rounded-[4px] transition-shadow hover:shadow-md relative"
+      className="bg-white rounded-[4px] transition-shadow hover:shadow-md relative flex flex-col h-full"
       style={{
         border: statusStyle ? `2px solid ${statusStyle.borderColor}` : "1px solid #d5e5f0",
         boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
@@ -227,45 +266,33 @@ export function JobCard({ job, onViewDetail, showApplicationStatus = false, isEn
           </div>
         )}
 
-        {/* 案件特徴バッジ（右上に配置、左側バッジの下に配置、横並び） */}
+        {/* 案件特徴バッジ（左側バッジの下に配置、横並び・左揃え） */}
         <div 
-          className="flex flex-nowrap gap-2 justify-end mb-3"
+          className="flex flex-nowrap gap-2 justify-start mb-3"
           style={{ 
             paddingTop: (() => {
               // 左側のバッジ（応募ステータス、New、担当者おすすめ、AIマッチ）がない場合は上部の空白を削除
-              if (statusStyle) return "48px"; // 応募ステータスがある場合
-              if (job.isNew || job.staffRecommend || job.aiMatched) return "48px"; // 左側バッジがある場合
+              if (statusStyle) return "28px"; // 応募ステータスがある場合（バッジの下に近づける）
+              if (job.isNew || job.staffRecommend || job.aiMatched) return "28px"; // 左側バッジがある場合（バッジの下に近づける）
               return "0"; // バッジがない場合は空白なし
             })(),
             paddingLeft: (() => {
-              if (statusStyle) return "88px";
-              
-              // バッジの組み合わせに応じて左パディングを調整
-              // 順序: New → 担当者おすすめ → AIマッチ
-              const hasNew = job.isNew;
-              const hasStaffRecommend = job.staffRecommend;
-              const hasAiMatched = job.aiMatched;
-              
-              if (hasNew && hasStaffRecommend && hasAiMatched) return "276px"; // New(58) + 間隔(8) + 担当者(110) + 間隔(8) + AI(72) + 間隔(8) + 左マージン(8)
-              if (hasNew && hasStaffRecommend) return "196px"; // New(58) + 間隔(8) + 担当者(110) + 間隔(8) + 左マージン(8)
-              if (hasNew && hasAiMatched) return "154px"; // New(58) + 間隔(8) + AI(72) + 間隔(8) + 左マージン(8)
-              if (hasStaffRecommend && hasAiMatched) return "206px"; // 担当者(110) + 間隔(8) + AI(72) + 間隔(8) + 左マージン(8)
-              if (hasNew) return "74px"; // New(58) + 間隔(8) + 左マージン(8)
-              if (hasStaffRecommend) return "126px"; // 担当者(110) + 間隔(8) + 左マージン(8)
-              if (hasAiMatched) return "88px"; // AI(72) + 間隔(8) + 左マージン(8)
-              return "0";
+              // バッジがない場合は左パディングなし（左端に配置）
+              if (statusStyle) return "0"; // 応募ステータスがある場合も左端から
+              if (job.isNew || job.staffRecommend || job.aiMatched) return "0"; // バッジがある場合も左端から
+              return "0"; // バッジがない場合も左端から
             })(),
             minWidth: 0, // flexアイテムが縮小できるようにする
           }}
         >
-          {features.map((feature, index) => (
+          {features.map((feature) => (
             <span
               key={feature}
               className="px-3 py-1 text-xs font-semibold rounded flex-shrink-0 whitespace-nowrap"
               style={{
-                border: index === 0 ? "1px solid #e9277a" : "1px solid #686868",
-                backgroundColor: index === 0 ? "#fde3ef" : "#ffffff",
-                color: index === 0 ? "#e9277a" : "#686868",
+                border: "1px solid #686868",
+                backgroundColor: "#ffffff",
+                color: "#686868",
               }}
             >
               {feature}
@@ -431,9 +458,12 @@ export function JobCard({ job, onViewDetail, showApplicationStatus = false, isEn
         <div style={{ borderTop: `1px solid ${dividerColor}` }} />
       </div>
 
+      {/* スペーサー：詳細を見るボタンを最下部に固定 */}
+      <div className="flex-1" />
+
       {/* 詳細を見るボタン */}
       {!hideDetailButton && (
-        <div className="px-4 pb-4 pt-3 flex justify-center">
+        <div className="px-4 pb-4 pt-3 flex justify-center mt-auto">
           <Button
             variant={isEnded ? "pw-outline" : "pw-primary"}
             className="w-full max-w-[180px]"
