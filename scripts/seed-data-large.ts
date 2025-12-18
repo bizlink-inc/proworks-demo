@@ -404,8 +404,8 @@ export const seedData3 = (() => {
   
   // 応募履歴（各カテゴリの最初の人材が最初の案件に応募）
   // IDは002から開始（001はyamada用）
+  // 注: seed_user_002（田中花子）は応募履歴なしの状態にするため除外
   const applications = [
-    { auth_user_id: "seed_user_002", jobIndex: 0, 対応状況: "応募済み" },
     { auth_user_id: "seed_user_012", jobIndex: 10, 対応状況: "面談調整中" },
     { auth_user_id: "seed_user_022", jobIndex: 20, 対応状況: "案件参画" },
     { auth_user_id: "seed_user_032", jobIndex: 30, 対応状況: "応募済み" },
