@@ -4,6 +4,9 @@ import { getSession } from "@/lib/auth-server";
 import { getApplicationsByAuthUserId } from "@/lib/kintone/services/application";
 import { getRecommendationScoreMap } from "@/lib/kintone/services/recommendation";
 import { POSITION_MAPPING } from "@/components/dashboard-filters";
+import { createRecommendationClient, getAppIds } from "@/lib/kintone/client";
+import { RECOMMENDATION_FIELDS } from "@/lib/kintone/fieldMapping";
+import type { RecommendationRecord } from "@/lib/kintone/types";
 
 export const GET = async (request: NextRequest) => {
   try {
@@ -26,9 +29,13 @@ export const GET = async (request: NextRequest) => {
     // 募集ステータスが「クローズ」の案件を除外（案件一覧には表示しない）
     jobs = jobs.filter((job) => job.recruitmentStatus !== 'クローズ');
 
-    // ログインしている場合、応募ステータスと推薦スコアを取得
+    // ログインしている場合、応募ステータスと推薦情報を取得
     let applicationsMap: Record<string, string> = {};
-    let recommendationScores: Record<string, number> = {};
+    let recommendationMap: Record<string, {
+      score: number;
+      staffRecommend: boolean;
+      aiMatched: boolean;
+    }> = {};
     let currentUserId: string | undefined;
 
     try {
@@ -43,8 +50,38 @@ export const GET = async (request: NextRequest) => {
           return acc;
         }, {} as Record<string, string>);
 
-        // 推薦スコアを取得
-        recommendationScores = await getRecommendationScoreMap(session.user.id);
+        // 推薦情報を取得（スコア、担当者おすすめ、AIマッチ）
+        const recommendationClient = createRecommendationClient();
+        const appIds = getAppIds();
+
+        if (appIds.recommendation) {
+          const recommendationsResponse = await recommendationClient.record.getRecords({
+            app: appIds.recommendation,
+            query: `${RECOMMENDATION_FIELDS.TALENT_ID} = "${session.user.id}"`,
+            fields: [
+              RECOMMENDATION_FIELDS.JOB_ID,
+              RECOMMENDATION_FIELDS.SCORE,
+              RECOMMENDATION_FIELDS.STAFF_RECOMMEND,
+              RECOMMENDATION_FIELDS.AI_EXECUTION_STATUS,
+            ],
+          });
+
+          const recommendations = recommendationsResponse.records as RecommendationRecord[];
+
+          for (const rec of recommendations) {
+            const jobId = rec[RECOMMENDATION_FIELDS.JOB_ID].value;
+            const score = parseInt(rec[RECOMMENDATION_FIELDS.SCORE].value, 10) || 0;
+            const staffRecommend = rec[RECOMMENDATION_FIELDS.STAFF_RECOMMEND]?.value === "おすすめ";
+            const aiExecutionStatus = rec[RECOMMENDATION_FIELDS.AI_EXECUTION_STATUS]?.value || "";
+            const aiMatched = aiExecutionStatus === "実行済み";
+
+            recommendationMap[jobId] = {
+              score,
+              staffRecommend,
+              aiMatched,
+            };
+          }
+        }
       }
     } catch (error) {
       // ログインしていない場合はスキップ
@@ -119,23 +156,36 @@ export const GET = async (request: NextRequest) => {
       });
     }
 
-    // 案件に推薦スコアと応募ステータスを追加
-    const jobsWithMetadata = jobs.map(job => ({
-      ...job,
-      recommendationScore: recommendationScores[job.id] || 0,
-      applicationStatus: applicationsMap[job.id] || null
-    }));
+    // 案件に推薦情報と応募ステータスを追加
+    const jobsWithMetadata = jobs.map(job => {
+      const recommendation = recommendationMap[job.id];
+      return {
+        ...job,
+        recommendationScore: recommendation?.score || 0,
+        staffRecommend: recommendation?.staffRecommend || false,
+        aiMatched: recommendation?.aiMatched || false,
+        applicationStatus: applicationsMap[job.id] || null
+      };
+    });
 
     // ソート処理
     let sortedJobs = jobsWithMetadata;
     
     if (sort === "recommend") {
       // おすすめ順
+      // ③担当者おすすめ（最優先）
+      // ②AIマッチ
       // ①登録情報マッチ（適合スコア）
-      // ②AIマッチ（将来拡張）
-      // ③管理者おすすめ（将来拡張）
       sortedJobs = sortedJobs.sort((a, b) => {
-        // 推薦スコアの降順でソート
+        // 優先順位1: 担当者おすすめ
+        if (a.staffRecommend && !b.staffRecommend) return -1;
+        if (!a.staffRecommend && b.staffRecommend) return 1;
+
+        // 優先順位2: AIマッチ
+        if (a.aiMatched && !b.aiMatched) return -1;
+        if (!a.aiMatched && b.aiMatched) return 1;
+
+        // 優先順位3: 推薦スコアの降順でソート
         const scoreA = a.recommendationScore || 0;
         const scoreB = b.recommendationScore || 0;
         

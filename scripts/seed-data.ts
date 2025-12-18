@@ -559,6 +559,31 @@ SOC（セキュリティオペレーションセンター）での監視・分�
     { talentIndex: 0, jobIndex: 3, score: 60 },  // 案件参画（案件決定）
     { talentIndex: 0, jobIndex: 4, score: 65 },  // 見送り（募集終了）
   ],
+
+  // 田中花子（seed_user_002）用の推薦データ
+  // 案件一覧に表示される案件（応募していない案件）
+  // 3つのバッジが同時に表示される案件を含む
+  recommendationsForHanako: [
+    // jobIndex 0: 大手ECサイトのフロントエンド刷新案件
+    // 担当者おすすめ + AIマッチ + New（3つ全部）
+    { talentIndex: 1, jobIndex: 0, score: 95, staffRecommend: true, aiMatched: true },
+    
+    // jobIndex 1: 金融系WebアプリケーションAPI開発
+    // 担当者おすすめのみ
+    { talentIndex: 1, jobIndex: 1, score: 80, staffRecommend: true, aiMatched: false },
+    
+    // jobIndex 2: スタートアップ向け新規サービス開発
+    // AIマッチ + New
+    { talentIndex: 1, jobIndex: 2, score: 90, staffRecommend: false, aiMatched: true },
+    
+    // jobIndex 3: ヘルスケアアプリ開発案件
+    // 登録情報マッチのみ（Newタグなし）
+    { talentIndex: 1, jobIndex: 3, score: 70, staffRecommend: false, aiMatched: false },
+    
+    // jobIndex 4: データ基盤構築・運用案件
+    // 登録情報マッチのみ（Newタグなし）
+    { talentIndex: 1, jobIndex: 4, score: 60, staffRecommend: false, aiMatched: false },
+  ],
 };
 
 // ========================================
@@ -1731,7 +1756,7 @@ export const createSeedData = async () => {
       const yamadaRecommendationRecords: any[] = [];
 
       for (const recommendation of seedData.recommendations) {
-        // jobIndexがseedData1の範囲内かチェック（seedData1は最初の5件）
+        // jobIndexがseedData1の範囲内かチェック（seedData1は最初の8件）
         if (recommendation.jobIndex < seedData1.jobs.length) {
           const jobId = jobIds[recommendation.jobIndex];
           yamadaRecommendationRecords.push({
@@ -1776,6 +1801,101 @@ export const createSeedData = async () => {
         console.log(`  - jobIndex 3: 案件決定（ヘルスケアアプリ開発案件）`);
         console.log(`  - jobIndex 4: 募集終了（データ基盤構築・運用案件）`);
         console.log(`  ※ 各ステータスが1件ずつ表示されます`);
+      }
+    }
+
+    // 田中花子用の推薦データを追加（バッジ表示確認用）
+    if (seedData1.recommendationsForHanako && seedData1.recommendationsForHanako.length > 0) {
+      console.log("\n" + "=".repeat(80));
+      console.log("⭐ 田中花子用の推薦データを追加（バッジ表示確認用）");
+      console.log("=".repeat(80));
+
+      // 田中花子のauth_user_idを取得
+      const hanakoUser = seedData1.authUsers[1]; // seed_user_002
+      let hanakoAuthUserId: string | undefined;
+      
+      if (hanakoUser.id && existingIdsForMapping.has(hanakoUser.id)) {
+        hanakoAuthUserId = existingIdsForMapping.get(hanakoUser.id);
+      } else if (existingEmailsForMapping.has(hanakoUser.email)) {
+        hanakoAuthUserId = existingEmailsForMapping.get(hanakoUser.email);
+      } else {
+        const userIndex = seedData.authUsers.findIndex(u => u.id === hanakoUser.id || u.email === hanakoUser.email);
+        hanakoAuthUserId = userIndex >= 0 ? authUserIds[userIndex] : hanakoUser.id;
+      }
+
+      if (!hanakoAuthUserId) {
+        throw new Error(`田中花子のユーザーIDが見つかりません: ${hanakoUser.email}`);
+      }
+
+      const hanakoRecommendationRecords: any[] = [];
+
+      for (const recommendation of seedData1.recommendationsForHanako) {
+        // jobIndexがseedData1の範囲内かチェック
+        if (recommendation.jobIndex < seedData1.jobs.length) {
+          const jobId = jobIds[recommendation.jobIndex];
+          const record: any = {
+            [RECOMMENDATION_FIELDS.TALENT_ID]: { value: hanakoAuthUserId },
+            [RECOMMENDATION_FIELDS.JOB_ID]: { value: jobId },
+            [RECOMMENDATION_FIELDS.SCORE]: { value: recommendation.score.toString() },
+          };
+
+          // 担当者おすすめフラグ
+          if (recommendation.staffRecommend) {
+            record[RECOMMENDATION_FIELDS.STAFF_RECOMMEND] = { value: "おすすめ" };
+          }
+
+          // AIマッチフラグ
+          if (recommendation.aiMatched) {
+            record[RECOMMENDATION_FIELDS.AI_EXECUTION_STATUS] = { value: "実行済み" };
+            // AIスコアをダミーで設定
+            record[RECOMMENDATION_FIELDS.AI_OVERALL_SCORE] = { value: "85" };
+            record[RECOMMENDATION_FIELDS.AI_SKILL_SCORE] = { value: "90" };
+            record[RECOMMENDATION_FIELDS.AI_PROCESS_SCORE] = { value: "85" };
+            record[RECOMMENDATION_FIELDS.AI_INFRA_SCORE] = { value: "80" };
+            record[RECOMMENDATION_FIELDS.AI_DOMAIN_SCORE] = { value: "75" };
+            record[RECOMMENDATION_FIELDS.AI_TEAM_SCORE] = { value: "90" };
+            record[RECOMMENDATION_FIELDS.AI_TOOL_SCORE] = { value: "85" };
+            record[RECOMMENDATION_FIELDS.AI_RESULT] = { value: "この案件は候補者のスキルセットと非常にマッチしています。" };
+            record[RECOMMENDATION_FIELDS.AI_EXECUTED_AT] = { value: new Date().toISOString() };
+          }
+
+          hanakoRecommendationRecords.push(record);
+        }
+      }
+
+      if (hanakoRecommendationRecords.length > 0) {
+        // 既存レコードをチェックして、存在する場合は更新、存在しない場合は追加
+        for (const rec of hanakoRecommendationRecords) {
+          const existingRecs = await recommendationClient.record.getRecords({
+            app: appIds.recommendation,
+            query: `${RECOMMENDATION_FIELDS.TALENT_ID} = "${hanakoAuthUserId}" and ${RECOMMENDATION_FIELDS.JOB_ID} = "${rec[RECOMMENDATION_FIELDS.JOB_ID].value}"`,
+          });
+
+          if (existingRecs.records.length > 0) {
+            // 更新
+            const existingId = (existingRecs.records[0] as any).$id.value;
+            await recommendationClient.record.updateRecord({
+              app: appIds.recommendation,
+              id: existingId,
+              record: rec,
+            });
+            console.log(`✅ 田中花子用推薦レコードを更新: 案件ID=${rec[RECOMMENDATION_FIELDS.JOB_ID].value}, スコア=${rec[RECOMMENDATION_FIELDS.SCORE].value}`);
+          } else {
+            // 追加
+            await recommendationClient.record.addRecord({
+              app: appIds.recommendation,
+              record: rec,
+            });
+            console.log(`✅ 田中花子用推薦レコードを追加: 案件ID=${rec[RECOMMENDATION_FIELDS.JOB_ID].value}, スコア=${rec[RECOMMENDATION_FIELDS.SCORE].value}`);
+          }
+        }
+        console.log(`\n📋 バッジ表示の確認方法:`);
+        console.log(`  ※ seed_hanako@example.com でログインすると案件一覧に以下が表示されます:`);
+        console.log(`  - jobIndex 0: 担当者おすすめ + AIマッチ + New（3つ全部）`);
+        console.log(`  - jobIndex 1: 担当者おすすめのみ`);
+        console.log(`  - jobIndex 2: AIマッチ + New`);
+        console.log(`  - jobIndex 3: 登録情報マッチのみ`);
+        console.log(`  - jobIndex 4: 登録情報マッチのみ`);
       }
     }
 
@@ -1835,10 +1955,13 @@ export const createSeedData = async () => {
       console.log("    - 募集終了: データ基盤構築・運用案件");
     }
     
-    console.log("\n📋 おすすめ案件カルーセルの確認方法:");
+    console.log("\n📋 案件一覧のバッジ表示確認方法:");
     console.log("  - seed_hanako@example.com でログイン");
-    console.log("  - 応募済み案件が0件の場合、おすすめ案件がカルーセルで表示されます");
-    console.log("  - 優先順位: 担当者おすすめ > AIマッチ > New > その他");
+    console.log("  - 案件一覧で以下のバッジが表示されます:");
+    console.log("    - 担当者おすすめ（オレンジ）");
+    console.log("    - AIマッチ（青）");
+    console.log("    - NEW（赤）");
+    console.log("  - 表示順: 担当者おすすめ > AIマッチ > 登録情報マッチ > 新着順");
     
     console.log("\n");
 

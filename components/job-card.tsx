@@ -145,7 +145,7 @@ export function JobCard({ job, onViewDetail, showApplicationStatus = false, isEn
           </div>
         )}
 
-        {/* 新着バッジ（リボン風・左上）- 応募ステータス表示時は非表示 */}
+        {/* 新着バッジ（リボン風・左上）- 応募ステータス表示時は非表示、最左に配置 */}
         {job.isNew && !showApplicationStatus && (
           <div className="absolute top-0 left-2">
             <svg width="58" height="40" style={{ display: "block" }}>
@@ -168,11 +168,44 @@ export function JobCard({ job, onViewDetail, showApplicationStatus = false, isEn
           </div>
         )}
 
-        {/* AIマッチバッジ（リボン風・左上、NEWバッジの右側）- 適合スコアが発行されている場合に表示 */}
-        {job.recommendationScore != null && job.recommendationScore > 0 && !showApplicationStatus && (
+        {/* 担当者おすすめバッジ（リボン風・左上）- 応募ステータス表示時は非表示、Newの右側に配置 */}
+        {job.staffRecommend && !showApplicationStatus && (
           <div 
             className="absolute top-0"
-            style={{ left: job.isNew ? "74px" : "8px" }}
+            style={{ left: job.isNew ? "74px" : "8px" }} // New(58) + 間隔(8) + 左マージン(8)
+          >
+            <svg width="110" height="40" style={{ display: "block" }}>
+              <path
+                d="M 0 0 L 110 0 L 110 32 Q 55 23, 0 32 Z"
+                fill="#f59e0b"
+              />
+              <text
+                x="55"
+                y="18"
+                textAnchor="middle"
+                fill="#ffffff"
+                fontSize="11"
+                fontWeight="700"
+                style={{ fontFamily: "Noto Sans JP" }}
+              >
+                担当者おすすめ
+              </text>
+            </svg>
+          </div>
+        )}
+
+        {/* AIマッチバッジ（リボン風・左上）- 応募ステータス表示時は非表示、担当者おすすめの右側に配置 */}
+        {job.aiMatched && !showApplicationStatus && (
+          <div 
+            className="absolute top-0"
+            style={{ 
+              left: (() => {
+                if (job.isNew && job.staffRecommend) return "196px"; // New(58) + 間隔(8) + 担当者おすすめ(110) + 間隔(8) + 左マージン(8)
+                if (job.isNew) return "74px"; // New(58) + 間隔(8) + 左マージン(8)
+                if (job.staffRecommend) return "126px"; // 担当者おすすめ(110) + 間隔(8) + 左マージン(8)
+                return "8px"; // 左マージンのみ
+              })()
+            }}
           >
             <svg width="72" height="40" style={{ display: "block" }}>
               <path
@@ -194,23 +227,41 @@ export function JobCard({ job, onViewDetail, showApplicationStatus = false, isEn
           </div>
         )}
 
-        {/* 案件特徴バッジ（右上に配置） */}
+        {/* 案件特徴バッジ（右上に配置、左側バッジの下に配置、横並び） */}
         <div 
-          className="flex flex-wrap gap-2 justify-end mb-3 pt-1"
+          className="flex flex-nowrap gap-2 justify-end mb-3"
           style={{ 
+            paddingTop: (() => {
+              // 左側のバッジ（応募ステータス、New、担当者おすすめ、AIマッチ）がない場合は上部の空白を削除
+              if (statusStyle) return "48px"; // 応募ステータスがある場合
+              if (job.isNew || job.staffRecommend || job.aiMatched) return "48px"; // 左側バッジがある場合
+              return "0"; // バッジがない場合は空白なし
+            })(),
             paddingLeft: (() => {
               if (statusStyle) return "88px";
-              const hasRecommendationScore = job.recommendationScore != null && job.recommendationScore > 0;
-              if (job.isNew && hasRecommendationScore) return "154px"; // NEW(58) + 間隔(8) + AIマッチ(72) + 余白(16)
-              if (job.isNew || hasRecommendationScore) return "88px"; // バッジ幅(72) + 余白(16)
+              
+              // バッジの組み合わせに応じて左パディングを調整
+              // 順序: New → 担当者おすすめ → AIマッチ
+              const hasNew = job.isNew;
+              const hasStaffRecommend = job.staffRecommend;
+              const hasAiMatched = job.aiMatched;
+              
+              if (hasNew && hasStaffRecommend && hasAiMatched) return "276px"; // New(58) + 間隔(8) + 担当者(110) + 間隔(8) + AI(72) + 間隔(8) + 左マージン(8)
+              if (hasNew && hasStaffRecommend) return "196px"; // New(58) + 間隔(8) + 担当者(110) + 間隔(8) + 左マージン(8)
+              if (hasNew && hasAiMatched) return "154px"; // New(58) + 間隔(8) + AI(72) + 間隔(8) + 左マージン(8)
+              if (hasStaffRecommend && hasAiMatched) return "206px"; // 担当者(110) + 間隔(8) + AI(72) + 間隔(8) + 左マージン(8)
+              if (hasNew) return "74px"; // New(58) + 間隔(8) + 左マージン(8)
+              if (hasStaffRecommend) return "126px"; // 担当者(110) + 間隔(8) + 左マージン(8)
+              if (hasAiMatched) return "88px"; // AI(72) + 間隔(8) + 左マージン(8)
               return "0";
-            })()
+            })(),
+            minWidth: 0, // flexアイテムが縮小できるようにする
           }}
         >
           {features.map((feature, index) => (
             <span
               key={feature}
-              className="px-3 py-1 text-xs font-semibold rounded"
+              className="px-3 py-1 text-xs font-semibold rounded flex-shrink-0 whitespace-nowrap"
               style={{
                 border: index === 0 ? "1px solid #e9277a" : "1px solid #686868",
                 backgroundColor: index === 0 ? "#fde3ef" : "#ffffff",
