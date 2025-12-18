@@ -38,7 +38,10 @@ export function Header({ user }: HeaderProps) {
         className="bg-white"
         style={{ borderBottom: "1px solid var(--pw-border-lighter)" }}
       >
-        <div className="container mx-auto px-6 py-4 flex items-center justify-between">
+        <div 
+          className="mx-auto px-6 py-4 flex items-center justify-between"
+          style={{ maxWidth: "1400px" }}
+        >
           <Link
             href={user ? "/" : "/landing"}
             className="font-bold flex-shrink-0"
@@ -65,7 +68,10 @@ export function Header({ user }: HeaderProps) {
         fontSize: "var(--pw-text-md)"
       }}
     >
-      <div className="container mx-auto px-6 py-3 flex items-center">
+      <div 
+        className="mx-auto px-6 py-3 flex items-center justify-between"
+        style={{ maxWidth: "1400px" }}
+      >
         {/* 左側: ロゴ */}
         <Link
           href={user ? "/" : "/landing"}
@@ -215,11 +221,8 @@ export function Header({ user }: HeaderProps) {
               </DropdownMenu>
             </nav>
 
-            {/* 右側のスペーサー */}
-            <div className="flex-1" />
-
             {/* デスクトップ右側アイコン - 大画面 */}
-            <div className="hidden lg:flex items-center gap-4">
+            <div className="hidden lg:flex items-center gap-4 ml-auto">
               <button
                 className="p-2 transition-colors hover:opacity-70"
                 style={{ color: "var(--pw-text-navy)" }}
