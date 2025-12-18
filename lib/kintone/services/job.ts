@@ -15,10 +15,10 @@ const isWithinOneWeek = (createdAt: string): boolean => {
 };
 
 // 環境に応じて作成日時フィールドを取得する関数
+// 作成日時_開発環境フィールドが存在する場合は常にそれを使用（AWS開発環境でも対応）
 const getCreatedAt = (record: JobRecord): string => {
-  const isDevelopment = process.env.NODE_ENV === 'development';
-  
-  if (isDevelopment && record.作成日時_開発環境?.value) {
+  // 作成日時_開発環境フィールドが存在する場合は優先的に使用
+  if (record.作成日時_開発環境?.value) {
     return record.作成日時_開発環境.value;
   }
   
