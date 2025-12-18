@@ -3,13 +3,16 @@ import type { ApplicationRecord, Application } from "../types";
 import { APPLICATION_FIELDS } from "../fieldMapping";
 
 // 環境に応じて作成日時フィールドを取得する関数
-// 作成日時_開発環境フィールドが存在する場合は常にそれを使用（AWS開発環境でも対応）
+// kintone APP_IDで判定：開発DB（84）では作成日時_開発環境、本番DB（8）では作成日時を使用
 const getCreatedAt = (record: ApplicationRecord): string => {
-  // 作成日時_開発環境フィールドが存在する場合は優先的に使用
-  if (record.作成日時_開発環境?.value) {
+  const applicationAppId = process.env.KINTONE_APPLICATION_APP_ID;
+  
+  // 開発環境のkintone DB（APP_ID: 84）の場合は作成日時_開発環境を使用
+  if (applicationAppId === '84' && record.作成日時_開発環境?.value) {
     return record.作成日時_開発環境.value;
   }
   
+  // 本番環境のkintone DB（APP_ID: 8）または作成日時_開発環境が存在しない場合は作成日時を使用
   return record[APPLICATION_FIELDS.CREATED_AT].value || '';
 };
 

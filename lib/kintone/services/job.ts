@@ -15,13 +15,16 @@ const isWithinOneWeek = (createdAt: string): boolean => {
 };
 
 // 環境に応じて作成日時フィールドを取得する関数
-// 作成日時_開発環境フィールドが存在する場合は常にそれを使用（AWS開発環境でも対応）
+// kintone APP_IDで判定：開発DB（85）では作成日時_開発環境、本番DB（73）では作成日時を使用
 const getCreatedAt = (record: JobRecord): string => {
-  // 作成日時_開発環境フィールドが存在する場合は優先的に使用
-  if (record.作成日時_開発環境?.value) {
+  const jobAppId = process.env.KINTONE_JOB_APP_ID;
+  
+  // 開発環境のkintone DB（APP_ID: 85）の場合は作成日時_開発環境を使用
+  if (jobAppId === '85' && record.作成日時_開発環境?.value) {
     return record.作成日時_開発環境.value;
   }
   
+  // 本番環境のkintone DB（APP_ID: 73）または作成日時_開発環境が存在しない場合は作成日時を使用
   return record.作成日時?.value || '';
 };
 
