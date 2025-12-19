@@ -25,7 +25,7 @@ const STATUS_FILTERS: { id: StatusFilter; kintoneValues: string[]; label: string
   { id: "all", kintoneValues: ["all"], label: "すべて" },
   { id: "案件参画", kintoneValues: ["案件参画"], label: "案件決定" },
   { id: "面談調整中", kintoneValues: ["面談調整中"], label: "面談調整中" },
-  { id: "面談予定", kintoneValues: ["予定決定", "面談予定"], label: "面談予定" }, // 予定決定と面談予定の両方に対応
+  { id: "面談予定", kintoneValues: ["予定決定", "面談予定"], label: "面談確定" }, // 予定決定と面談予定の両方に対応
   { id: "応募済み", kintoneValues: ["応募済み"], label: "応募済み" },
   { id: "見送り", kintoneValues: ["見送り"], label: "募集終了" },
 ]
@@ -85,6 +85,29 @@ export const ApplicationsClient = ({ user }: ApplicationsClientProps) => {
     fetchRecommendedJobs()
   }, [applications.length, loading])
 
+  // ステータスの優先順位を定義（並び順に合わせる）
+  const getStatusPriority = (status: string, recruitmentStatus?: string): number => {
+    // 募集終了（最優先で最後に配置）
+    if (status === "見送り" || recruitmentStatus === "クローズ") {
+      return 5
+    }
+    
+    // ステータスに基づく優先順位
+    switch (status) {
+      case "案件参画":
+        return 1 // 案件決定
+      case "予定決定":
+      case "面談予定":
+        return 2 // 面談確定
+      case "面談調整中":
+        return 3
+      case "応募済み":
+        return 4
+      default:
+        return 6 // その他は最後
+    }
+  }
+
   // フィルタリングとソートされた応募一覧
   const filteredApplications = useMemo(() => {
     let filtered = applications
@@ -100,30 +123,23 @@ export const ApplicationsClient = ({ user }: ApplicationsClientProps) => {
       }
     }
     
-    // 応募終了（見送りまたは案件の募集ステータスがクローズ）の案件を分離
-    const endedApplications = filtered.filter((app) => 
-      app.status === "見送り" || app.job?.recruitmentStatus === "クローズ"
-    )
-    const activeApplications = filtered.filter((app) => 
-      app.status !== "見送り" && app.job?.recruitmentStatus !== "クローズ"
-    )
-    
-    // 通常の案件を応募した順（新しい順）でソート
-    const sortedActive = [...activeApplications].sort((a, b) => {
+    // ステータスの優先順位でソート、同じ優先順位の場合は応募日時（新しい順）でソート
+    const sorted = [...filtered].sort((a, b) => {
+      const priorityA = getStatusPriority(a.status, a.job?.recruitmentStatus)
+      const priorityB = getStatusPriority(b.status, b.job?.recruitmentStatus)
+      
+      // 優先順位が異なる場合は優先順位でソート
+      if (priorityA !== priorityB) {
+        return priorityA - priorityB
+      }
+      
+      // 同じ優先順位の場合は応募日時（新しい順）でソート
       const dateA = new Date(a.appliedAt || 0).getTime()
       const dateB = new Date(b.appliedAt || 0).getTime()
       return dateB - dateA // 降順（新しい順）
     })
     
-    // 応募終了の案件も新しい順でソート（ただし最後に配置）
-    const sortedEnded = [...endedApplications].sort((a, b) => {
-      const dateA = new Date(a.appliedAt || 0).getTime()
-      const dateB = new Date(b.appliedAt || 0).getTime()
-      return dateB - dateA // 降順（新しい順）
-    })
-    
-    // 通常の案件の後に応募終了の案件を配置
-    return [...sortedActive, ...sortedEnded]
+    return sorted
   }, [applications, activeFilter])
 
   // 応募詳細を見る

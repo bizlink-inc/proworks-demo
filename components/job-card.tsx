@@ -85,7 +85,7 @@ const getStatusStyle = (status?: string | null, isEnded?: boolean, recruitmentSt
         borderColor: undefined, // 枠線なし
         textColor: "#ffffff"
       }
-    case "面談予定":
+    case "面談確定":
       return {
         label: displayLabel,
         bgColor: "#2196f3",

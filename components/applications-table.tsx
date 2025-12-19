@@ -18,7 +18,7 @@ const getStatusColor = (kintoneStatus: string): string => {
   switch (displayStatus) {
     case "案件決定":
       return "#d22852" // 赤
-    case "面談予定":
+    case "面談確定":
     case "面談調整中":
       return "#fa8212" // オレンジ
     case "応募済み":
