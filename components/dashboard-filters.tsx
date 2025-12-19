@@ -189,12 +189,6 @@ export const DashboardFilters = ({ onSearch, currentSort = "recommend" }: Dashbo
           </div>
         </div>
 
-        {/* 縦線（区切り） */}
-        <div 
-          className="hidden lg:block w-px self-stretch"
-          style={{ backgroundColor: "#9ab6ca" }}
-        />
-
         {/* 中央セクション: 勤務地エリア + 最寄り駅 */}
         <div className="space-y-3">
           {/* 勤務地エリア */}
@@ -241,10 +235,10 @@ export const DashboardFilters = ({ onSearch, currentSort = "recommend" }: Dashbo
           </div>
         </div>
 
-        {/* 縦線（区切り） */}
+        {/* 縦線（区切り） - 勤務地エリアと職種ポジションの間、横線と接続するため下にマージン */}
         <div 
           className="hidden lg:block w-px self-stretch"
-          style={{ backgroundColor: "#9ab6ca" }}
+          style={{ backgroundColor: "#9ab6ca", marginBottom: "-16px" }}
         />
 
         {/* 右セクション: 職種/ポジション */}
@@ -280,6 +274,12 @@ export const DashboardFilters = ({ onSearch, currentSort = "recommend" }: Dashbo
           </div>
         </div>
       </div>
+
+      {/* 横線（区切り）- 縦線と接続 */}
+      <div 
+        className="hidden lg:block h-px mt-4"
+        style={{ backgroundColor: "#9ab6ca" }}
+      />
 
       {/* 詳細条件トグル + ボタン */}
       <div className="flex items-center justify-between mt-4">
