@@ -171,17 +171,15 @@ export const DashboardClient = ({ user }: DashboardClientProps) => {
   }
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: "#d5e5f0" }}>
+    <div className="min-h-screen" style={{ backgroundColor: "#ffffff" }}>
       <Header user={user} />
 
       {/* 検索ボックス - ヘッダーの直下に配置（FullWidthLayoutの外） */}
-      <div className="w-full">
-        <div 
-          className="mx-auto px-6"
-          style={{ maxWidth: "1400px" }}
-        >
-          <DashboardFilters onSearch={handleSearch} currentSort={filters.sort} />
-        </div>
+      <div 
+        className="mx-auto px-6"
+        style={{ maxWidth: "1400px", backgroundColor: "#d5e5f0" }}
+      >
+        <DashboardFilters onSearch={handleSearch} currentSort={filters.sort} />
       </div>
 
       <FullWidthLayout>

@@ -213,16 +213,16 @@ export const ApplicationsClient = ({ user }: ApplicationsClientProps) => {
         <Header user={user} />
 
         {/* 水色背景エリア（ヘッダー下から検索ボックスのボタンまで） */}
-        <div className="w-full" style={{ backgroundColor: "#d5e5f0" }}>
+        <div 
+          className="mx-auto"
+          style={{ maxWidth: "1400px", backgroundColor: "#d5e5f0" }}
+        >
           {/* メッセージエリア（水色背景と同じ） */}
           <div 
-            className="w-full py-10"
+            className="w-full py-10 px-6"
             style={{ backgroundColor: "#d5e5f0" }}
           >
-            <div 
-              className="mx-auto px-6 text-center"
-              style={{ maxWidth: "1400px" }}
-            >
+            <div className="text-center">
               {/* チェックボックスアイコン（大きく、薄い水色） */}
               <div className="mb-4">
                 <FontAwesomeIcon 
@@ -257,53 +257,52 @@ export const ApplicationsClient = ({ user }: ApplicationsClientProps) => {
 
           {/* メッセージエリアと検索ボックスの間の線 */}
           <div 
-            className="w-full h-px"
+            className="h-px"
             style={{ backgroundColor: "#9ab6ca" }}
           />
 
           {/* 検索ボックス - 案件一覧と同じスタイル */}
-          <div className="w-full">
-            <div 
-              className="mx-auto px-6"
-              style={{ maxWidth: "1400px" }}
-            >
-              <DashboardFilters onSearch={handleSearch} currentSort="recommend" />
-            </div>
+          <div className="px-6">
+            <DashboardFilters onSearch={handleSearch} currentSort="recommend" />
           </div>
         </div>
 
         {/* AIおすすめ案件セクション（案件一覧と同じ薄水色背景） */}
         <div 
-          className="mx-auto px-6 pb-12 pt-12"
+          className="min-h-screen mx-auto"
           style={{ 
-            maxWidth: "1400px",
-            backgroundColor: "var(--pw-bg-body)"
+            backgroundColor: "var(--pw-bg-body)",
+            maxWidth: "1400px"
           }}
         >
-          <h2
-            className="text-center mb-8"
-            style={{
-              fontSize: "20px",
-              color: "var(--pw-text-navy)",
-              fontWeight: 700,
-            }}
+          <div 
+            className="px-6 pb-12 pt-12"
           >
-            AIがあなたにおすすめする案件
-          </h2>
+            <h2
+              className="text-center mb-8"
+              style={{
+                fontSize: "20px",
+                color: "var(--pw-text-navy)",
+                fontWeight: 700,
+              }}
+            >
+              AIがあなたにおすすめする案件
+            </h2>
 
-          {aiMatchedJobsLoading ? (
-            <div className="text-center py-12">
-              <p style={{ color: "var(--pw-text-gray)" }}>おすすめ案件を読み込み中...</p>
-            </div>
-          ) : aiMatchedJobs.length > 0 ? (
-            <AiRecommendedJobsCarousel jobs={aiMatchedJobs} onViewDetail={handleViewDetail} />
-          ) : (
-            <div className="text-center py-8">
-              <p style={{ color: "var(--pw-text-gray)" }}>
-                現在、AIおすすめ案件はありません
-              </p>
-            </div>
-          )}
+            {aiMatchedJobsLoading ? (
+              <div className="text-center py-12">
+                <p style={{ color: "var(--pw-text-gray)" }}>おすすめ案件を読み込み中...</p>
+              </div>
+            ) : aiMatchedJobs.length > 0 ? (
+              <AiRecommendedJobsCarousel jobs={aiMatchedJobs} onViewDetail={handleViewDetail} />
+            ) : (
+              <div className="text-center py-8">
+                <p style={{ color: "var(--pw-text-gray)" }}>
+                  現在、AIおすすめ案件はありません
+                </p>
+              </div>
+            )}
+          </div>
         </div>
 
         <JobDetailModal
