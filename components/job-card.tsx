@@ -33,7 +33,7 @@ const getStatusStyle = (status?: string | null, isEnded?: boolean, recruitmentSt
     return {
       label: "募集終了",
       bgColor: "#9ca3af",
-      borderColor: "#9ca3af",
+      borderColor: undefined, // 枠線なし
       textColor: "#ffffff"
     }
   }
@@ -43,7 +43,7 @@ const getStatusStyle = (status?: string | null, isEnded?: boolean, recruitmentSt
     return {
       label: "募集終了",
       bgColor: "#9ca3af",
-      borderColor: "#9ca3af",
+      borderColor: undefined, // 枠線なし
       textColor: "#ffffff"
     }
   }
@@ -55,6 +55,7 @@ const getStatusStyle = (status?: string | null, isEnded?: boolean, recruitmentSt
   if (!displayLabel) return null
 
   // 表示ラベルに基づいて色を決定
+  // 枠線は「案件決定」の場合のみ表示
   switch (displayLabel) {
     case "案件決定":
       return {
@@ -67,28 +68,28 @@ const getStatusStyle = (status?: string | null, isEnded?: boolean, recruitmentSt
       return {
         label: displayLabel,
         bgColor: "#fa8212",
-        borderColor: "#fa8212",
+        borderColor: undefined, // 枠線なし
         textColor: "#ffffff"
       }
     case "面談予定":
       return {
         label: displayLabel,
         bgColor: "#2196f3",
-        borderColor: "#2196f3",
+        borderColor: undefined, // 枠線なし
         textColor: "#ffffff"
       }
     case "応募済み":
       return {
         label: displayLabel,
         bgColor: "#3f9c78",
-        borderColor: "#3f9c78",
+        borderColor: undefined, // 枠線なし
         textColor: "#ffffff"
       }
     case "募集終了":
       return {
         label: displayLabel,
         bgColor: "#9ca3af",
-        borderColor: "#9ca3af",
+        borderColor: undefined, // 枠線なし
         textColor: "#ffffff"
       }
     default:
@@ -154,7 +155,7 @@ export function JobCard({ job, onViewDetail, showApplicationStatus = false, isEn
     <div
       className="bg-white rounded-[4px] transition-shadow hover:shadow-md relative flex flex-col h-full"
       style={{
-        border: statusStyle ? `2px solid ${statusStyle.borderColor}` : "1px solid #d5e5f0",
+        border: statusStyle?.borderColor ? `2px solid ${statusStyle.borderColor}` : "1px solid #d5e5f0",
         boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
         overflow: "visible" // リボンが外に出るように
       }}
