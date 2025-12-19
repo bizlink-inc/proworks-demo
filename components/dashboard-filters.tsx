@@ -120,13 +120,7 @@ export const DashboardFilters = ({ onSearch, currentSort = "recommend" }: Dashbo
   // Hydration errorを避けるため、クライアントサイドでマウントされるまで簡易版を表示
   if (!isMounted) {
     return (
-      <div 
-        className="p-6 rounded-lg mb-6"
-        style={{ 
-          backgroundColor: "#d5e5f0",
-          border: "1px solid #9ab6ca"
-        }}
-      >
+      <div className="py-6">
         <div className="flex gap-4">
           <div className="flex-1 h-9 border rounded-md bg-white" />
           <div className="h-9 w-32 border rounded-md bg-white" />
@@ -136,13 +130,7 @@ export const DashboardFilters = ({ onSearch, currentSort = "recommend" }: Dashbo
   }
 
   return (
-    <div 
-      className="p-6 rounded-lg mb-6"
-      style={{ 
-        backgroundColor: "#d5e5f0",
-        border: "1px solid #9ab6ca"
-      }}
-    >
+    <div className="py-6">
       {/* メインフィルター */}
       <div className="flex flex-col lg:flex-row gap-6">
         {/* 左セクション: フリーワード + リモート可否 */}

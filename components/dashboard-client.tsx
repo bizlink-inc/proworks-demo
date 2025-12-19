@@ -171,11 +171,20 @@ export const DashboardClient = ({ user }: DashboardClientProps) => {
   }
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen" style={{ backgroundColor: "#d5e5f0" }}>
       <Header user={user} />
 
+      {/* 検索ボックス - ヘッダーの直下に配置（FullWidthLayoutの外） */}
+      <div className="w-full">
+        <div 
+          className="mx-auto px-6"
+          style={{ maxWidth: "1400px" }}
+        >
+          <DashboardFilters onSearch={handleSearch} currentSort={filters.sort} />
+        </div>
+      </div>
+
       <FullWidthLayout>
-        <DashboardFilters onSearch={handleSearch} currentSort={filters.sort} />
 
         {/* ページネーション・表示順 - 同じ行に配置（下に寄せる） */}
         <div className="flex items-center justify-between mb-2 mt-8">

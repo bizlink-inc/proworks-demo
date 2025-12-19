@@ -36,7 +36,6 @@ export function Header({ user }: HeaderProps) {
     return (
       <header
         className="bg-white"
-        style={{ borderBottom: "1px solid var(--pw-border-lighter)" }}
       >
         <div 
           className="mx-auto px-6 py-4 flex items-center justify-between"
@@ -64,12 +63,11 @@ export function Header({ user }: HeaderProps) {
     <header
       className="bg-white"
       style={{
-        borderBottom: "1px solid var(--pw-border-lighter)",
         fontSize: "var(--pw-text-md)"
       }}
     >
       <div 
-        className="mx-auto px-6 py-3 flex items-center justify-between"
+        className="mx-auto px-6 pt-3 flex items-center justify-between"
         style={{ maxWidth: "1400px" }}
       >
         {/* 左側: ロゴ */}
