@@ -14,11 +14,14 @@ export const GET = async () => {
     // kintoneから応募履歴を取得（auth_user_idで検索）
     const applications = await getApplicationsByAuthUserId(session.user.id);
 
+    // 応募取消しのレコードを除外
+    const activeApplications = applications.filter((app) => app.status !== "応募取消し");
+
     // 3ヶ月以上前の応募履歴を除外
     const threeMonthsAgo = new Date();
     threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
     
-    const recentApplications = applications.filter((app) => {
+    const recentApplications = activeApplications.filter((app) => {
       if (!app.appliedAt) return false;
       const appliedDate = new Date(app.appliedAt);
       return appliedDate >= threeMonthsAgo;

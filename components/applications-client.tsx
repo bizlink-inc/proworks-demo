@@ -136,6 +136,42 @@ export const ApplicationsClient = ({ user }: ApplicationsClientProps) => {
     // 何もしない（既に応募済みのため）
   }
 
+  // 応募を取り消す
+  const handleCancelApplication = async (applicationId: string) => {
+    try {
+      const res = await fetch(`/api/applications/${applicationId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ status: "応募取消し" }),
+      })
+
+      if (!res.ok) {
+        const error = await res.json()
+        throw new Error(error.error || "応募の取り消しに失敗しました")
+      }
+
+      // 応募一覧を再取得
+      const fetchApplications = async () => {
+        try {
+          const res = await fetch("/api/applications/me")
+          if (res.ok) {
+            const data = await res.json()
+            setApplications(data)
+          }
+        } catch (error) {
+          console.error("Failed to fetch applications:", error)
+        }
+      }
+
+      await fetchApplications()
+    } catch (error) {
+      console.error("応募取り消しエラー:", error)
+      throw error
+    }
+  }
+
   return (
     <div className="min-h-screen" style={{ backgroundColor: "var(--pw-bg-light)" }}>
       <Header user={user} />
@@ -309,6 +345,8 @@ export const ApplicationsClient = ({ user }: ApplicationsClientProps) => {
                   onViewDetail={isEnded ? () => {} : handleViewDetail}
                   showApplicationStatus={true}
                   isEnded={isEnded}
+                  onCancelApplication={handleCancelApplication}
+                  applicationId={app.id}
                 />
               )
             })}

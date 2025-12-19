@@ -1,6 +1,18 @@
 "use client"
 
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 import type { Job } from "@/lib/kintone/types"
 import { mapApplicationStatusToDisplay } from "@/lib/utils"
 
@@ -10,6 +22,8 @@ type JobCardProps = {
   showApplicationStatus?: boolean // 応募ステータスの枠線を表示するかどうか（デフォルト: false）
   isEnded?: boolean // 応募終了かどうか（デフォルト: false）
   hideDetailButton?: boolean // 詳細を見るボタンを非表示にするかどうか（デフォルト: false）
+  onCancelApplication?: (applicationId: string) => Promise<void> // 応募取り消しのコールバック
+  applicationId?: string // 応募履歴のID
 }
 
 // 仕様書: 案件カード > フォント・カラー
@@ -136,7 +150,9 @@ const getDisplayableSkills = (skills: string[], maxWidth: number = 400): string[
   return skills.slice(0, 1)
 }
 
-export function JobCard({ job, onViewDetail, showApplicationStatus = false, isEnded = false, hideDetailButton = false }: JobCardProps) {
+export function JobCard({ job, onViewDetail, showApplicationStatus = false, isEnded = false, hideDetailButton = false, onCancelApplication, applicationId }: JobCardProps) {
+  const [isCancelling, setIsCancelling] = useState(false)
+  
   const rateValue = formatRateValue(job.rate)
   const features = getDisplayableFeatures(job.features ?? [])
   const positions = (job.position ?? []).slice(0, 3) // 最大3個まで
@@ -150,6 +166,27 @@ export function JobCard({ job, onViewDetail, showApplicationStatus = false, isEn
   
   // 応募ステータスの枠線表示を制御（showApplicationStatusがfalseの場合は非表示）
   const statusStyle = showApplicationStatus ? getStatusStyle(job.applicationStatus, isEnded, job.recruitmentStatus) : null
+
+  // 応募取り消しボタンの表示と活性状態を判定
+  // 応募済み（応募中）のみ活性、それ以外（案件決定、面談調整中、応募終了など）は非活性
+  // 応募終了時もボタンは表示されるが非活性
+  const shouldShowCancelButton = showApplicationStatus && onCancelApplication && applicationId
+  const canCancelApplication = shouldShowCancelButton && job.applicationStatus === "応募済み" && !isEnded
+
+  // 応募取り消しの処理
+  const handleCancelApplication = async () => {
+    if (!onCancelApplication || !applicationId) return
+
+    try {
+      setIsCancelling(true)
+      await onCancelApplication(applicationId)
+    } catch (error) {
+      console.error("応募取り消しに失敗:", error)
+      alert("応募の取り消しに失敗しました。もう一度お試しください。")
+    } finally {
+      setIsCancelling(false)
+    }
+  }
 
   return (
     <div
@@ -462,27 +499,107 @@ export function JobCard({ job, onViewDetail, showApplicationStatus = false, isEn
       {/* スペーサー：詳細を見るボタンを最下部に固定 */}
       <div className="flex-1" />
 
-      {/* 詳細を見るボタン */}
+      {/* 詳細を見るボタンと応募を取り消すボタン（横並び） */}
       {!hideDetailButton && (
-        <div className="px-4 pb-4 pt-3 flex justify-center mt-auto">
+        <div className="px-4 pb-4 pt-3 flex items-center justify-center gap-2 mt-auto">
+          {/* 詳細を見るボタン */}
           <Button
             variant={isEnded ? "pw-outline" : "pw-primary"}
-            className="w-full max-w-[180px]"
+            className="flex-1 max-w-[140px]"
             onClick={() => !isEnded && onViewDetail(job.id)}
             disabled={isEnded}
             style={{ 
-              fontSize: "14px", 
+              fontSize: "12px", 
               borderRadius: "4px",
               ...(isEnded ? {
-                backgroundColor: "#9ca3af",
-                borderColor: "#9ca3af",
-                color: "#ffffff",
+                backgroundColor: "#e5e5e5",
+                borderColor: "#e5e5e5",
+                color: "#686868",
                 cursor: "not-allowed",
               } : {})
             }}
           >
             詳細を見る
           </Button>
+
+          {/* 応募を取り消すボタン */}
+          {shouldShowCancelButton && (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  variant="outline"
+                  className="flex-1 max-w-[140px]"
+                  disabled={isCancelling || !canCancelApplication}
+                  style={{
+                    fontSize: "12px",
+                    borderRadius: "4px",
+                    ...(canCancelApplication ? {
+                      borderColor: "#686868",
+                      color: "#ffffff",
+                      backgroundColor: "#686868",
+                    } : {
+                      backgroundColor: "#e5e5e5",
+                      borderColor: "#e5e5e5",
+                      color: "#686868",
+                      cursor: "not-allowed",
+                    }),
+                  }}
+                >
+                  {isCancelling ? "処理中..." : "× 応募を取り消す"}
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent
+                style={{
+                  backgroundColor: "var(--pw-bg-white)",
+                  border: "1px solid var(--pw-border-lighter)",
+                }}
+              >
+                <AlertDialogHeader>
+                  <AlertDialogTitle
+                    style={{
+                      fontSize: "var(--pw-text-lg)",
+                      color: "var(--pw-text-primary)",
+                      fontWeight: 600,
+                    }}
+                  >
+                    応募を取消します。よろしいですか？
+                  </AlertDialogTitle>
+                </AlertDialogHeader>
+                <AlertDialogFooter
+                  style={{
+                    display: "flex",
+                    flexDirection: "row",
+                    justifyContent: "flex-end",
+                    gap: "8px",
+                  }}
+                >
+                  <AlertDialogCancel
+                    style={{
+                      fontSize: "14px",
+                      borderRadius: "4px",
+                      borderColor: "var(--pw-border-gray)",
+                      color: "var(--pw-text-gray)",
+                      backgroundColor: "var(--pw-bg-white)",
+                    }}
+                  >
+                    キャンセル
+                  </AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={handleCancelApplication}
+                    disabled={isCancelling}
+                    style={{
+                      fontSize: "14px",
+                      borderRadius: "4px",
+                      backgroundColor: "var(--pw-button-primary)",
+                      color: "#ffffff",
+                    }}
+                  >
+                    {isCancelling ? "処理中..." : "応募を取り消す"}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
         </div>
       )}
     </div>

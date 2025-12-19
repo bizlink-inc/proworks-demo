@@ -96,3 +96,27 @@ export const checkDuplicateApplication = async (
   }
 };
 
+// 応募ステータスを更新
+export const updateApplicationStatus = async (
+  applicationId: string,
+  status: string
+): Promise<void> => {
+  const client = createApplicationClient();
+  const appId = getAppIds().application;
+
+  try {
+    await client.record.updateRecord({
+      app: appId,
+      id: applicationId,
+      record: {
+        [APPLICATION_FIELDS.STATUS]: { value: status },
+      },
+    });
+
+    console.log(`✅ 応募ステータス更新成功: レコードID=${applicationId}, 対応状況=${status}`);
+  } catch (error) {
+    console.error("応募ステータスの更新に失敗:", error);
+    throw error;
+  }
+};
+
