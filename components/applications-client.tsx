@@ -3,12 +3,15 @@
 import { useState, useEffect, useMemo } from "react"
 import { Header } from "@/components/header"
 import { FullWidthLayout } from "@/components/layouts"
+import { DashboardFilters, type JobFilters } from "@/components/dashboard-filters"
 import { JobCard } from "@/components/job-card"
 import { JobDetailModal } from "@/components/job-detail-modal"
-import { JobCarousel } from "@/components/job-carousel"
+import { AiRecommendedJobsCarousel } from "@/components/ai-recommended-jobs-carousel"
 import { useApplicationStatusMonitor } from "@/hooks/use-application-status-monitor"
 import type { Job } from "@/lib/kintone/types"
 import { mapApplicationStatusToDisplay } from "@/lib/utils"
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
+import { faSquareCheck } from "@fortawesome/free-regular-svg-icons"
 
 interface ApplicationsClientProps {
   user: {
@@ -38,8 +41,8 @@ export const ApplicationsClient = ({ user }: ApplicationsClientProps) => {
 
   const [applications, setApplications] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
-  const [recommendedJobs, setRecommendedJobs] = useState<Job[]>([])
-  const [recommendedJobsLoading, setRecommendedJobsLoading] = useState(false)
+  const [aiMatchedJobs, setAiMatchedJobs] = useState<Job[]>([])
+  const [aiMatchedJobsLoading, setAiMatchedJobsLoading] = useState(false)
   const [selectedJobId, setSelectedJobId] = useState<string | null>(null)
   const [activeFilter, setActiveFilter] = useState<StatusFilter>("all")
 
@@ -63,26 +66,28 @@ export const ApplicationsClient = ({ user }: ApplicationsClientProps) => {
     fetchApplications()
   }, [])
 
-  // おすすめ案件を取得（応募済み案件が0件の場合のみ）
+  // AIマッチ案件を取得（応募済み案件が0件の場合のみ）
   useEffect(() => {
-    const fetchRecommendedJobs = async () => {
+    const fetchAiMatchedJobs = async () => {
       if (applications.length > 0 || loading) return
 
       try {
-        setRecommendedJobsLoading(true)
+        setAiMatchedJobsLoading(true)
         const res = await fetch("/api/recommended-jobs")
         if (res.ok) {
           const data = await res.json()
-          setRecommendedJobs(data.items || [])
+          // AIマッチの案件のみをフィルタリング
+          const aiMatched = (data.items || []).filter((job: Job & { aiMatched?: boolean }) => job.aiMatched)
+          setAiMatchedJobs(aiMatched)
         }
       } catch (error) {
-        console.error("Failed to fetch recommended jobs:", error)
+        console.error("Failed to fetch AI matched jobs:", error)
       } finally {
-        setRecommendedJobsLoading(false)
+        setAiMatchedJobsLoading(false)
       }
     }
 
-    fetchRecommendedJobs()
+    fetchAiMatchedJobs()
   }, [applications.length, loading])
 
   // ステータスの優先順位を定義（並び順に合わせる）
@@ -188,6 +193,128 @@ export const ApplicationsClient = ({ user }: ApplicationsClientProps) => {
     }
   }
 
+  // 案件一覧ページへ遷移するための検索ハンドラー（ダミー）
+  const handleSearch = (filters: JobFilters) => {
+    // 検索ボタンが押されたら案件一覧ページに遷移
+    const params = new URLSearchParams()
+    if (filters.query) params.set("query", filters.query)
+    if (filters.remote.length > 0) params.set("remote", filters.remote.join(","))
+    if (filters.positions.length > 0) params.set("positions", filters.positions.join(","))
+    if (filters.location) params.set("location", filters.location)
+    if (filters.nearestStation) params.set("nearestStation", filters.nearestStation)
+    
+    window.location.href = `/?${params.toString()}`
+  }
+
+  // 応募済み案件が0件の場合の表示
+  if (!loading && applications.length === 0) {
+    return (
+      <div className="min-h-screen" style={{ backgroundColor: "#ffffff" }}>
+        <Header user={user} />
+
+        {/* 水色背景エリア（ヘッダー下から検索ボックスのボタンまで） */}
+        <div className="w-full" style={{ backgroundColor: "#d5e5f0" }}>
+          {/* メッセージエリア（水色背景と同じ） */}
+          <div 
+            className="w-full py-10"
+            style={{ backgroundColor: "#d5e5f0" }}
+          >
+            <div 
+              className="mx-auto px-6 text-center"
+              style={{ maxWidth: "1400px" }}
+            >
+              {/* チェックボックスアイコン（大きく、薄い水色） */}
+              <div className="mb-4">
+                <FontAwesomeIcon 
+                  icon={faSquareCheck} 
+                  style={{ 
+                    color: "var(--pw-bg-light-blue)",
+                    width: "64px",
+                    height: "64px",
+                  }}
+                />
+              </div>
+              <h1
+                style={{
+                  fontSize: "24px",
+                  color: "var(--pw-text-navy)",
+                  fontWeight: 700,
+                  marginBottom: "8px",
+                }}
+              >
+                現在、応募済みの案件はありません。
+              </h1>
+              <p
+                style={{
+                  fontSize: "var(--pw-text-md)",
+                  color: "var(--pw-text-navy)",
+                }}
+              >
+                気になる案件を探して、応募してみましょう！
+              </p>
+            </div>
+          </div>
+
+          {/* メッセージエリアと検索ボックスの間の線 */}
+          <div 
+            className="w-full h-px"
+            style={{ backgroundColor: "#9ab6ca" }}
+          />
+
+          {/* 検索ボックス - 案件一覧と同じスタイル */}
+          <div className="w-full">
+            <div 
+              className="mx-auto px-6"
+              style={{ maxWidth: "1400px" }}
+            >
+              <DashboardFilters onSearch={handleSearch} currentSort="recommend" />
+            </div>
+          </div>
+        </div>
+
+        {/* AIおすすめ案件セクション（案件一覧と同じ薄水色背景） */}
+        <div 
+          className="mx-auto px-6 pb-12 pt-12"
+          style={{ 
+            maxWidth: "1400px",
+            backgroundColor: "var(--pw-bg-body)"
+          }}
+        >
+          <h2
+            className="text-center mb-8"
+            style={{
+              fontSize: "20px",
+              color: "var(--pw-text-navy)",
+              fontWeight: 700,
+            }}
+          >
+            AIがあなたにおすすめする案件
+          </h2>
+
+          {aiMatchedJobsLoading ? (
+            <div className="text-center py-12">
+              <p style={{ color: "var(--pw-text-gray)" }}>おすすめ案件を読み込み中...</p>
+            </div>
+          ) : aiMatchedJobs.length > 0 ? (
+            <AiRecommendedJobsCarousel jobs={aiMatchedJobs} onViewDetail={handleViewDetail} />
+          ) : (
+            <div className="text-center py-8">
+              <p style={{ color: "var(--pw-text-gray)" }}>
+                現在、AIおすすめ案件はありません
+              </p>
+            </div>
+          )}
+        </div>
+
+        <JobDetailModal
+          jobId={selectedJobId}
+          onClose={() => setSelectedJobId(null)}
+          onApply={handleApply}
+        />
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen" style={{ backgroundColor: "var(--pw-bg-light)" }}>
       <Header user={user} />
@@ -265,80 +392,30 @@ export const ApplicationsClient = ({ user }: ApplicationsClientProps) => {
             <p style={{ color: "var(--pw-text-gray)" }}>読み込み中...</p>
           </div>
         ) : filteredApplications.length === 0 ? (
-          // 応募済み案件が0件の場合、おすすめ案件をカルーセルで表示
-          activeFilter === "all" && applications.length === 0 ? (
-            <div
-              className="py-12 rounded-lg"
-              style={{ backgroundColor: "#ffffff", border: "1px solid var(--pw-border-light)" }}
+          // フィルター適用後に0件の場合
+          <div
+            className="text-center py-12 rounded-lg"
+            style={{ backgroundColor: "#ffffff", border: "1px solid var(--pw-border-light)" }}
+          >
+            <p
+              style={{
+                fontSize: "var(--pw-text-lg)",
+                color: "var(--pw-text-navy)",
+                fontWeight: 600,
+              }}
             >
-              {/* メッセージ表示 */}
-              <div className="text-center mb-8">
-                <p
-                  style={{
-                    fontSize: "var(--pw-text-lg)",
-                    color: "var(--pw-text-navy)",
-                    fontWeight: 600,
-                  }}
-                >
-                  応募済みの案件はありません
-                </p>
-                <p
-                  className="mt-2"
-                  style={{
-                    fontSize: "var(--pw-text-sm)",
-                    color: "var(--pw-text-gray)",
-                  }}
-                >
-                  気になる案件を探して、応募してみましょう！
-                </p>
-              </div>
-
-              {/* おすすめ案件カルーセル */}
-              {recommendedJobsLoading ? (
-                <div className="text-center py-12">
-                  <p style={{ color: "var(--pw-text-gray)" }}>おすすめ案件を読み込み中...</p>
-                </div>
-              ) : recommendedJobs.length > 0 ? (
-                <div className="px-4">
-                  <h2
-                    className="mb-6 text-center"
-                    style={{
-                      fontSize: "var(--pw-text-xl)",
-                      color: "var(--pw-text-navy)",
-                      fontWeight: 700,
-                    }}
-                  >
-                    おすすめ案件
-                  </h2>
-                  <JobCarousel jobs={recommendedJobs} onViewDetail={handleViewDetail} />
-                </div>
-              ) : null}
-            </div>
-          ) : (
-            <div
-              className="text-center py-12 rounded-lg"
-              style={{ backgroundColor: "#ffffff", border: "1px solid var(--pw-border-light)" }}
+              {`${STATUS_FILTERS.find((f) => f.id === activeFilter)?.label || ""}の案件はありません`}
+            </p>
+            <p
+              className="mt-2"
+              style={{
+                fontSize: "var(--pw-text-sm)",
+                color: "var(--pw-text-gray)",
+              }}
             >
-              <p
-                style={{
-                  fontSize: "var(--pw-text-lg)",
-                  color: "var(--pw-text-navy)",
-                  fontWeight: 600,
-                }}
-              >
-                {`${STATUS_FILTERS.find((f) => f.id === activeFilter)?.label || ""}の案件はありません`}
-              </p>
-              <p
-                className="mt-2"
-                style={{
-                  fontSize: "var(--pw-text-sm)",
-                  color: "var(--pw-text-gray)",
-                }}
-              >
-                気になる案件を探して、応募してみましょう！
-              </p>
-            </div>
-          )
+              気になる案件を探して、応募してみましょう！
+            </p>
+          </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredApplications.map((app) => {

@@ -235,12 +235,6 @@ export const DashboardFilters = ({ onSearch, currentSort = "recommend" }: Dashbo
           </div>
         </div>
 
-        {/* 縦線（区切り） - 勤務地エリアと職種ポジションの間、横線と接続するため下にマージン */}
-        <div 
-          className="hidden lg:block w-px self-stretch"
-          style={{ backgroundColor: "#9ab6ca", marginBottom: "-16px" }}
-        />
-
         {/* 右セクション: 職種/ポジション */}
         <div className="space-y-2">
           <span

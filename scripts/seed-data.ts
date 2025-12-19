@@ -569,20 +569,24 @@ SOC（セキュリティオペレーションセンター）での監視・分�
     { talentIndex: 1, jobIndex: 0, score: 95, staffRecommend: true, aiMatched: true },
     
     // jobIndex 1: 金融系WebアプリケーションAPI開発
-    // 担当者おすすめのみ
-    { talentIndex: 1, jobIndex: 1, score: 80, staffRecommend: true, aiMatched: false },
+    // 担当者おすすめ + AIマッチ
+    { talentIndex: 1, jobIndex: 1, score: 80, staffRecommend: true, aiMatched: true },
     
     // jobIndex 2: スタートアップ向け新規サービス開発
     // AIマッチ + New
     { talentIndex: 1, jobIndex: 2, score: 90, staffRecommend: false, aiMatched: true },
     
     // jobIndex 3: ヘルスケアアプリ開発案件
-    // 登録情報マッチのみ（Newタグなし）
-    { talentIndex: 1, jobIndex: 3, score: 70, staffRecommend: false, aiMatched: false },
+    // AIマッチ
+    { talentIndex: 1, jobIndex: 3, score: 70, staffRecommend: false, aiMatched: true },
     
     // jobIndex 4: データ基盤構築・運用案件
-    // 登録情報マッチのみ（Newタグなし）
-    { talentIndex: 1, jobIndex: 4, score: 60, staffRecommend: false, aiMatched: false },
+    // AIマッチ
+    { talentIndex: 1, jobIndex: 4, score: 60, staffRecommend: false, aiMatched: true },
+    
+    // jobIndex 5: 大規模データから追加（seedData3の最初の案件を参照）
+    // AIマッチ
+    { talentIndex: 1, jobIndex: 5, score: 75, staffRecommend: false, aiMatched: true },
   ],
 };
 
@@ -1830,8 +1834,8 @@ export const createSeedData = async () => {
       const hanakoRecommendationRecords: any[] = [];
 
       for (const recommendation of seedData1.recommendationsForHanako) {
-        // jobIndexがseedData1の範囲内かチェック
-        if (recommendation.jobIndex < seedData1.jobs.length) {
+        // jobIndexが統合後の全案件の範囲内かチェック
+        if (recommendation.jobIndex < jobIds.length) {
           const jobId = jobIds[recommendation.jobIndex];
           const record: any = {
             [RECOMMENDATION_FIELDS.TALENT_ID]: { value: hanakoAuthUserId },
