@@ -92,19 +92,34 @@ export const GET = async (request: NextRequest) => {
     jobs = jobs.filter((job) => !applicationsMap[job.id]);
 
     // キーワード検索（案件名、作業内容、環境、必須スキル、尚可スキルを対象）
+    // 複数単語のAND検索に対応（スペースで区切られた単語は全て含まれる必要がある）
     if (query) {
-      const lowerQuery = query.toLowerCase();
-      jobs = jobs.filter((job) => {
-        return (
-          job.title?.toLowerCase().includes(lowerQuery) ||
-          job.description?.toLowerCase().includes(lowerQuery) ||
-          job.environment?.toLowerCase().includes(lowerQuery) ||
-          job.requiredSkills?.toLowerCase().includes(lowerQuery) ||
-          job.preferredSkills?.toLowerCase().includes(lowerQuery) ||
-          job.features?.some(f => f.toLowerCase().includes(lowerQuery)) ||
-          job.position?.some(p => p.toLowerCase().includes(lowerQuery))
-        );
-      });
+      // クエリをスペースで分割し、空文字列を除外
+      const searchWords = query
+        .split(/\s+/)
+        .map(word => word.trim())
+        .filter(word => word.length > 0)
+        .map(word => word.toLowerCase());
+
+      if (searchWords.length > 0) {
+        jobs = jobs.filter((job) => {
+          // 各単語が検索対象フィールドのいずれかに含まれているかチェック
+          const checkWordMatches = (word: string): boolean => {
+            return (
+              job.title?.toLowerCase().includes(word) ||
+              job.description?.toLowerCase().includes(word) ||
+              job.environment?.toLowerCase().includes(word) ||
+              job.requiredSkills?.toLowerCase().includes(word) ||
+              job.preferredSkills?.toLowerCase().includes(word) ||
+              job.features?.some(f => f.toLowerCase().includes(word)) ||
+              job.position?.some(p => p.toLowerCase().includes(word))
+            );
+          };
+
+          // 全ての単語が含まれている場合のみ該当（AND検索）
+          return searchWords.every(word => checkWordMatches(word));
+        });
+      }
     }
 
     // リモート可否フィルター（案件特徴から検索）
