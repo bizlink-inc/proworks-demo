@@ -33,7 +33,13 @@
     "test:ai-match": "npx tsx scripts/test-ai-match.ts",
     "cache:clear:announcements": "npx tsx scripts/clear-announcement-cache.ts",
     "env:push:dev": "npx tsx scripts/push-env-to-apprunner.ts dev",
-    "env:push:prod": "npx tsx scripts/push-env-to-apprunner.ts prod"
+    "env:push:prod": "npx tsx scripts/push-env-to-apprunner.ts prod",
+    "apprunner:start:dev": "npx tsx scripts/apprunner-control.ts start dev",
+    "apprunner:start:prod": "npx tsx scripts/apprunner-control.ts start prod",
+    "apprunner:stop:dev": "npx tsx scripts/apprunner-control.ts stop dev",
+    "apprunner:stop:prod": "npx tsx scripts/apprunner-control.ts stop prod",
+    "apprunner:status:dev": "npx tsx scripts/apprunner-control.ts status dev",
+    "apprunner:status:prod": "npx tsx scripts/apprunner-control.ts status prod"
   },
   "dependencies": {
     "@aws-sdk/client-ses": "^3.700.0",
