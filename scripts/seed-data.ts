@@ -560,6 +560,23 @@ SOC（セキュリティオペレーションセンター）での監視・分�
     { talentIndex: 0, jobIndex: 4, score: 65 },  // 見送り（募集終了）
   ],
 
+  // 山田太郎（seed_user_001）用の推薦データ
+  // 案件一覧に表示される案件（応募していない案件）
+  // 担当者おすすめやAIマッチのバッジ表示確認用
+  recommendationsForYamada: [
+    // seedData3の案件に対して推薦データを作成（jobIndexは統合後のインデックス）
+    // 担当者おすすめ + AIマッチ
+    { talentIndex: 0, jobIndex: 8, score: 95, staffRecommend: true, aiMatched: true },
+    // 担当者おすすめ + AIマッチ
+    { talentIndex: 0, jobIndex: 9, score: 88, staffRecommend: true, aiMatched: true },
+    // AIマッチのみ
+    { talentIndex: 0, jobIndex: 10, score: 85, staffRecommend: false, aiMatched: true },
+    { talentIndex: 0, jobIndex: 11, score: 82, staffRecommend: false, aiMatched: true },
+    { talentIndex: 0, jobIndex: 12, score: 80, staffRecommend: false, aiMatched: true },
+    { talentIndex: 0, jobIndex: 13, score: 78, staffRecommend: false, aiMatched: true },
+    { talentIndex: 0, jobIndex: 14, score: 75, staffRecommend: false, aiMatched: true },
+  ],
+
   // 田中花子（seed_user_002）用の推薦データ
   // 案件一覧に表示される案件（応募していない案件）
   // 3つのバッジが同時に表示される案件を含む
@@ -1735,7 +1752,7 @@ export const createSeedData = async () => {
     }
 
     // yamada用の推薦データを追加（表示順確認用）
-    if (seedData.recommendations.length > 0) {
+    if (seedData.recommendations.length > 0 || seedData1.recommendationsForYamada?.length > 0) {
       console.log("\n" + "=".repeat(80));
       console.log("⭐ yamada用の推薦データを追加（表示順確認用）");
       console.log("=".repeat(80));
@@ -1759,6 +1776,7 @@ export const createSeedData = async () => {
 
       const yamadaRecommendationRecords: any[] = [];
 
+      // 応募済み案件の推薦データ（案件一覧には表示されない）
       for (const recommendation of seedData.recommendations) {
         // jobIndexがseedData1の範囲内かチェック（seedData1は最初の8件）
         if (recommendation.jobIndex < seedData1.jobs.length) {
@@ -1768,6 +1786,43 @@ export const createSeedData = async () => {
             [RECOMMENDATION_FIELDS.JOB_ID]: { value: jobId },
             [RECOMMENDATION_FIELDS.SCORE]: { value: recommendation.score.toString() },
           });
+        }
+      }
+
+      // 案件一覧に表示される案件の推薦データ（担当者おすすめ・AIマッチフラグ付き）
+      if (seedData1.recommendationsForYamada && seedData1.recommendationsForYamada.length > 0) {
+        for (const recommendation of seedData1.recommendationsForYamada) {
+          // jobIndexが統合後の全案件の範囲内かチェック
+          if (recommendation.jobIndex < jobIds.length) {
+            const jobId = jobIds[recommendation.jobIndex];
+            const record: any = {
+              [RECOMMENDATION_FIELDS.TALENT_ID]: { value: yamadaAuthUserId },
+              [RECOMMENDATION_FIELDS.JOB_ID]: { value: jobId },
+              [RECOMMENDATION_FIELDS.SCORE]: { value: recommendation.score.toString() },
+            };
+
+            // 担当者おすすめフラグ
+            if (recommendation.staffRecommend) {
+              record[RECOMMENDATION_FIELDS.STAFF_RECOMMEND] = { value: "おすすめ" };
+            }
+
+            // AIマッチフラグ
+            if (recommendation.aiMatched) {
+              record[RECOMMENDATION_FIELDS.AI_EXECUTION_STATUS] = { value: "実行済み" };
+              // AIスコアをダミーで設定
+              record[RECOMMENDATION_FIELDS.AI_OVERALL_SCORE] = { value: "85" };
+              record[RECOMMENDATION_FIELDS.AI_SKILL_SCORE] = { value: "90" };
+              record[RECOMMENDATION_FIELDS.AI_PROCESS_SCORE] = { value: "85" };
+              record[RECOMMENDATION_FIELDS.AI_INFRA_SCORE] = { value: "80" };
+              record[RECOMMENDATION_FIELDS.AI_DOMAIN_SCORE] = { value: "75" };
+              record[RECOMMENDATION_FIELDS.AI_TEAM_SCORE] = { value: "90" };
+              record[RECOMMENDATION_FIELDS.AI_TOOL_SCORE] = { value: "85" };
+              record[RECOMMENDATION_FIELDS.AI_RESULT] = { value: "この案件は候補者のスキルセットと非常にマッチしています。" };
+              record[RECOMMENDATION_FIELDS.AI_EXECUTED_AT] = { value: new Date().toISOString() };
+            }
+
+            yamadaRecommendationRecords.push(record);
+          }
         }
       }
 
@@ -1787,14 +1842,20 @@ export const createSeedData = async () => {
               id: existingId,
               record: rec,
             });
-            console.log(`✅ yamada用推薦レコードを更新: 案件ID=${rec[RECOMMENDATION_FIELDS.JOB_ID].value}, スコア=${rec[RECOMMENDATION_FIELDS.SCORE].value}`);
+            const flags = [];
+            if (rec[RECOMMENDATION_FIELDS.STAFF_RECOMMEND]?.value === "おすすめ") flags.push("担当者おすすめ");
+            if (rec[RECOMMENDATION_FIELDS.AI_EXECUTION_STATUS]?.value === "実行済み") flags.push("AIマッチ");
+            console.log(`✅ yamada用推薦レコードを更新: 案件ID=${rec[RECOMMENDATION_FIELDS.JOB_ID].value}, スコア=${rec[RECOMMENDATION_FIELDS.SCORE].value}${flags.length > 0 ? `, ${flags.join(" + ")}` : ""}`);
           } else {
             // 追加
             await recommendationClient.record.addRecord({
               app: appIds.recommendation,
               record: rec,
             });
-            console.log(`✅ yamada用推薦レコードを追加: 案件ID=${rec[RECOMMENDATION_FIELDS.JOB_ID].value}, スコア=${rec[RECOMMENDATION_FIELDS.SCORE].value}`);
+            const flags = [];
+            if (rec[RECOMMENDATION_FIELDS.STAFF_RECOMMEND]?.value === "おすすめ") flags.push("担当者おすすめ");
+            if (rec[RECOMMENDATION_FIELDS.AI_EXECUTION_STATUS]?.value === "実行済み") flags.push("AIマッチ");
+            console.log(`✅ yamada用推薦レコードを追加: 案件ID=${rec[RECOMMENDATION_FIELDS.JOB_ID].value}, スコア=${rec[RECOMMENDATION_FIELDS.SCORE].value}${flags.length > 0 ? `, ${flags.join(" + ")}` : ""}`);
           }
         }
         console.log(`\n📋 応募済み案件のステータス:`);
@@ -1805,6 +1866,16 @@ export const createSeedData = async () => {
         console.log(`  - jobIndex 3: 案件決定（ヘルスケアアプリ開発案件）`);
         console.log(`  - jobIndex 4: 募集終了（データ基盤構築・運用案件）`);
         console.log(`  ※ 各ステータスが1件ずつ表示されます`);
+        console.log(`\n📋 案件一覧に表示される案件:`);
+        console.log(`  ※ seed_yamada@example.com でログインすると案件一覧に以下が表示されます:`);
+        if (seedData1.recommendationsForYamada && seedData1.recommendationsForYamada.length > 0) {
+          seedData1.recommendationsForYamada.forEach((rec, idx) => {
+            const flags = [];
+            if (rec.staffRecommend) flags.push("担当者おすすめ");
+            if (rec.aiMatched) flags.push("AIマッチ");
+            console.log(`  - jobIndex ${rec.jobIndex}: スコア=${rec.score}${flags.length > 0 ? `, ${flags.join(" + ")}` : ""}`);
+          });
+        }
       }
     }
 
@@ -2452,6 +2523,7 @@ const upsertYamadaSeedData = async () => {
 
     const recommendationClient = createRecommendationClient();
     
+    // 応募済み案件の推薦データ（案件一覧には表示されない）
     for (const recommendation of seedData.recommendations) {
       const jobId = jobIds[recommendation.jobIndex];
 
@@ -2461,7 +2533,7 @@ const upsertYamadaSeedData = async () => {
         query: `${RECOMMENDATION_FIELDS.TALENT_ID} = "${YAMADA_AUTH_USER_ID}" and ${RECOMMENDATION_FIELDS.JOB_ID} = "${jobId}"`,
       });
 
-      const recommendationRecord = {
+      const recommendationRecord: any = {
         [RECOMMENDATION_FIELDS.TALENT_ID]: { value: YAMADA_AUTH_USER_ID },
         [RECOMMENDATION_FIELDS.JOB_ID]: { value: jobId },
         [RECOMMENDATION_FIELDS.SCORE]: { value: recommendation.score.toString() },
@@ -2483,6 +2555,74 @@ const upsertYamadaSeedData = async () => {
           record: recommendationRecord,
         });
         console.log(`✅ 新規推薦レコードを作成: 案件ID=${jobId}, スコア=${recommendation.score} (ID=${result.id})`);
+      }
+    }
+
+    // 案件一覧に表示される案件の推薦データ（担当者おすすめ・AIマッチフラグ付き）
+    if (seedData1.recommendationsForYamada && seedData1.recommendationsForYamada.length > 0) {
+      for (const recommendation of seedData1.recommendationsForYamada) {
+        // jobIndexが統合後の全案件の範囲内かチェック
+        if (recommendation.jobIndex >= jobIds.length) {
+          console.log(`⚠️ jobIndex ${recommendation.jobIndex} は範囲外です（案件数: ${jobIds.length}）`);
+          continue;
+        }
+        const jobId = jobIds[recommendation.jobIndex];
+
+        // 人材ID と 案件ID で既存レコードを検索
+        const existingRecommendations = await recommendationClient.record.getRecords({
+          app: appIds.recommendation,
+          query: `${RECOMMENDATION_FIELDS.TALENT_ID} = "${YAMADA_AUTH_USER_ID}" and ${RECOMMENDATION_FIELDS.JOB_ID} = "${jobId}"`,
+        });
+
+        const recommendationRecord: any = {
+          [RECOMMENDATION_FIELDS.TALENT_ID]: { value: YAMADA_AUTH_USER_ID },
+          [RECOMMENDATION_FIELDS.JOB_ID]: { value: jobId },
+          [RECOMMENDATION_FIELDS.SCORE]: { value: recommendation.score.toString() },
+        };
+
+        // 担当者おすすめフラグ
+        if (recommendation.staffRecommend) {
+          recommendationRecord[RECOMMENDATION_FIELDS.STAFF_RECOMMEND] = { value: "おすすめ" };
+        }
+
+        // AIマッチフラグ
+        if (recommendation.aiMatched) {
+          recommendationRecord[RECOMMENDATION_FIELDS.AI_EXECUTION_STATUS] = { value: "実行済み" };
+          // AIスコアをダミーで設定
+          recommendationRecord[RECOMMENDATION_FIELDS.AI_OVERALL_SCORE] = { value: "85" };
+          recommendationRecord[RECOMMENDATION_FIELDS.AI_SKILL_SCORE] = { value: "90" };
+          recommendationRecord[RECOMMENDATION_FIELDS.AI_PROCESS_SCORE] = { value: "85" };
+          recommendationRecord[RECOMMENDATION_FIELDS.AI_INFRA_SCORE] = { value: "80" };
+          recommendationRecord[RECOMMENDATION_FIELDS.AI_DOMAIN_SCORE] = { value: "75" };
+          recommendationRecord[RECOMMENDATION_FIELDS.AI_TEAM_SCORE] = { value: "90" };
+          recommendationRecord[RECOMMENDATION_FIELDS.AI_TOOL_SCORE] = { value: "85" };
+          recommendationRecord[RECOMMENDATION_FIELDS.AI_RESULT] = { value: "この案件は候補者のスキルセットと非常にマッチしています。" };
+          recommendationRecord[RECOMMENDATION_FIELDS.AI_EXECUTED_AT] = { value: new Date().toISOString() };
+        }
+
+        if (existingRecommendations.records.length > 0) {
+          // 更新
+          const existingId = (existingRecommendations.records[0] as any).$id.value;
+          await recommendationClient.record.updateRecord({
+            app: appIds.recommendation,
+            id: existingId,
+            record: recommendationRecord,
+          });
+          const flags = [];
+          if (recommendation.staffRecommend) flags.push("担当者おすすめ");
+          if (recommendation.aiMatched) flags.push("AIマッチ");
+          console.log(`✅ 既存の推薦レコードを更新: 案件ID=${jobId}, スコア=${recommendation.score}${flags.length > 0 ? `, ${flags.join(" + ")}` : ""} (ID=${existingId})`);
+        } else {
+          // 新規作成
+          const result = await recommendationClient.record.addRecord({
+            app: appIds.recommendation,
+            record: recommendationRecord,
+          });
+          const flags = [];
+          if (recommendation.staffRecommend) flags.push("担当者おすすめ");
+          if (recommendation.aiMatched) flags.push("AIマッチ");
+          console.log(`✅ 新規推薦レコードを作成: 案件ID=${jobId}, スコア=${recommendation.score}${flags.length > 0 ? `, ${flags.join(" + ")}` : ""} (ID=${result.id})`);
+        }
       }
     }
 
