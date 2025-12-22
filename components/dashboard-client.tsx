@@ -7,6 +7,7 @@ import { DashboardFilters, type JobFilters } from "@/components/dashboard-filter
 import { JobCard } from "@/components/job-card"
 import { JobDetailModal } from "@/components/job-detail-modal"
 import { ApplySuccessModal } from "@/components/apply-success-modal"
+import { AnnouncementBanner } from "@/components/announcement-banner"
 import { useToast } from "@/hooks/use-toast"
 import { useApplicationStatusMonitor } from "@/hooks/use-application-status-monitor"
 import { ChevronDown } from "lucide-react"
@@ -174,7 +175,10 @@ export const DashboardClient = ({ user }: DashboardClientProps) => {
     <div className="min-h-screen" style={{ backgroundColor: "#ffffff" }}>
       <Header user={user} />
 
-      {/* 検索ボックス - ヘッダーの直下に配置（FullWidthLayoutの外） */}
+      {/* お知らせバナー - ヘッダーの直下に配置 */}
+      <AnnouncementBanner />
+
+      {/* 検索ボックス - お知らせバナーの下に配置（FullWidthLayoutの外） */}
       <div 
         className="mx-auto px-6"
         style={{ maxWidth: "1400px", backgroundColor: "#d5e5f0" }}

@@ -16,7 +16,7 @@ try {
   // ファイルが存在しない場合は無視
 }
 
-import { createTalentClient, createJobClient, createApplicationClient, createRecommendationClient, getAppIds } from "../lib/kintone/client";
+import { createTalentClient, createJobClient, createApplicationClient, createRecommendationClient, createAnnouncementClient, getAppIds } from "../lib/kintone/client";
 import { uploadFileToKintone } from "../lib/kintone/services/file";
 import { TALENT_FIELDS, JOB_FIELDS, APPLICATION_FIELDS, RECOMMENDATION_FIELDS } from "../lib/kintone/fieldMapping";
 import { calculateTopMatches, TalentForMatching, JobForMatching } from "../lib/matching/calculateScore";
@@ -1974,6 +1974,86 @@ export const createSeedData = async () => {
       }
     }
 
+    // システム通知のシードデータを作成
+    console.log("\n" + "=".repeat(80));
+    console.log("📢 Step 6: システム通知のシードデータを作成");
+    console.log("=".repeat(80));
+    
+    if (appIds.announcement) {
+      try {
+        const announcementClient = createAnnouncementClient();
+        const today = new Date();
+        const oneWeekAgo = new Date(today);
+        oneWeekAgo.setDate(today.getDate() - 7);
+        const oneMonthLater = new Date(today);
+        oneMonthLater.setMonth(today.getMonth() + 1);
+        
+        // 2025年12月21日（昨日）を設定
+        const yesterday = new Date(2025, 11, 21); // 月は0始まりなので11が12月
+
+        // 日付をyyyy-MM-dd形式に変換
+        const formatDate = (date: Date): string => {
+          const year = date.getFullYear();
+          const month = String(date.getMonth() + 1).padStart(2, '0');
+          const day = String(date.getDate()).padStart(2, '0');
+          return `${year}-${month}-${day}`;
+        };
+
+        const oneWeekAgoStr = formatDate(oneWeekAgo);
+        const todayStr = formatDate(today);
+        const yesterdayStr = formatDate(yesterday);
+        const oneMonthLaterStr = formatDate(oneMonthLater);
+
+        // 表示されるお知らせを4件作成（種別のバリエーションを含む）
+        const announcementRecords = [
+          // お知らせ1: 掲載開始日が作成当日、掲載終了日が1ヶ月後（表示される）
+          {
+            掲載種別: { value: "お知らせ" },
+            掲載開始日: { value: todayStr },
+            掲載終了日: { value: oneMonthLaterStr },
+            通知内容: { value: "システムの新機能が追加されました。詳細はこちらをご確認ください。" },
+          },
+          // メンテナンス: 掲載開始日が作成当日、掲載終了日が1ヶ月後（表示される）
+          {
+            掲載種別: { value: "メンテナンス" },
+            掲載開始日: { value: todayStr },
+            掲載終了日: { value: oneMonthLaterStr },
+            通知内容: { value: "来週のメンテナンス作業についてお知らせします。作業時間中はサービスが一時的に利用できなくなります。" },
+          },
+          // お知らせ2: 掲載開始日が作成当日、掲載終了日が1ヶ月後（表示される）
+          {
+            掲載種別: { value: "お知らせ" },
+            掲載開始日: { value: todayStr },
+            掲載終了日: { value: oneMonthLaterStr },
+            通知内容: { value: "年末年始の営業時間についてお知らせします。12月29日から1月3日まで休業となります。" },
+          },
+          // 障害: 掲載開始日が作成当日、掲載終了日が1ヶ月後（表示される）
+          {
+            掲載種別: { value: "障害" },
+            掲載開始日: { value: todayStr },
+            掲載終了日: { value: oneMonthLaterStr },
+            通知内容: { value: "現在、一部機能で不具合が発生している可能性があります。復旧作業を進めております。" },
+          },
+        ];
+
+        // レコードを追加
+        await announcementClient.record.addRecords({
+          app: appIds.announcement,
+          records: announcementRecords,
+        });
+
+        console.log(`✅ システム通知のシードデータを作成: ${announcementRecords.length}件（すべて表示される）`);
+        console.log(`   - お知らせ: 2件（表示される - 掲載開始日: ${todayStr}, 掲載終了日: ${oneMonthLaterStr}）`);
+        console.log(`   - メンテナンス: 1件（表示される - 掲載開始日: ${todayStr}, 掲載終了日: ${oneMonthLaterStr}）`);
+        console.log(`   - 障害: 1件（表示される - 掲載開始日: ${todayStr}, 掲載終了日: ${oneMonthLaterStr}）`);
+      } catch (error) {
+        console.error("⚠️ システム通知のシードデータ作成でエラーが発生しました:", error);
+        console.log("   続行します...");
+      }
+    } else {
+      console.log("⚠️ KINTONE_ANNOUNCEMENT_APP_ID が設定されていないため、システム通知のシードデータ作成をスキップします");
+    }
+
     // 完了メッセージ
     console.log("\n" + "=".repeat(80));
     console.log("🎉 シードデータの作成が完了しました！");
@@ -1990,6 +2070,9 @@ export const createSeedData = async () => {
     if (yamadaRecommendationCount > 0) {
       console.log(`     - マッチング計算: ${allRecommendationRecords.length}件`);
       console.log(`     - yamada用（表示順確認用）: ${yamadaRecommendationCount}件`);
+    }
+    if (appIds.announcement) {
+      console.log(`  📢 システム通知: 3件（障害1件、メンテナンス1件、お知らせ1件）`);
     }
     
     console.log("\n📝 ログイン情報:");
@@ -2173,9 +2256,42 @@ export const deleteSeedData = async () => {
       console.log("✅ 人材: 削除対象なし");
     }
 
-    // 5. Better Authユーザーを削除
+    // 5. システム通知を全件削除（存在する場合）
+    if (appIds.announcement) {
+      try {
+        console.log("\n" + "=".repeat(80));
+        console.log("📢 Step 5: システム通知を全件削除");
+        console.log("=".repeat(80));
+
+        const announcementClient = createAnnouncementClient();
+        const announcements = await announcementClient.record.getAllRecords({
+          app: appIds.announcement,
+          fields: ["$id"],
+        });
+
+        if (announcements.length > 0) {
+          const announcementIds = announcements.map((record: any) => record.$id.value);
+          // 100件ずつ削除
+          for (let i = 0; i < announcementIds.length; i += 100) {
+            const batch = announcementIds.slice(i, i + 100);
+            await announcementClient.record.deleteRecords({
+              app: appIds.announcement,
+              ids: batch,
+            });
+          }
+          console.log(`✅ システム通知を削除: ${announcementIds.length}件`);
+        } else {
+          console.log("✅ システム通知: 削除対象なし");
+        }
+      } catch (error) {
+        console.error("⚠️ システム通知の削除でエラーが発生しました:", error);
+        console.log("   続行します...");
+      }
+    }
+
+    // 6. Better Authユーザーを削除
     console.log("\n" + "=".repeat(80));
-    console.log("👤 Step 5: Better Authユーザーを削除");
+    console.log("👤 Step 6: Better Authユーザーを削除");
     console.log("=".repeat(80));
 
     const db = getDb();

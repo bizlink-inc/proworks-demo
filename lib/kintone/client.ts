@@ -140,12 +140,40 @@ export const createRecommendationClient = () => {
   });
 };
 
+// kintone クライアントの作成（システム通知用）
+export const createAnnouncementClient = () => {
+  const baseUrl = process.env.KINTONE_BASE_URL;
+  const apiToken = process.env.KINTONE_ANNOUNCEMENT_API_TOKEN;
+
+  if (!baseUrl) {
+    console.error("❌ KINTONE_BASE_URL が設定されていません");
+    throw new Error("KINTONE_BASE_URL is not defined");
+  }
+
+  if (!apiToken) {
+    console.error("❌ KINTONE_ANNOUNCEMENT_API_TOKEN が設定されていません");
+    throw new Error("KINTONE_ANNOUNCEMENT_API_TOKEN is not defined");
+  }
+
+  console.log("✅ kintone Announcement Client 初期化成功");
+  console.log("   Base URL:", baseUrl);
+  console.log("   API Token:", apiToken.substring(0, 10) + "...");
+
+  return new KintoneRestAPIClient({
+    baseUrl,
+    auth: {
+      apiToken,
+    },
+  });
+};
+
 // アプリIDの取得
 export const getAppIds = () => {
   const talentAppId = process.env.KINTONE_TALENT_APP_ID;
   const jobAppId = process.env.KINTONE_JOB_APP_ID;
   const applicationAppId = process.env.KINTONE_APPLICATION_APP_ID;
   const recommendationAppId = process.env.KINTONE_RECOMMENDATION_APP_ID;
+  const announcementAppId = process.env.KINTONE_ANNOUNCEMENT_APP_ID;
 
   if (!talentAppId) {
     console.error("❌ KINTONE_TALENT_APP_ID が設定されていません");
@@ -169,12 +197,18 @@ export const getAppIds = () => {
     console.log("   Job App ID:", jobAppId);
     console.log("   Application App ID:", applicationAppId);
     console.log("   Recommendation App ID:", recommendationAppId);
+    if (announcementAppId) {
+      console.log("   Announcement App ID:", announcementAppId);
+    }
   } else {
   console.log("✅ kintone App IDs 取得成功");
   console.log("   Talent App ID:", talentAppId);
   console.log("   Job App ID:", jobAppId);
   console.log("   Application App ID:", applicationAppId);
     console.log("   ⚠️ Recommendation App ID: 未設定");
+    if (announcementAppId) {
+      console.log("   Announcement App ID:", announcementAppId);
+    }
   }
 
   return {
@@ -182,6 +216,7 @@ export const getAppIds = () => {
     job: jobAppId,
     application: applicationAppId,
     recommendation: recommendationAppId,
+    announcement: announcementAppId,
   };
 };
 

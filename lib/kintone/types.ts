@@ -153,3 +153,20 @@ export type Recommendation = {
   aiOverallScore?: number;
 };
 
+// システム通知DBの型定義
+export type AnnouncementRecord = {
+  $id: { value: string };
+  掲載種別: { value: string }; // プルダウン: お知らせ, メンテナンス, 障害
+  掲載開始日: { value: string }; // 日付フィールド (yyyy-MM-dd形式)
+  掲載終了日: { value: string }; // 日付フィールド (yyyy-MM-dd形式)
+  通知内容: { value: string };
+};
+
+export type Announcement = {
+  id: string;
+  type: string; // 掲載種別: お知らせ, メンテナンス, 障害
+  startDate: string; // 掲載開始日 (yyyy-MM-dd形式)
+  endDate: string; // 掲載終了日 (yyyy-MM-dd形式)
+  content: string; // 通知内容
+};
+
