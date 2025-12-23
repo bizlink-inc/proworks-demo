@@ -31,6 +31,7 @@ export const TALENT_FIELDS = {
   DESIRED_WORK: '希望案件_作業内容',
   NG_COMPANIES: 'NG企業',
   OTHER_REQUESTS: 'その他要望',
+  ST: 'ST', // ステータス（退会時に「退会」に更新）
 } as const;
 
 // 案件DB（Job）のフィールドコード
@@ -132,3 +133,25 @@ export const DROPDOWN_OPTIONS = {
 export type DesiredWorkDays = typeof DROPDOWN_OPTIONS.DESIRED_WORK_DAYS[number];
 export type DesiredCommute = typeof DROPDOWN_OPTIONS.DESIRED_COMMUTE[number];
 export type DesiredWorkHours = typeof DROPDOWN_OPTIONS.DESIRED_WORK_HOURS[number];
+
+// 問い合わせ・退会DB（Inquiry）のフィールドコード
+export const INQUIRY_FIELDS = {
+  ID: '$id',
+  CATEGORY: '種別',
+  RECEIVED_AT: '受付日時',
+  USER_ID: 'ユーザーID', // ルックアップキー（人材DBのauth_user_id）
+  USER_NAME: '氏名', // ルックアップで自動取得
+  STATUS: '対応ステータス',
+  ASSIGNEE: '対応者',
+  INTERNAL_MEMO: '対応メモ',
+  // 問い合わせ用
+  INQUIRY_CATEGORY: '問い合わせカテゴリ',
+  INQUIRY_CONTENT: '問い合わせ内容',
+  REPLY_CONTENT: '返信内容',
+  // 退会用
+  WITHDRAWAL_REASON: '退会理由',
+  WITHDRAWAL_REASON_DETAIL: '退会理由詳細',
+  CONFIRMATION_AGREED: '確認事項同意',
+} as const;
+
+export const INQUIRY_FIELDS_BY_VALUE = createFieldsByValue(INQUIRY_FIELDS);

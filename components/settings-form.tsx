@@ -10,6 +10,8 @@ import { PWInput } from "@/components/ui/pw-input"
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
 import { faEyeSlash, faEye } from "@fortawesome/free-solid-svg-icons"
 import type { Talent } from "@/lib/kintone/types"
+import { ContactDialog } from "@/components/contact-dialog"
+import { WithdrawDialog } from "@/components/withdraw-dialog"
 
 interface SettingsFormProps {
   user: Talent | null
@@ -59,6 +61,10 @@ export const SettingsForm = ({ user }: SettingsFormProps) => {
   const [passwordLoading, setPasswordLoading] = useState(false)
   const [showCurrentPassword, setShowCurrentPassword] = useState(false)
   const [showNewPassword, setShowNewPassword] = useState(false)
+
+  // ダイアログ関連
+  const [contactDialogOpen, setContactDialogOpen] = useState(false)
+  const [withdrawDialogOpen, setWithdrawDialogOpen] = useState(false)
 
   // 新しいパスワードのリアルタイムバリデーション
   const passwordValidation = useMemo(() => {
@@ -395,7 +401,7 @@ export const SettingsForm = ({ user }: SettingsFormProps) => {
       <FormSection title="お問い合わせ">
         <div>
           <Divider />
-          
+
           <div className="flex justify-center py-4">
             <p
               className="text-left"
@@ -405,17 +411,15 @@ export const SettingsForm = ({ user }: SettingsFormProps) => {
               担当スタッフがご対応いたします。
             </p>
           </div>
-          
+
           <Divider />
-          
+
           <div className="flex justify-center pt-4">
             <Button
               type="button"
               variant="pw-primary"
               style={{ fontSize: "var(--pw-text-md)", minWidth: "280px" }}
-              onClick={() => {
-                // 今後実装予定
-              }}
+              onClick={() => setContactDialogOpen(true)}
             >
               お問い合わせをする
             </Button>
@@ -423,11 +427,16 @@ export const SettingsForm = ({ user }: SettingsFormProps) => {
         </div>
       </FormSection>
 
+      <ContactDialog
+        open={contactDialogOpen}
+        onOpenChange={setContactDialogOpen}
+      />
+
       {/* 退会セクション */}
       <FormSection title="退会">
         <div>
           <Divider />
-          
+
           <div className="flex justify-center py-4">
             <p
               className="text-left"
@@ -438,23 +447,26 @@ export const SettingsForm = ({ user }: SettingsFormProps) => {
               よろしければ「退会の申請をする」ボタンを押してください
             </p>
           </div>
-          
+
           <Divider />
-          
+
           <div className="flex justify-center pt-4">
             <Button
               type="button"
               variant="pw-primary"
               style={{ fontSize: "var(--pw-text-md)", minWidth: "280px" }}
-              onClick={() => {
-                // 今後実装予定
-              }}
+              onClick={() => setWithdrawDialogOpen(true)}
             >
               退会の申請をする
             </Button>
           </div>
         </div>
       </FormSection>
+
+      <WithdrawDialog
+        open={withdrawDialogOpen}
+        onOpenChange={setWithdrawDialogOpen}
+      />
     </div>
   )
 }

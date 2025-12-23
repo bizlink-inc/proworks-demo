@@ -8,6 +8,7 @@ import { JobCard } from "@/components/job-card"
 import { JobDetailModal } from "@/components/job-detail-modal"
 import { AiRecommendedJobsCarousel } from "@/components/ai-recommended-jobs-carousel"
 import { useApplicationStatusMonitor } from "@/hooks/use-application-status-monitor"
+import { useWithdrawalCheck } from "@/hooks/use-withdrawal-check"
 import type { Job } from "@/lib/kintone/types"
 import { mapApplicationStatusToDisplay } from "@/lib/utils"
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
@@ -38,6 +39,7 @@ const filterBlue = "#3966a2"
 
 export const ApplicationsClient = ({ user }: ApplicationsClientProps) => {
   useApplicationStatusMonitor()
+  const { handleWithdrawalError } = useWithdrawalCheck()
 
   const [applications, setApplications] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -45,6 +47,22 @@ export const ApplicationsClient = ({ user }: ApplicationsClientProps) => {
   const [aiMatchedJobsLoading, setAiMatchedJobsLoading] = useState(false)
   const [selectedJobId, setSelectedJobId] = useState<string | null>(null)
   const [activeFilter, setActiveFilter] = useState<StatusFilter>("all")
+
+  // 初回ロード時に退会チェック
+  useEffect(() => {
+    const checkWithdrawal = async () => {
+      try {
+        const res = await fetch("/api/me")
+        if (!res.ok) {
+          await handleWithdrawalError(res)
+        }
+      } catch (error) {
+        console.error("退会チェックエラー:", error)
+      }
+    }
+    checkWithdrawal()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // 応募済み案件を取得
   useEffect(() => {

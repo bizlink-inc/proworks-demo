@@ -39,6 +39,8 @@ const convertTalentRecord = (record: TalentRecord): Talent => {
     // 新規登録時の同意・設定フィールド
     emailDeliveryStatus: record[TALENT_FIELDS.EMAIL_DELIVERY_STATUS]?.value || '',
     termsAgreed: record[TALENT_FIELDS.TERMS_AGREED]?.value || '',
+    // ステータスフィールド（退会時に「退会」に設定）
+    st: record[TALENT_FIELDS.ST]?.value || '',
   };
 };
 
@@ -172,6 +174,8 @@ export const updateTalent = async (
   // 新規登録時の同意・設定フィールド
   if (data.emailDeliveryStatus !== undefined) record[TALENT_FIELDS.EMAIL_DELIVERY_STATUS] = { value: data.emailDeliveryStatus };
   if (data.termsAgreed !== undefined) record[TALENT_FIELDS.TERMS_AGREED] = { value: data.termsAgreed };
+  // ステータスフィールド（退会時に使用）
+  if (data.st !== undefined) record[TALENT_FIELDS.ST] = { value: data.st };
 
   try {
     await client.record.updateRecord({

@@ -296,6 +296,154 @@ const sendEmail = async ({ to, subject, html, text }: SendEmailParams): Promise<
 };
 
 /**
+ * お問い合わせ受付確認メールを送信
+ */
+export const sendContactConfirmationEmail = async (
+  to: string,
+  userName: string,
+  inquiryContent: string
+): Promise<SendEmailResult> => {
+  const subject = "【PRO WORKS】お問い合わせを受け付けました";
+
+  const htmlContent = `
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="font-family: 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #30373f; max-width: 600px; margin: 0 auto; padding: 20px;">
+  <div style="background-color: #f3f9fd; padding: 30px; border-radius: 8px;">
+    <h1 style="color: #1f3151; font-size: 24px; margin-bottom: 20px;">PRO WORKS</h1>
+
+    <p style="margin-bottom: 20px;">${userName} 様</p>
+
+    <p style="margin-bottom: 20px;">お問い合わせいただき、ありがとうございます。<br>内容を確認のうえ、担当より順次ご連絡させていただきます。</p>
+
+    <div style="background-color: #ffffff; padding: 20px; border-radius: 6px; margin: 20px 0;">
+      <p style="margin: 0 0 10px 0; font-weight: bold; color: #1f3151;">▼お問い合わせ内容</p>
+      <p style="margin: 0; white-space: pre-wrap;">${inquiryContent}</p>
+    </div>
+
+    <hr style="border: none; border-top: 1px solid #d5e5f0; margin: 30px 0;">
+
+    <p style="color: #686868; font-size: 12px;">
+      【ご注意】<br>
+      本メールに身に覚えのない場合は、本メールを破棄していただきますようお願いいたします。
+    </p>
+
+    <hr style="border: none; border-top: 1px solid #d5e5f0; margin: 20px 0;">
+
+    <p style="color: #686868; font-size: 12px; text-align: center;">
+      PRO WORKS 運営チーム/株式会社アルマ
+    </p>
+  </div>
+</body>
+</html>
+  `;
+
+  const textContent = `
+${userName} 様
+
+お問い合わせいただき、ありがとうございます。
+内容を確認のうえ、担当より順次ご連絡させていただきます。
+
+▼お問い合わせ内容
+${inquiryContent}
+
+————————————————————
+【ご注意】
+本メールに身に覚えのない場合は、本メールを破棄していただきますようお願いいたします。
+————————————————————
+PRO WORKS 運営チーム/株式会社アルマ
+  `;
+
+  return sendEmail({ to, subject, html: htmlContent, text: textContent });
+};
+
+/**
+ * 退会完了メールを送信
+ */
+export const sendWithdrawalCompletionEmail = async (
+  to: string,
+  userName: string
+): Promise<SendEmailResult> => {
+  const subject = "【PRO WORKS】退会手続き完了のお知らせ";
+
+  const now = new Date();
+  const withdrawalDate = `${now.getFullYear()}年${now.getMonth() + 1}月${now.getDate()}日 ${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')}`;
+
+  const htmlContent = `
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="font-family: 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #30373f; max-width: 600px; margin: 0 auto; padding: 20px;">
+  <div style="background-color: #f3f9fd; padding: 30px; border-radius: 8px;">
+    <h1 style="color: #1f3151; font-size: 24px; margin-bottom: 20px;">PRO WORKS</h1>
+
+    <p style="margin-bottom: 20px;">${userName} 様</p>
+
+    <p style="margin-bottom: 20px;">このたびは、PRO WORKS サービスをご利用いただきありがとうございました。<br>以下の通り、退会手続きが完了いたしました。</p>
+
+    <div style="background-color: #ffffff; padding: 20px; border-radius: 6px; margin: 20px 0;">
+      <p style="margin: 0 0 10px 0;"><strong>退会日時：</strong>${withdrawalDate}</p>
+      <p style="margin: 0;"><strong>対象アカウント：</strong>${to}</p>
+    </div>
+
+    <p style="margin-bottom: 20px; color: #686868;">
+      退会後は、アカウント情報・応募履歴などは削除され、復元することはできません。
+    </p>
+
+    <p style="margin-bottom: 20px;">
+      これまでのご利用、誠にありがとうございました。<br>
+      またのご利用を心よりお待ちしております。
+    </p>
+
+    <hr style="border: none; border-top: 1px solid #d5e5f0; margin: 30px 0;">
+
+    <p style="color: #686868; font-size: 12px;">
+      ※本メールは退会完了の確認のために送信しています。
+    </p>
+
+    <hr style="border: none; border-top: 1px solid #d5e5f0; margin: 20px 0;">
+
+    <p style="color: #686868; font-size: 12px; text-align: center;">
+      PRO WORKS 運営チーム/株式会社アルマ
+    </p>
+  </div>
+</body>
+</html>
+  `;
+
+  const textContent = `
+${userName} 様
+
+このたびは、PRO WORKS サービスをご利用いただきありがとうございました。
+以下の通り、退会手続きが完了いたしました。
+
+————————————————————
+退会日時：${withdrawalDate}
+対象アカウント：${to}
+————————————————————
+
+退会後は、アカウント情報・応募履歴などは削除され、復元することはできません。
+
+これまでのご利用、誠にありがとうございました。
+またのご利用を心よりお待ちしております。
+
+※本メールは退会完了の確認のために送信しています。
+
+————————————————————
+PRO WORKS 運営チーム/株式会社アルマ
+  `;
+
+  return sendEmail({ to, subject, html: htmlContent, text: textContent });
+};
+
+/**
  * コンソール出力用のヘルパー関数（開発環境専用）
  * Better Auth のコールバックから呼び出される
  */

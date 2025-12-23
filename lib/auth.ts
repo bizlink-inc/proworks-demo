@@ -5,6 +5,8 @@ import { Pool } from "pg";
 import crypto from "crypto";
 import * as schema from "./db/schema";
 import { sendVerificationEmail, sendPasswordResetEmail, logEmailToConsole } from "./email";
+import { createTalentClient, getAppIds } from "./kintone/client";
+import { TALENT_FIELDS } from "./kintone/fieldMapping";
 
 // ランダムなパスワードを生成する関数
 const generateRandomPassword = () => {
@@ -34,11 +36,49 @@ const db = drizzle(pool, { schema });
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
   const isDevelopment = process.env.NODE_ENV === "development";
 
+// 退会済みユーザーかどうかをkintoneでチェック
+const checkWithdrawnUser = async (userId: string): Promise<boolean> => {
+  try {
+    const client = createTalentClient();
+    const appIds = getAppIds();
+
+    const response = await client.record.getRecords({
+      app: appIds.talent,
+      query: `${TALENT_FIELDS.AUTH_USER_ID} = "${userId}"`,
+    });
+
+    if (response.records.length > 0) {
+      const record = response.records[0] as any;
+      const st = record[TALENT_FIELDS.ST]?.value || "";
+      return st === "退会";
+    }
+    return false; // レコードが見つからない場合は退会ではないとみなす
+  } catch (error) {
+    console.error("退会チェックエラー:", error);
+    return false; // エラー時は退会ではないとみなす（ログインを許可）
+  }
+};
+
 // better-auth インスタンスの初期化
 const auth = betterAuth({
     database: drizzleAdapter(db, {
       provider: "pg",
     }),
+    databaseHooks: {
+      session: {
+        create: {
+          before: async (session) => {
+            // セッション作成前に退会チェック
+            const isWithdrawn = await checkWithdrawnUser(session.userId);
+            if (isWithdrawn) {
+              console.log(`⛔ 退会済みユーザーのログインをブロック: ${session.userId}`);
+              throw new Error("このアカウントは退会済みです。再度ご利用いただく場合は新規登録をお願いいたします。");
+            }
+            // 変更なしで続行（undefinedを返す）
+          },
+        },
+      },
+    },
   secret: process.env.BETTER_AUTH_SECRET || "demo-secret-key-for-development-must-be-32-chars-min",
     baseURL: appUrl,
     basePath: "/api/auth",

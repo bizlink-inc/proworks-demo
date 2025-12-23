@@ -140,6 +140,43 @@ export const createRecommendationClient = () => {
   });
 };
 
+// kintone クライアントの作成（問い合わせ・退会用）
+// 問い合わせDBは人材DBをルックアップ参照するため、2つのAPIトークンを連結
+export const createInquiryClient = () => {
+  const baseUrl = process.env.KINTONE_BASE_URL;
+  const inquiryToken = process.env.KINTONE_INQUIRY_API_TOKEN;
+  const talentToken = process.env.KINTONE_TALENT_API_TOKEN;
+
+  if (!baseUrl) {
+    console.error("❌ KINTONE_BASE_URL が設定されていません");
+    throw new Error("KINTONE_BASE_URL is not defined");
+  }
+
+  if (!inquiryToken) {
+    console.error("❌ KINTONE_INQUIRY_API_TOKEN が設定されていません");
+    throw new Error("KINTONE_INQUIRY_API_TOKEN is not defined");
+  }
+
+  if (!talentToken) {
+    console.error("❌ KINTONE_TALENT_API_TOKEN が設定されていません");
+    throw new Error("KINTONE_TALENT_API_TOKEN is not defined");
+  }
+
+  // 複数のAPIトークンをカンマ区切りで連結（ルックアップ参照用）
+  const combinedToken = [inquiryToken, talentToken].join(",");
+
+  console.log("✅ kintone Inquiry Client 初期化成功");
+  console.log("   Base URL:", baseUrl);
+  console.log("   Combined API Tokens: 2つのトークンを連結（問い合わせDB + 人材DB）");
+
+  return new KintoneRestAPIClient({
+    baseUrl,
+    auth: {
+      apiToken: combinedToken,
+    },
+  });
+};
+
 // kintone クライアントの作成（システム通知用）
 export const createAnnouncementClient = () => {
   const baseUrl = process.env.KINTONE_BASE_URL;
@@ -174,6 +211,7 @@ export const getAppIds = () => {
   const applicationAppId = process.env.KINTONE_APPLICATION_APP_ID;
   const recommendationAppId = process.env.KINTONE_RECOMMENDATION_APP_ID;
   const announcementAppId = process.env.KINTONE_ANNOUNCEMENT_APP_ID;
+  const inquiryAppId = process.env.KINTONE_INQUIRY_APP_ID;
 
   if (!talentAppId) {
     console.error("❌ KINTONE_TALENT_APP_ID が設定されていません");
@@ -217,6 +255,7 @@ export const getAppIds = () => {
     application: applicationAppId,
     recommendation: recommendationAppId,
     announcement: announcementAppId,
+    inquiry: inquiryAppId,
   };
 };
 

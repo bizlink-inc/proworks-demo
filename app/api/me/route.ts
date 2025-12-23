@@ -23,6 +23,15 @@ export const GET = async () => {
       return NextResponse.json({ error: "Talent not found" }, { status: 404 });
     }
 
+    // 退会済みユーザーのチェック
+    if (talent.st === "退会") {
+      console.log("Withdrawn user attempted to access:", session.user.id);
+      return NextResponse.json(
+        { error: "このアカウントは退会済みです", withdrawn: true },
+        { status: 403 }
+      );
+    }
+
     return NextResponse.json(talent);
   } catch (error) {
     console.error("人材情報の取得に失敗:", error);

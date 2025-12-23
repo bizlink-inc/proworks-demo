@@ -9,6 +9,7 @@ import { WorkHistoryForm } from "@/components/work-history-form"
 import { PreferencesForm } from "@/components/preferences-form"
 import { SettingsForm } from "@/components/settings-form"
 import { useApplicationStatusMonitor } from "@/hooks/use-application-status-monitor"
+import { useWithdrawalCheck } from "@/hooks/use-withdrawal-check"
 import type { Talent } from "@/lib/kintone/types"
 
 type MenuItem = "profile" | "work-history" | "preferences" | "settings"
@@ -23,6 +24,7 @@ interface MyPageClientProps {
 
 export function MyPageClient({ user: sessionUser }: MyPageClientProps) {
   useApplicationStatusMonitor()
+  const { handleWithdrawalError } = useWithdrawalCheck()
 
   const searchParams = useSearchParams()
   const tabParam = searchParams.get("tab") as MenuItem | null
@@ -32,6 +34,7 @@ export function MyPageClient({ user: sessionUser }: MyPageClientProps) {
 
   useEffect(() => {
     fetchUser()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   // クエリパラメータが変更されたら activeMenu を更新
@@ -46,6 +49,12 @@ export function MyPageClient({ user: sessionUser }: MyPageClientProps) {
       const res = await fetch("/api/me")
 
       if (!res.ok) {
+        // 退会済みユーザーのチェック
+        const isWithdrawn = await handleWithdrawalError(res)
+        if (isWithdrawn) {
+          return // 退会済みの場合はログアウト処理が走るため何もしない
+        }
+
         if (res.status === 404) {
           // 404の場合は新規ユーザーとして空のデータを設定
           console.log("User not found in Kintone, treating as new user")

@@ -16,9 +16,9 @@ try {
   // ファイルが存在しない場合は無視
 }
 
-import { createTalentClient, createJobClient, createApplicationClient, createRecommendationClient, createAnnouncementClient, getAppIds } from "../lib/kintone/client";
+import { createTalentClient, createJobClient, createApplicationClient, createRecommendationClient, createAnnouncementClient, createInquiryClient, getAppIds } from "../lib/kintone/client";
 import { uploadFileToKintone } from "../lib/kintone/services/file";
-import { TALENT_FIELDS, JOB_FIELDS, APPLICATION_FIELDS, RECOMMENDATION_FIELDS } from "../lib/kintone/fieldMapping";
+import { TALENT_FIELDS, JOB_FIELDS, APPLICATION_FIELDS, RECOMMENDATION_FIELDS, INQUIRY_FIELDS } from "../lib/kintone/fieldMapping";
 import { calculateTopMatches, TalentForMatching, JobForMatching } from "../lib/matching/calculateScore";
 import { seedData3 } from "./seed-data-large";
 import { getDb, closePool, query, schema } from "../lib/db/client";
@@ -2345,6 +2345,73 @@ const upsertYamadaSeedData = async () => {
     const talentClient = createTalentClient();
     const jobClient = createJobClient();
     const applicationClient = createApplicationClient();
+
+    // ========================================
+    // Step 0: 問い合わせ・退会DBのクリーンアップ & STフィールドのリセット
+    // ========================================
+    console.log("=".repeat(80));
+    console.log("🧹 Step 0: 問い合わせ・退会DBのクリーンアップ & STフィールドのリセット");
+    console.log("=".repeat(80));
+
+    // 問い合わせDBの全レコード削除
+    if (appIds.inquiry) {
+      try {
+        const inquiryClient = createInquiryClient();
+        const inquiryRecords = await inquiryClient.record.getRecords({
+          app: appIds.inquiry,
+          query: "",
+        });
+
+        if (inquiryRecords.records.length > 0) {
+          const recordIds = inquiryRecords.records.map((r: any) => r.$id.value);
+          await inquiryClient.record.deleteRecords({
+            app: appIds.inquiry,
+            ids: recordIds.map((id: string) => parseInt(id, 10)),
+          });
+          console.log(`✅ 問い合わせ・退会DB: ${recordIds.length}件のレコードを削除しました`);
+        } else {
+          console.log("✅ 問い合わせ・退会DB: 削除するレコードはありません");
+        }
+      } catch (inquiryError) {
+        console.error("⚠️ 問い合わせ・退会DBのクリーンアップに失敗:", inquiryError);
+        // エラーが発生しても続行
+      }
+    } else {
+      console.log("⚠️ 問い合わせ・退会DBのApp IDが設定されていません");
+    }
+
+    // Yamadaの人材DBレコードのSTフィールドをリセット
+    try {
+      const existingTalent = await talentClient.record.getRecords({
+        app: appIds.talent,
+        query: `${TALENT_FIELDS.AUTH_USER_ID} = "${YAMADA_AUTH_USER_ID}"`,
+      });
+
+      if (existingTalent.records.length > 0) {
+        const talentRecordId = (existingTalent.records[0] as any).$id.value;
+        const currentST = (existingTalent.records[0] as any)[TALENT_FIELDS.ST]?.value || "";
+
+        if (currentST === "退会") {
+          await talentClient.record.updateRecord({
+            app: appIds.talent,
+            id: talentRecordId,
+            record: {
+              [TALENT_FIELDS.ST]: { value: "" }, // STフィールドを空にリセット
+            },
+          });
+          console.log(`✅ 人材DB: Yamadaの退会ステータスをリセットしました`);
+        } else {
+          console.log(`✅ 人材DB: Yamadaは退会ステータスではありません（現在: "${currentST}"）`);
+        }
+      } else {
+        console.log("⚠️ 人材DB: Yamadaのレコードが見つかりません（後で作成されます）");
+      }
+    } catch (talentError) {
+      console.error("⚠️ 人材DBのSTフィールドリセットに失敗:", talentError);
+      // エラーが発生しても続行
+    }
+
+    console.log("");
 
     const seedData = seedData1;
 

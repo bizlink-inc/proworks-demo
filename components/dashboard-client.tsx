@@ -10,6 +10,7 @@ import { ApplySuccessModal } from "@/components/apply-success-modal"
 import { AnnouncementBanner } from "@/components/announcement-banner"
 import { useToast } from "@/hooks/use-toast"
 import { useApplicationStatusMonitor } from "@/hooks/use-application-status-monitor"
+import { useWithdrawalCheck } from "@/hooks/use-withdrawal-check"
 import { ChevronDown } from "lucide-react"
 import type { Job } from "@/lib/kintone/types"
 
@@ -31,6 +32,7 @@ interface DashboardClientProps {
 export const DashboardClient = ({ user }: DashboardClientProps) => {
   const { toast } = useToast()
   useApplicationStatusMonitor()
+  const { handleWithdrawalError } = useWithdrawalCheck()
 
   const [jobs, setJobs] = useState<Job[]>([])
   const [total, setTotal] = useState(0)
@@ -51,6 +53,22 @@ export const DashboardClient = ({ user }: DashboardClientProps) => {
   } | null>(null)
   const [sortDropdownOpen, setSortDropdownOpen] = useState(false)
   const sortDropdownRef = useRef<HTMLDivElement>(null)
+
+  // 初回ロード時に退会チェック
+  useEffect(() => {
+    const checkWithdrawal = async () => {
+      try {
+        const res = await fetch("/api/me")
+        if (!res.ok) {
+          await handleWithdrawalError(res)
+        }
+      } catch (error) {
+        console.error("退会チェックエラー:", error)
+      }
+    }
+    checkWithdrawal()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // ドロップダウン外クリックで閉じる
   useEffect(() => {

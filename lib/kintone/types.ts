@@ -25,6 +25,7 @@ export type TalentRecord = {
   希望案件_作業内容: { value: string };
   NG企業: { value: string };
   その他要望: { value: string };
+  ST?: { value: string }; // ステータス（退会時に「退会」に設定）
 };
 
 // 案件DBの型定義
@@ -93,6 +94,7 @@ export type Talent = {
   desiredWork: string;
   ngCompanies: string;
   otherRequests: string;
+  st?: string; // ステータス（退会時に「退会」に設定）
 };
 
 export type Job = {
