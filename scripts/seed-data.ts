@@ -1181,10 +1181,7 @@ const filterValidOptions = (values: string[], validOptions: readonly string[]): 
 
 // シードデータ作成（Yamada + 50人50案件を統合、推薦DBも自動作成）
 export const createSeedData = async () => {
-  console.log("\n🌱 シードデータを作成します\n");
-  console.log("📦 統合データセット: Yamada（1人+5案件） + 大規模（50人+50案件）");
-  console.log("✅ 推薦データ（マッチングスコア）も自動で作成されます");
-  console.log("✅ yamada用の推薦データ（表示順確認用）も作成されます\n");
+  console.log("\n🌱 シードデータを作成します...\n");
   
   // seedData1とseedData3を統合（重複を除去）
   // seedData1を優先し、seedData3から重複するユーザーIDとメールアドレスを除外
@@ -1217,11 +1214,7 @@ export const createSeedData = async () => {
     recommendations: seedData1.recommendations, // seedData1の推薦データを使用（yamada用）
   };
   
-  console.log(`📊 統合結果:`);
-  console.log(`   ユーザー: ${seedData1.authUsers.length}人 (seedData1) + ${uniqueSeedData3Users.length}人 (seedData3重複除外後) = ${combinedAuthUsers.length}人`);
-  console.log(`   人材: ${seedData1.talents.length}人 (seedData1) + ${uniqueSeedData3Talents.length}人 (seedData3重複除外後) = ${combinedTalents.length}人`);
-  console.log(`   案件: ${combinedJobs.length}件`);
-  console.log(`   応募履歴: ${combinedApplications.length}件\n`);
+  console.log(`📊 データ: ユーザー${combinedAuthUsers.length}人, 人材${combinedTalents.length}人, 案件${combinedJobs.length}件, 応募${combinedApplications.length}件`);
 
   try {
     const appIds = getAppIds();
@@ -1229,20 +1222,8 @@ export const createSeedData = async () => {
     const jobClient = createJobClient();
     const applicationClient = createApplicationClient();
 
-    // 0. ハードコーディングされた選択肢を使用
-    console.log("=".repeat(80));
-    console.log("📋 Step 0: kintone案件DBの選択肢を確認");
-    console.log("=".repeat(80));
-    console.log("📝 ハードコーディング値を使用します（kintoneから取得済み）");
-    console.log(`   職種_ポジション: ${JOB_FIELD_OPTIONS.職種_ポジション.length}件`);
-    console.log(`   スキル: ${JOB_FIELD_OPTIONS.スキル.length}件`);
-    console.log(`   案件特徴: ${JOB_FIELD_OPTIONS.案件特徴.length}件`);
-
-    // 1. Better Authユーザーを作成（Better Auth APIを使用して正しいハッシュ形式を保証）
-    console.log("=".repeat(80));
-    console.log(`👤 Step 1: Better Authユーザーを作成 (${seedData.authUsers.length}人)`);
-    console.log("=".repeat(80));
-    console.log("📝 Better Auth APIを使用してユーザーを作成します（正しいハッシュ形式を保証）");
+    // 1. Better Authユーザーを作成
+    console.log(`\n[1/6] Better Authユーザーを作成中...`);
 
     const authUserIds: string[] = [];
     const db = getDb();
@@ -1279,66 +1260,62 @@ export const createSeedData = async () => {
       
       // スキップされるユーザーのIDを追加
       for (const user of skippedUsers) {
-        // ユーザーIDが指定されている場合はIDを優先、そうでない場合はメールアドレスから取得
-        const existingId = user.id && existingIds.has(user.id) 
-          ? existingIds.get(user.id)! 
+        const existingId = user.id && existingIds.has(user.id)
+          ? existingIds.get(user.id)!
           : existingEmails.get(user.email)!;
         authUserIds.push(existingId);
-        console.log(`⚠️  ユーザー ${user.name} (${user.email}${user.id ? ` / ID: ${user.id}` : ''}) は既に存在します。スキップします。`);
+      }
+
+      if (skippedUsers.length > 0) {
+        console.log(`   既存ユーザー: ${skippedUsers.length}人（スキップ）`);
       }
 
       if (newUsers.length > 0) {
-        console.log(`\n🔐 ${newUsers.length}人のユーザーを作成中...`);
-        
-        // Better Auth APIを使用してユーザーを作成（正しいハッシュ形式を保証）
-        // ただし、auth.api.signUpEmail()はHTTPリクエスト用なので、
-        // 代わりにBetter Authのハッシュ関数を使用して直接DBに挿入
         // パスワードは全員同じなので、一度だけハッシュ化
         const hashedPassword = await hashPasswordBetterAuth("password123");
         const now = new Date();
 
+        // ユーザーとアカウントのレコードを一括で準備
+        const userRecords: any[] = [];
+        const accountRecords: any[] = [];
+
         for (const user of newUsers) {
-          try {
-            // seedData に id が定義されている場合はそれを使用（Vercel との整合性のため）
-            // 定義されていない場合はランダム生成
-            const userId = user.id || generateId(32);
-            const accountId = generateId(32);
+          const userId = user.id || generateId(32);
+          const accountId = generateId(32);
 
-            // userテーブルに挿入
-            await db.insert(schema.user).values({
-              id: userId,
-              name: user.name,
-              email: user.email,
-              emailVerified: true, // シードデータなのでメール認証済みに設定
-              image: null,
-              createdAt: now,
-              updatedAt: now,
-            });
+          userRecords.push({
+            id: userId,
+            name: user.name,
+            email: user.email,
+            emailVerified: true,
+            image: null,
+            createdAt: now,
+            updatedAt: now,
+          });
 
-            // accountテーブルに挿入（Better Authの正しいハッシュ形式を使用）
-            await db.insert(schema.account).values({
-              id: accountId,
-              userId: userId,
-              accountId: userId,
-              providerId: "credential",
-              password: hashedPassword, // Better Authのハッシュ関数で生成されたハッシュ
-              createdAt: now,
-              updatedAt: now,
-            });
+          accountRecords.push({
+            id: accountId,
+            userId: userId,
+            accountId: userId,
+            providerId: "credential",
+            password: hashedPassword,
+            createdAt: now,
+            updatedAt: now,
+          });
 
-            authUserIds.push(userId);
-            console.log(`✅ ユーザー作成: ${user.email} (ID: ${userId})`);
-          } catch (error) {
-            console.error(`❌ ユーザー作成失敗: ${user.email}`, error);
-            // エラーが発生しても続行
-            continue;
-          }
+          authUserIds.push(userId);
         }
 
-        console.log(`\n✅ ${newUsers.length}人のユーザーを作成しました（メール認証済み）`);
+        // 一括挿入
+        if (userRecords.length > 0) {
+          await db.insert(schema.user).values(userRecords);
+          await db.insert(schema.account).values(accountRecords);
+        }
+
+        console.log(`   新規作成: ${newUsers.length}人`);
       }
-      
-      console.log(`\n✅ 合計 ${authUserIds.length}人のユーザーを処理しました`);
+
+      console.log(`   → 合計${authUserIds.length}人を処理完了`);
       
       // auth_user_idマッピングを作成（seedData.authUsersの順序で）
       // seedData.authUsersの各ユーザーに対応するIDをマッピング
@@ -1356,10 +1333,8 @@ export const createSeedData = async () => {
       throw error;
     }
 
-    // 2. 人材DBにレコード作成（一括作成で高速化）
-    console.log("\n" + "=".repeat(80));
-    console.log(`👨‍💼 Step 2: 人材DBにレコードを作成 (${seedData.talents.length}人)`);
-    console.log("=".repeat(80));
+    // 2. 人材DBにレコード作成
+    console.log(`\n[2/6] 人材DBにレコードを作成中...`);
 
     // 2-0. 田中 花子 用の職務経歴書PDFをアップロード（テスト用）
     // Backend_Engineer_Resume_sample.pdf を kintone にアップロードし、
@@ -1370,15 +1345,11 @@ export const createSeedData = async () => {
     try {
       const resumePath = path.join(process.cwd(), "test-file", "Backend_Engineer_Resume_sample.pdf");
       if (fs.existsSync(resumePath)) {
-        console.log(`📄 田中 花子 用レジュメファイルを読み込み中: ${resumePath}`);
         const fileBuffer = fs.readFileSync(resumePath);
         const resumeFile = new File([fileBuffer], "Backend_Engineer_Resume_sample.pdf", {
           type: "application/pdf",
         });
-
-        console.log("📤 田中 花子 用レジュメファイルをkintoneにアップロード中...");
         const uploadResult = await uploadFileToKintone(resumeFile);
-
         hanakoResumeFiles = [
           {
             fileKey: uploadResult.fileKey,
@@ -1386,12 +1357,9 @@ export const createSeedData = async () => {
             size: uploadResult.fileSize.toString(),
           },
         ];
-        console.log(`✅ アップロード成功: ${uploadResult.fileName} (${uploadResult.fileKey})`);
-      } else {
-        console.log(`⚠️ 田中 花子 用レジュメファイルが見つかりません: ${resumePath}`);
       }
     } catch (uploadError) {
-      console.error("❌ 田中 花子 用レジュメファイルのアップロードに失敗しました（処理は継続します）:", uploadError);
+      // ファイルアップロードエラーは無視して続行
     }
 
     const talentRecords = seedData.talents.map((talent) => {
@@ -1461,12 +1429,10 @@ export const createSeedData = async () => {
     });
 
     const talentRecordIds = talentCreateResult.ids;
-    console.log(`✅ ${talentRecordIds.length}人の人材レコードを一括作成しました`);
+    console.log(`   → ${talentRecordIds.length}人を作成完了`);
 
-    // 3. 案件DBにレコード作成（一括作成で高速化）
-    console.log("\n" + "=".repeat(80));
-    console.log(`💼 Step 3: 案件DBにレコードを作成 (${seedData.jobs.length}件)`);
-    console.log("=".repeat(80));
+    // 3. 案件DBにレコード作成
+    console.log(`\n[3/6] 案件DBにレコードを作成中...`);
 
     const jobRecords = seedData.jobs.map((job) => {
       // 選択肢をフィルタリング（kintoneに存在する値のみを使用）
@@ -1510,12 +1476,10 @@ export const createSeedData = async () => {
       });
 
     const jobIds = jobCreateResult.ids;
-    console.log(`✅ ${jobIds.length}件の案件レコードを一括作成しました`);
+    console.log(`   → ${jobIds.length}件を作成完了`);
 
-    // 4. 応募履歴DBにレコード作成（一括作成で高速化）
-    console.log("\n" + "=".repeat(80));
-    console.log("📝 Step 4: 応募履歴DBにレコードを作成");
-    console.log("=".repeat(80));
+    // 4. 応募履歴DBにレコード作成
+    console.log(`\n[4/6] 応募履歴DBにレコードを作成中...`);
 
     const applicationRecords = seedData.applications.map((application: any) => {
       // auth_user_idに対応するユーザーIDを検索
@@ -1563,15 +1527,13 @@ export const createSeedData = async () => {
           app: appIds.application,
         records: applicationRecords,
         });
-      console.log(`✅ ${applicationCreateResult.ids.length}件の応募履歴レコードを一括作成しました`);
+      console.log(`   → ${applicationCreateResult.ids.length}件を作成完了`);
     } else {
-      console.log("✅ 応募履歴: 作成対象なし");
+      console.log(`   → 作成対象なし`);
       }
 
     // 5. 推薦データを作成（マッチングスコア計算）
-    console.log("\n" + "=".repeat(80));
-    console.log("🎯 Step 5: 推薦データを作成（マッチングスコア計算）");
-    console.log("=".repeat(80));
+    console.log(`\n[5/6] 推薦データを作成中（マッチングスコア計算）...`);
 
     const recommendationClient = createRecommendationClient();
 
@@ -1729,12 +1691,6 @@ export const createSeedData = async () => {
         }
       }
 
-      // 進捗表示（10件ごと）
-      if ((jobIndex + 1) % 10 === 0) {
-        console.log(
-          `   処理中: ${jobIndex + 1}/${seedData.jobs.length}件の案件をスコアリング完了`
-        );
-      }
     }
 
     // 推薦レコードを一括作成（100件ずつバッチ処理）
@@ -1747,20 +1703,16 @@ export const createSeedData = async () => {
           records: batch,
         });
       }
-      console.log(`✅ ${allRecommendationRecords.length}件の推薦レコードを一括作成しました`);
-      console.log(`   （${seedData.jobs.length}案件 × 上位マッチ）`);
+      console.log(`   → ${allRecommendationRecords.length}件を作成完了`);
     }
 
     // yamada用の推薦データを追加（表示順確認用）
+    let yamadaRecommendationCount = 0;
     if (seedData.recommendations.length > 0 || seedData1.recommendationsForYamada?.length > 0) {
-      console.log("\n" + "=".repeat(80));
-      console.log("⭐ yamada用の推薦データを追加（表示順確認用）");
-      console.log("=".repeat(80));
-
-      // yamadaのauth_user_idを正しく取得
+      // yamadaのauth_user_idを取得
       const yamadaUser = seedData1.authUsers[0];
       let yamadaAuthUserId: string | undefined;
-      
+
       if (yamadaUser.id && existingIdsForMapping.has(yamadaUser.id)) {
         yamadaAuthUserId = existingIdsForMapping.get(yamadaUser.id);
       } else if (existingEmailsForMapping.has(yamadaUser.email)) {
@@ -1770,46 +1722,126 @@ export const createSeedData = async () => {
         yamadaAuthUserId = userIndex >= 0 ? authUserIds[userIndex] : yamadaUser.id;
       }
 
-      if (!yamadaAuthUserId) {
-        throw new Error(`yamadaのユーザーIDが見つかりません: ${yamadaUser.email}`);
-      }
+      if (yamadaAuthUserId) {
+        const yamadaRecommendationRecords: any[] = [];
 
-      const yamadaRecommendationRecords: any[] = [];
-
-      // 応募済み案件の推薦データ（案件一覧には表示されない）
-      for (const recommendation of seedData.recommendations) {
-        // jobIndexがseedData1の範囲内かチェック（seedData1は最初の8件）
-        if (recommendation.jobIndex < seedData1.jobs.length) {
-          const jobId = jobIds[recommendation.jobIndex];
-          yamadaRecommendationRecords.push({
-            [RECOMMENDATION_FIELDS.TALENT_ID]: { value: yamadaAuthUserId },
-            [RECOMMENDATION_FIELDS.JOB_ID]: { value: jobId },
-            [RECOMMENDATION_FIELDS.SCORE]: { value: recommendation.score.toString() },
-          });
-        }
-      }
-
-      // 案件一覧に表示される案件の推薦データ（担当者おすすめ・AIマッチフラグ付き）
-      if (seedData1.recommendationsForYamada && seedData1.recommendationsForYamada.length > 0) {
-        for (const recommendation of seedData1.recommendationsForYamada) {
-          // jobIndexが統合後の全案件の範囲内かチェック
-          if (recommendation.jobIndex < jobIds.length) {
+        // 応募済み案件の推薦データ
+        for (const recommendation of seedData.recommendations) {
+          if (recommendation.jobIndex < seedData1.jobs.length) {
             const jobId = jobIds[recommendation.jobIndex];
-            const record: any = {
+            yamadaRecommendationRecords.push({
               [RECOMMENDATION_FIELDS.TALENT_ID]: { value: yamadaAuthUserId },
               [RECOMMENDATION_FIELDS.JOB_ID]: { value: jobId },
               [RECOMMENDATION_FIELDS.SCORE]: { value: recommendation.score.toString() },
-            };
+            });
+          }
+        }
 
-            // 担当者おすすめフラグ
+        // 案件一覧に表示される案件の推薦データ
+        if (seedData1.recommendationsForYamada && seedData1.recommendationsForYamada.length > 0) {
+          for (const recommendation of seedData1.recommendationsForYamada) {
+            if (recommendation.jobIndex < jobIds.length) {
+              const jobId = jobIds[recommendation.jobIndex];
+              const record: any = {
+                [RECOMMENDATION_FIELDS.TALENT_ID]: { value: yamadaAuthUserId },
+                [RECOMMENDATION_FIELDS.JOB_ID]: { value: jobId },
+                [RECOMMENDATION_FIELDS.SCORE]: { value: recommendation.score.toString() },
+              };
+              if (recommendation.staffRecommend) {
+                record[RECOMMENDATION_FIELDS.STAFF_RECOMMEND] = { value: "おすすめ" };
+              }
+              if (recommendation.aiMatched) {
+                record[RECOMMENDATION_FIELDS.AI_EXECUTION_STATUS] = { value: "実行済み" };
+                record[RECOMMENDATION_FIELDS.AI_OVERALL_SCORE] = { value: "85" };
+                record[RECOMMENDATION_FIELDS.AI_SKILL_SCORE] = { value: "90" };
+                record[RECOMMENDATION_FIELDS.AI_PROCESS_SCORE] = { value: "85" };
+                record[RECOMMENDATION_FIELDS.AI_INFRA_SCORE] = { value: "80" };
+                record[RECOMMENDATION_FIELDS.AI_DOMAIN_SCORE] = { value: "75" };
+                record[RECOMMENDATION_FIELDS.AI_TEAM_SCORE] = { value: "90" };
+                record[RECOMMENDATION_FIELDS.AI_TOOL_SCORE] = { value: "85" };
+                record[RECOMMENDATION_FIELDS.AI_RESULT] = { value: "この案件は候補者のスキルセットと非常にマッチしています。" };
+                record[RECOMMENDATION_FIELDS.AI_EXECUTED_AT] = { value: new Date().toISOString() };
+              }
+              yamadaRecommendationRecords.push(record);
+            }
+          }
+        }
+
+        if (yamadaRecommendationRecords.length > 0) {
+          // 既存レコードを一括取得
+          const existingRecs = await recommendationClient.record.getRecords({
+            app: appIds.recommendation,
+            query: `${RECOMMENDATION_FIELDS.TALENT_ID} = "${yamadaAuthUserId}"`,
+          });
+          const existingMap = new Map<string, string>();
+          for (const rec of existingRecs.records as any[]) {
+            existingMap.set(rec[RECOMMENDATION_FIELDS.JOB_ID].value, rec.$id.value);
+          }
+
+          // 更新と追加を分離
+          const toUpdate: any[] = [];
+          const toAdd: any[] = [];
+          for (const rec of yamadaRecommendationRecords) {
+            const jobId = rec[RECOMMENDATION_FIELDS.JOB_ID].value;
+            const existingId = existingMap.get(jobId);
+            if (existingId) {
+              toUpdate.push({ id: existingId, record: rec });
+            } else {
+              toAdd.push(rec);
+            }
+          }
+
+          // 一括更新
+          if (toUpdate.length > 0) {
+            await recommendationClient.record.updateRecords({
+              app: appIds.recommendation,
+              records: toUpdate,
+            });
+          }
+          // 一括追加
+          if (toAdd.length > 0) {
+            await recommendationClient.record.addRecords({
+              app: appIds.recommendation,
+              records: toAdd,
+            });
+          }
+          yamadaRecommendationCount = yamadaRecommendationRecords.length;
+          console.log(`   → yamada用: ${yamadaRecommendationCount}件を処理完了`);
+        }
+      }
+    }
+
+    // 田中花子用の推薦データを追加（バッジ表示確認用）
+    let hanakoRecommendationCount = 0;
+    if (seedData1.recommendationsForHanako && seedData1.recommendationsForHanako.length > 0) {
+      const hanakoUser = seedData1.authUsers[1];
+      let hanakoAuthUserId: string | undefined;
+
+      if (hanakoUser.id && existingIdsForMapping.has(hanakoUser.id)) {
+        hanakoAuthUserId = existingIdsForMapping.get(hanakoUser.id);
+      } else if (existingEmailsForMapping.has(hanakoUser.email)) {
+        hanakoAuthUserId = existingEmailsForMapping.get(hanakoUser.email);
+      } else {
+        const userIndex = seedData.authUsers.findIndex(u => u.id === hanakoUser.id || u.email === hanakoUser.email);
+        hanakoAuthUserId = userIndex >= 0 ? authUserIds[userIndex] : hanakoUser.id;
+      }
+
+      if (hanakoAuthUserId) {
+        const hanakoRecommendationRecords: any[] = [];
+
+        for (const recommendation of seedData1.recommendationsForHanako) {
+          if (recommendation.jobIndex < jobIds.length) {
+            const jobId = jobIds[recommendation.jobIndex];
+            const record: any = {
+              [RECOMMENDATION_FIELDS.TALENT_ID]: { value: hanakoAuthUserId },
+              [RECOMMENDATION_FIELDS.JOB_ID]: { value: jobId },
+              [RECOMMENDATION_FIELDS.SCORE]: { value: recommendation.score.toString() },
+            };
             if (recommendation.staffRecommend) {
               record[RECOMMENDATION_FIELDS.STAFF_RECOMMEND] = { value: "おすすめ" };
             }
-
-            // AIマッチフラグ
             if (recommendation.aiMatched) {
               record[RECOMMENDATION_FIELDS.AI_EXECUTION_STATUS] = { value: "実行済み" };
-              // AIスコアをダミーで設定
               record[RECOMMENDATION_FIELDS.AI_OVERALL_SCORE] = { value: "85" };
               record[RECOMMENDATION_FIELDS.AI_SKILL_SCORE] = { value: "90" };
               record[RECOMMENDATION_FIELDS.AI_PROCESS_SCORE] = { value: "85" };
@@ -1820,164 +1852,56 @@ export const createSeedData = async () => {
               record[RECOMMENDATION_FIELDS.AI_RESULT] = { value: "この案件は候補者のスキルセットと非常にマッチしています。" };
               record[RECOMMENDATION_FIELDS.AI_EXECUTED_AT] = { value: new Date().toISOString() };
             }
-
-            yamadaRecommendationRecords.push(record);
+            hanakoRecommendationRecords.push(record);
           }
         }
-      }
 
-      if (yamadaRecommendationRecords.length > 0) {
-        // 既存レコードをチェックして、存在する場合は更新、存在しない場合は追加
-        for (const rec of yamadaRecommendationRecords) {
+        if (hanakoRecommendationRecords.length > 0) {
+          // 既存レコードを一括取得
           const existingRecs = await recommendationClient.record.getRecords({
             app: appIds.recommendation,
-            query: `${RECOMMENDATION_FIELDS.TALENT_ID} = "${yamadaAuthUserId}" and ${RECOMMENDATION_FIELDS.JOB_ID} = "${rec[RECOMMENDATION_FIELDS.JOB_ID].value}"`,
+            query: `${RECOMMENDATION_FIELDS.TALENT_ID} = "${hanakoAuthUserId}"`,
           });
-
-          if (existingRecs.records.length > 0) {
-            // 更新
-            const existingId = (existingRecs.records[0] as any).$id.value;
-            await recommendationClient.record.updateRecord({
-              app: appIds.recommendation,
-              id: existingId,
-              record: rec,
-            });
-            const flags = [];
-            if (rec[RECOMMENDATION_FIELDS.STAFF_RECOMMEND]?.value === "おすすめ") flags.push("担当者おすすめ");
-            if (rec[RECOMMENDATION_FIELDS.AI_EXECUTION_STATUS]?.value === "実行済み") flags.push("AIマッチ");
-            console.log(`✅ yamada用推薦レコードを更新: 案件ID=${rec[RECOMMENDATION_FIELDS.JOB_ID].value}, スコア=${rec[RECOMMENDATION_FIELDS.SCORE].value}${flags.length > 0 ? `, ${flags.join(" + ")}` : ""}`);
-          } else {
-            // 追加
-            await recommendationClient.record.addRecord({
-              app: appIds.recommendation,
-              record: rec,
-            });
-            const flags = [];
-            if (rec[RECOMMENDATION_FIELDS.STAFF_RECOMMEND]?.value === "おすすめ") flags.push("担当者おすすめ");
-            if (rec[RECOMMENDATION_FIELDS.AI_EXECUTION_STATUS]?.value === "実行済み") flags.push("AIマッチ");
-            console.log(`✅ yamada用推薦レコードを追加: 案件ID=${rec[RECOMMENDATION_FIELDS.JOB_ID].value}, スコア=${rec[RECOMMENDATION_FIELDS.SCORE].value}${flags.length > 0 ? `, ${flags.join(" + ")}` : ""}`);
+          const existingMap = new Map<string, string>();
+          for (const rec of existingRecs.records as any[]) {
+            existingMap.set(rec[RECOMMENDATION_FIELDS.JOB_ID].value, rec.$id.value);
           }
-        }
-        console.log(`\n📋 応募済み案件のステータス:`);
-        console.log(`  ※ seed_yamada@example.com でログインすると応募済み案件一覧に以下が表示されます:`);
-        console.log(`  - jobIndex 0: 応募済み（大手ECサイトのフロントエンド刷新案件）`);
-        console.log(`  - jobIndex 1: 面談調整中（金融系WebアプリケーションAPI開発）`);
-        console.log(`  - jobIndex 2: 面談予定（スタートアップ向け新規サービス開発）`);
-        console.log(`  - jobIndex 3: 案件決定（ヘルスケアアプリ開発案件）`);
-        console.log(`  - jobIndex 4: 募集終了（データ基盤構築・運用案件）`);
-        console.log(`  ※ 各ステータスが1件ずつ表示されます`);
-        console.log(`\n📋 案件一覧に表示される案件:`);
-        console.log(`  ※ seed_yamada@example.com でログインすると案件一覧に以下が表示されます:`);
-        if (seedData1.recommendationsForYamada && seedData1.recommendationsForYamada.length > 0) {
-          seedData1.recommendationsForYamada.forEach((rec, idx) => {
-            const flags = [];
-            if (rec.staffRecommend) flags.push("担当者おすすめ");
-            if (rec.aiMatched) flags.push("AIマッチ");
-            console.log(`  - jobIndex ${rec.jobIndex}: スコア=${rec.score}${flags.length > 0 ? `, ${flags.join(" + ")}` : ""}`);
-          });
+
+          // 更新と追加を分離
+          const toUpdate: any[] = [];
+          const toAdd: any[] = [];
+          for (const rec of hanakoRecommendationRecords) {
+            const jobId = rec[RECOMMENDATION_FIELDS.JOB_ID].value;
+            const existingId = existingMap.get(jobId);
+            if (existingId) {
+              toUpdate.push({ id: existingId, record: rec });
+            } else {
+              toAdd.push(rec);
+            }
+          }
+
+          // 一括更新
+          if (toUpdate.length > 0) {
+            await recommendationClient.record.updateRecords({
+              app: appIds.recommendation,
+              records: toUpdate,
+            });
+          }
+          // 一括追加
+          if (toAdd.length > 0) {
+            await recommendationClient.record.addRecords({
+              app: appIds.recommendation,
+              records: toAdd,
+            });
+          }
+          hanakoRecommendationCount = hanakoRecommendationRecords.length;
+          console.log(`   → hanako用: ${hanakoRecommendationCount}件を処理完了`);
         }
       }
     }
 
-    // 田中花子用の推薦データを追加（バッジ表示確認用）
-    if (seedData1.recommendationsForHanako && seedData1.recommendationsForHanako.length > 0) {
-      console.log("\n" + "=".repeat(80));
-      console.log("⭐ 田中花子用の推薦データを追加（バッジ表示確認用）");
-      console.log("=".repeat(80));
-
-      // 田中花子のauth_user_idを取得
-      const hanakoUser = seedData1.authUsers[1]; // seed_user_002
-      let hanakoAuthUserId: string | undefined;
-      
-      if (hanakoUser.id && existingIdsForMapping.has(hanakoUser.id)) {
-        hanakoAuthUserId = existingIdsForMapping.get(hanakoUser.id);
-      } else if (existingEmailsForMapping.has(hanakoUser.email)) {
-        hanakoAuthUserId = existingEmailsForMapping.get(hanakoUser.email);
-      } else {
-        const userIndex = seedData.authUsers.findIndex(u => u.id === hanakoUser.id || u.email === hanakoUser.email);
-        hanakoAuthUserId = userIndex >= 0 ? authUserIds[userIndex] : hanakoUser.id;
-      }
-
-      if (!hanakoAuthUserId) {
-        throw new Error(`田中花子のユーザーIDが見つかりません: ${hanakoUser.email}`);
-      }
-
-      const hanakoRecommendationRecords: any[] = [];
-
-      for (const recommendation of seedData1.recommendationsForHanako) {
-        // jobIndexが統合後の全案件の範囲内かチェック
-        if (recommendation.jobIndex < jobIds.length) {
-          const jobId = jobIds[recommendation.jobIndex];
-          const record: any = {
-            [RECOMMENDATION_FIELDS.TALENT_ID]: { value: hanakoAuthUserId },
-            [RECOMMENDATION_FIELDS.JOB_ID]: { value: jobId },
-            [RECOMMENDATION_FIELDS.SCORE]: { value: recommendation.score.toString() },
-          };
-
-          // 担当者おすすめフラグ
-          if (recommendation.staffRecommend) {
-            record[RECOMMENDATION_FIELDS.STAFF_RECOMMEND] = { value: "おすすめ" };
-          }
-
-          // AIマッチフラグ
-          if (recommendation.aiMatched) {
-            record[RECOMMENDATION_FIELDS.AI_EXECUTION_STATUS] = { value: "実行済み" };
-            // AIスコアをダミーで設定
-            record[RECOMMENDATION_FIELDS.AI_OVERALL_SCORE] = { value: "85" };
-            record[RECOMMENDATION_FIELDS.AI_SKILL_SCORE] = { value: "90" };
-            record[RECOMMENDATION_FIELDS.AI_PROCESS_SCORE] = { value: "85" };
-            record[RECOMMENDATION_FIELDS.AI_INFRA_SCORE] = { value: "80" };
-            record[RECOMMENDATION_FIELDS.AI_DOMAIN_SCORE] = { value: "75" };
-            record[RECOMMENDATION_FIELDS.AI_TEAM_SCORE] = { value: "90" };
-            record[RECOMMENDATION_FIELDS.AI_TOOL_SCORE] = { value: "85" };
-            record[RECOMMENDATION_FIELDS.AI_RESULT] = { value: "この案件は候補者のスキルセットと非常にマッチしています。" };
-            record[RECOMMENDATION_FIELDS.AI_EXECUTED_AT] = { value: new Date().toISOString() };
-          }
-
-          hanakoRecommendationRecords.push(record);
-        }
-      }
-
-      if (hanakoRecommendationRecords.length > 0) {
-        // 既存レコードをチェックして、存在する場合は更新、存在しない場合は追加
-        for (const rec of hanakoRecommendationRecords) {
-          const existingRecs = await recommendationClient.record.getRecords({
-            app: appIds.recommendation,
-            query: `${RECOMMENDATION_FIELDS.TALENT_ID} = "${hanakoAuthUserId}" and ${RECOMMENDATION_FIELDS.JOB_ID} = "${rec[RECOMMENDATION_FIELDS.JOB_ID].value}"`,
-          });
-
-          if (existingRecs.records.length > 0) {
-            // 更新
-            const existingId = (existingRecs.records[0] as any).$id.value;
-            await recommendationClient.record.updateRecord({
-              app: appIds.recommendation,
-              id: existingId,
-              record: rec,
-            });
-            console.log(`✅ 田中花子用推薦レコードを更新: 案件ID=${rec[RECOMMENDATION_FIELDS.JOB_ID].value}, スコア=${rec[RECOMMENDATION_FIELDS.SCORE].value}`);
-          } else {
-            // 追加
-            await recommendationClient.record.addRecord({
-              app: appIds.recommendation,
-              record: rec,
-            });
-            console.log(`✅ 田中花子用推薦レコードを追加: 案件ID=${rec[RECOMMENDATION_FIELDS.JOB_ID].value}, スコア=${rec[RECOMMENDATION_FIELDS.SCORE].value}`);
-          }
-        }
-        console.log(`\n📋 バッジ表示の確認方法:`);
-        console.log(`  ※ seed_hanako@example.com でログインすると案件一覧に以下が表示されます:`);
-        console.log(`  - jobIndex 0: 担当者おすすめ + AIマッチ + New（3つ全部）`);
-        console.log(`  - jobIndex 1: 担当者おすすめのみ`);
-        console.log(`  - jobIndex 2: AIマッチ + New`);
-        console.log(`  - jobIndex 3: 登録情報マッチのみ`);
-        console.log(`  - jobIndex 4: 登録情報マッチのみ`);
-      }
-    }
-
-    // システム通知のシードデータを作成
-    console.log("\n" + "=".repeat(80));
-    console.log("📢 Step 6: システム通知のシードデータを作成");
-    console.log("=".repeat(80));
+    // 6. システム通知のシードデータを作成
+    console.log(`\n[6/6] システム通知を作成中...`);
     
     if (appIds.announcement) {
       try {
@@ -2042,86 +1966,22 @@ export const createSeedData = async () => {
           records: announcementRecords,
         });
 
-        console.log(`✅ システム通知のシードデータを作成: ${announcementRecords.length}件（すべて表示される）`);
-        console.log(`   - お知らせ: 2件（表示される - 掲載開始日: ${todayStr}, 掲載終了日: ${oneMonthLaterStr}）`);
-        console.log(`   - メンテナンス: 1件（表示される - 掲載開始日: ${todayStr}, 掲載終了日: ${oneMonthLaterStr}）`);
-        console.log(`   - 障害: 1件（表示される - 掲載開始日: ${todayStr}, 掲載終了日: ${oneMonthLaterStr}）`);
+        console.log(`   → ${announcementRecords.length}件を作成完了`);
       } catch (error) {
-        console.error("⚠️ システム通知のシードデータ作成でエラーが発生しました:", error);
-        console.log("   続行します...");
+        console.log(`   → スキップ（App ID未設定またはエラー）`);
       }
     } else {
-      console.log("⚠️ KINTONE_ANNOUNCEMENT_APP_ID が設定されていないため、システム通知のシードデータ作成をスキップします");
+      console.log(`   → スキップ（App ID未設定）`);
     }
 
     // 完了メッセージ
-    console.log("\n" + "=".repeat(80));
-    console.log("🎉 シードデータの作成が完了しました！");
-    console.log("=".repeat(80));
-    const yamadaRecommendationCount = seedData.recommendations.length;
-    const totalRecommendationCount = allRecommendationRecords.length + yamadaRecommendationCount;
-    
-    console.log("\n📊 作成されたデータ:");
-    console.log(`  👤 Better Authユーザー: ${seedData.authUsers.length}件`);
-    console.log(`  👨‍💼 人材: ${seedData.talents.length}件`);
-    console.log(`  💼 案件: ${seedData.jobs.length}件`);
-    console.log(`  📝 応募履歴: ${seedData.applications.length}件`);
-    console.log(`  🎯 推薦データ: ${totalRecommendationCount}件`);
-    if (yamadaRecommendationCount > 0) {
-      console.log(`     - マッチング計算: ${allRecommendationRecords.length}件`);
-      console.log(`     - yamada用（表示順確認用）: ${yamadaRecommendationCount}件`);
-    }
-    if (appIds.announcement) {
-      console.log(`  📢 システム通知: 3件（障害1件、メンテナンス1件、お知らせ1件）`);
-    }
-    
-    console.log("\n📝 ログイン情報:");
-    // 固定シードユーザー（山田太郎、田中花子）を表示
-    const fixedUsers = seedData.authUsers.filter(u => 
-      u.id === "seed_user_001" || u.id === "seed_user_002"
-    );
-    for (const user of fixedUsers) {
-      console.log(`  - ${user.name}: ${user.email} / ${user.password}`);
-    }
-    // その他のユーザー
-    const otherUsers = seedData.authUsers.filter(u => 
-      u.id !== "seed_user_001" && u.id !== "seed_user_002"
-    );
-    if (otherUsers.length > 0) {
-      const usersToShow = otherUsers.slice(0, 3);
-      for (const user of usersToShow) {
-        console.log(`  - ${user.name}: ${user.email} / ${user.password}`);
-      }
-      if (otherUsers.length > 3) {
-        console.log(`  ... 他 ${otherUsers.length - 3}人（パスワードはすべて password123）`);
-      }
-    }
-    
-    console.log("\n💡 使い方:");
-    console.log("  1. 管理画面にログイン: /admin/login");
-    console.log("  2. 案件を選択すると候補者一覧が自動で表示されます");
-    console.log("  3. 候補者を選択して「AIマッチ実行」でAI評価を実行できます");
-    
-    if (seedData.recommendations.length > 0) {
-      console.log("\n📋 応募済み案件の確認方法:");
-      console.log("  - seed_yamada@example.com でログイン");
-      console.log("  - 応募済み案件一覧画面で各ステータスが1件ずつ表示されます:");
-      console.log("    - 応募済み: 大手ECサイトのフロントエンド刷新案件");
-      console.log("    - 面談調整中: 金融系WebアプリケーションAPI開発");
-      console.log("    - 面談予定: スタートアップ向け新規サービス開発");
-      console.log("    - 案件決定: ヘルスケアアプリ開発案件");
-      console.log("    - 募集終了: データ基盤構築・運用案件");
-    }
-    
-    console.log("\n📋 案件一覧のバッジ表示確認方法:");
-    console.log("  - seed_hanako@example.com でログイン");
-    console.log("  - 案件一覧で以下のバッジが表示されます:");
-    console.log("    - 担当者おすすめ（オレンジ）");
-    console.log("    - AIマッチ（青）");
-    console.log("    - NEW（赤）");
-    console.log("  - 表示順: 担当者おすすめ > AIマッチ > 登録情報マッチ > 新着順");
-    
-    console.log("\n");
+    const totalRecommendationCount = allRecommendationRecords.length + yamadaRecommendationCount + hanakoRecommendationCount;
+
+    console.log("\n🎉 シードデータの作成が完了しました！");
+    console.log(`   ユーザー: ${seedData.authUsers.length}人, 人材: ${seedData.talents.length}人, 案件: ${seedData.jobs.length}件`);
+    console.log(`   応募: ${seedData.applications.length}件, 推薦: ${totalRecommendationCount}件`);
+    console.log(`\n📝 ログイン: seed_yamada@example.com / password123`);
+    console.log(`            seed_hanako@example.com / password123\n`);
 
   } catch (error) {
     console.error("\n❌ エラーが発生しました:", error);
@@ -2135,8 +1995,7 @@ export const createSeedData = async () => {
 
 // シードデータ削除
 export const deleteSeedData = async () => {
-  console.log("\n🗑️  シードデータを削除します\n");
-  console.log("⚠️  警告: すべてのレコードが削除されます！");
+  console.log("\n🗑️  シードデータを削除します...\n");
 
   try {
     const appIds = getAppIds();
@@ -2144,30 +2003,27 @@ export const deleteSeedData = async () => {
     const jobClient = createJobClient();
     const applicationClient = createApplicationClient();
 
+    // 削除件数を記録
+    let deletedCounts = { recommendation: 0, application: 0, job: 0, talent: 0, announcement: 0, user: 0 };
+
     // 推薦DBのクライアント（存在する場合のみ）
     let recommendationClient: ReturnType<typeof createRecommendationClient> | null = null;
     if (appIds.recommendation) {
       try {
         recommendationClient = createRecommendationClient();
       } catch {
-        console.log("⚠️ 推薦DBクライアントの初期化をスキップしました");
+        // スキップ
       }
     }
 
-    // 1. 推薦データを全件削除（存在する場合）
+    // 1. 推薦データを全件削除
     if (recommendationClient && appIds.recommendation) {
-    console.log("\n" + "=".repeat(80));
-      console.log("🎯 Step 1: 推薦データを全件削除");
-    console.log("=".repeat(80));
-
       const recommendations = await recommendationClient.record.getAllRecords({
         app: appIds.recommendation,
         fields: ["$id"],
       });
-
       if (recommendations.length > 0) {
         const recIds = recommendations.map((record: any) => record.$id.value);
-        // 100件ずつ削除
         for (let i = 0; i < recIds.length; i += 100) {
           const batch = recIds.slice(i, i + 100);
           await recommendationClient.record.deleteRecords({
@@ -2175,103 +2031,71 @@ export const deleteSeedData = async () => {
             ids: batch,
           });
         }
-        console.log(`✅ 推薦データを削除: ${recIds.length}件`);
-      } else {
-        console.log("✅ 推薦データ: 削除対象なし");
+        deletedCounts.recommendation = recIds.length;
       }
     }
 
     // 2. 応募履歴を全件削除
-    console.log("\n" + "=".repeat(80));
-    console.log("📝 Step 2: 応募履歴を全件削除");
-    console.log("=".repeat(80));
-
     const applications = await applicationClient.record.getAllRecords({
       app: appIds.application,
       fields: ["$id"],
     });
-
     if (applications.length > 0) {
       const applicationIds = applications.map((record: any) => record.$id.value);
-      // 100件ずつ削除
       for (let i = 0; i < applicationIds.length; i += 100) {
         const batch = applicationIds.slice(i, i + 100);
-      await applicationClient.record.deleteRecords({
-        app: appIds.application,
+        await applicationClient.record.deleteRecords({
+          app: appIds.application,
           ids: batch,
-      });
+        });
       }
-      console.log(`✅ 応募履歴を削除: ${applicationIds.length}件`);
-    } else {
-      console.log("✅ 応募履歴: 削除対象なし");
+      deletedCounts.application = applicationIds.length;
     }
 
     // 3. 案件を全件削除
-    console.log("\n" + "=".repeat(80));
-    console.log("💼 Step 3: 案件を全件削除");
-    console.log("=".repeat(80));
-
     const jobs = await jobClient.record.getAllRecords({
       app: appIds.job,
       fields: ["$id"],
     });
-
     if (jobs.length > 0) {
       const jobIds = jobs.map((record: any) => record.$id.value);
-      // 100件ずつ削除
       for (let i = 0; i < jobIds.length; i += 100) {
         const batch = jobIds.slice(i, i + 100);
-      await jobClient.record.deleteRecords({
-        app: appIds.job,
+        await jobClient.record.deleteRecords({
+          app: appIds.job,
           ids: batch,
-      });
+        });
       }
-      console.log(`✅ 案件を削除: ${jobIds.length}件`);
-    } else {
-      console.log("✅ 案件: 削除対象なし");
+      deletedCounts.job = jobIds.length;
     }
 
     // 4. 人材を全件削除
-    console.log("\n" + "=".repeat(80));
-    console.log("👨‍💼 Step 4: 人材を全件削除");
-    console.log("=".repeat(80));
-
     const talents = await talentClient.record.getAllRecords({
       app: appIds.talent,
       fields: ["$id"],
     });
-
     if (talents.length > 0) {
       const talentIds = talents.map((record: any) => record.$id.value);
-      // 100件ずつ削除
       for (let i = 0; i < talentIds.length; i += 100) {
         const batch = talentIds.slice(i, i + 100);
-      await talentClient.record.deleteRecords({
-        app: appIds.talent,
+        await talentClient.record.deleteRecords({
+          app: appIds.talent,
           ids: batch,
-      });
+        });
       }
-      console.log(`✅ 人材を削除: ${talentIds.length}件`);
-    } else {
-      console.log("✅ 人材: 削除対象なし");
+      deletedCounts.talent = talentIds.length;
     }
 
-    // 5. システム通知を全件削除（存在する場合）
+    // 5. システム通知を全件削除
     if (appIds.announcement) {
       try {
-        console.log("\n" + "=".repeat(80));
-        console.log("📢 Step 5: システム通知を全件削除");
-        console.log("=".repeat(80));
-
         const announcementClient = createAnnouncementClient();
         const announcements = await announcementClient.record.getAllRecords({
           app: appIds.announcement,
           fields: ["$id"],
         });
-
         if (announcements.length > 0) {
           const announcementIds = announcements.map((record: any) => record.$id.value);
-          // 100件ずつ削除
           for (let i = 0; i < announcementIds.length; i += 100) {
             const batch = announcementIds.slice(i, i + 100);
             await announcementClient.record.deleteRecords({
@@ -2279,51 +2103,37 @@ export const deleteSeedData = async () => {
               ids: batch,
             });
           }
-          console.log(`✅ システム通知を削除: ${announcementIds.length}件`);
-        } else {
-          console.log("✅ システム通知: 削除対象なし");
+          deletedCounts.announcement = announcementIds.length;
         }
-      } catch (error) {
-        console.error("⚠️ システム通知の削除でエラーが発生しました:", error);
-        console.log("   続行します...");
+      } catch {
+        // スキップ
       }
     }
 
     // 6. Better Authユーザーを削除
-    console.log("\n" + "=".repeat(80));
-    console.log("👤 Step 6: Better Authユーザーを削除");
-    console.log("=".repeat(80));
-
     const db = getDb();
-    
-    // すべてのテーブルのレコード数を確認
     const users = await db.select({ id: schema.user.id }).from(schema.user);
     const userCount = users.length;
-    
+
     if (userCount > 0) {
-      // すべてのテーブルを削除（外部キー制約の順番に注意）
       await db.delete(schema.session);
       await db.delete(schema.account);
       await db.delete(schema.verification);
       await db.delete(schema.user);
-      
-      console.log(`✅ ユーザーを削除: ${userCount}件`);
-    } else {
-      console.log("✅ ユーザー: 削除対象なし");
+      deletedCounts.user = userCount;
     }
 
     await closePool();
 
-    console.log("\n" + "=".repeat(80));
+    // サマリー表示
     console.log("🎉 シードデータの削除が完了しました！");
-    console.log("=".repeat(80));
-    console.log("\n");
+    console.log(`   推薦: ${deletedCounts.recommendation}件, 応募: ${deletedCounts.application}件, 案件: ${deletedCounts.job}件`);
+    console.log(`   人材: ${deletedCounts.talent}件, 通知: ${deletedCounts.announcement}件, ユーザー: ${deletedCounts.user}件\n`);
 
   } catch (error) {
     console.error("\n❌ エラーが発生しました:", error);
     if (error instanceof Error) {
       console.error("エラーメッセージ:", error.message);
-      console.error("スタックトレース:", error.stack);
     }
     process.exit(1);
   }
