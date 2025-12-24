@@ -565,13 +565,13 @@ SOC（セキュリティオペレーションセンター）での監視・分�
   // 担当者おすすめやAIマッチのバッジ表示確認用
   recommendationsForYamada: [
     // seedData3の案件に対して推薦データを作成（jobIndexは統合後のインデックス）
-    // 担当者おすすめ + AIマッチ
-    { talentIndex: 0, jobIndex: 8, score: 95, staffRecommend: true, aiMatched: true },
-    // 担当者おすすめ + AIマッチ
-    { talentIndex: 0, jobIndex: 9, score: 88, staffRecommend: true, aiMatched: true },
+    // AIマッチのみ（応募済みの可能性がある案件）
+    { talentIndex: 0, jobIndex: 8, score: 95, staffRecommend: false, aiMatched: true },
+    { talentIndex: 0, jobIndex: 9, score: 88, staffRecommend: false, aiMatched: true },
+    // 担当者おすすめ + AIマッチ（確実に応募済みでない案件）
+    { talentIndex: 0, jobIndex: 10, score: 85, staffRecommend: true, aiMatched: true },
+    { talentIndex: 0, jobIndex: 11, score: 82, staffRecommend: true, aiMatched: true },
     // AIマッチのみ
-    { talentIndex: 0, jobIndex: 10, score: 85, staffRecommend: false, aiMatched: true },
-    { talentIndex: 0, jobIndex: 11, score: 82, staffRecommend: false, aiMatched: true },
     { talentIndex: 0, jobIndex: 12, score: 80, staffRecommend: false, aiMatched: true },
     { talentIndex: 0, jobIndex: 13, score: 78, staffRecommend: false, aiMatched: true },
     { talentIndex: 0, jobIndex: 14, score: 75, staffRecommend: false, aiMatched: true },
@@ -1769,12 +1769,12 @@ export const createSeedData = async () => {
 
         if (yamadaRecommendationRecords.length > 0) {
           // 既存レコードを一括取得
-          const existingRecs = await recommendationClient.record.getRecords({
+          const existingRecs = await recommendationClient.record.getAllRecords({
             app: appIds.recommendation,
-            query: `${RECOMMENDATION_FIELDS.TALENT_ID} = "${yamadaAuthUserId}"`,
+            condition: `${RECOMMENDATION_FIELDS.TALENT_ID} = "${yamadaAuthUserId}"`,
           });
           const existingMap = new Map<string, string>();
-          for (const rec of existingRecs.records as any[]) {
+          for (const rec of existingRecs as any[]) {
             existingMap.set(rec[RECOMMENDATION_FIELDS.JOB_ID].value, rec.$id.value);
           }
 
@@ -1858,12 +1858,12 @@ export const createSeedData = async () => {
 
         if (hanakoRecommendationRecords.length > 0) {
           // 既存レコードを一括取得
-          const existingRecs = await recommendationClient.record.getRecords({
+          const existingRecs = await recommendationClient.record.getAllRecords({
             app: appIds.recommendation,
-            query: `${RECOMMENDATION_FIELDS.TALENT_ID} = "${hanakoAuthUserId}"`,
+            condition: `${RECOMMENDATION_FIELDS.TALENT_ID} = "${hanakoAuthUserId}"`,
           });
           const existingMap = new Map<string, string>();
-          for (const rec of existingRecs.records as any[]) {
+          for (const rec of existingRecs as any[]) {
             existingMap.set(rec[RECOMMENDATION_FIELDS.JOB_ID].value, rec.$id.value);
           }
 
@@ -2167,13 +2167,12 @@ const upsertYamadaSeedData = async () => {
     if (appIds.inquiry) {
       try {
         const inquiryClient = createInquiryClient();
-        const inquiryRecords = await inquiryClient.record.getRecords({
+        const inquiryRecords = await inquiryClient.record.getAllRecords({
           app: appIds.inquiry,
-          query: "",
         });
 
-        if (inquiryRecords.records.length > 0) {
-          const recordIds = inquiryRecords.records.map((r: any) => r.$id.value);
+        if (inquiryRecords.length > 0) {
+          const recordIds = inquiryRecords.map((r: any) => r.$id.value);
           await inquiryClient.record.deleteRecords({
             app: appIds.inquiry,
             ids: recordIds.map((id: string) => parseInt(id, 10)),
@@ -2192,14 +2191,14 @@ const upsertYamadaSeedData = async () => {
 
     // Yamadaの人材DBレコードのSTフィールドをリセット
     try {
-      const existingTalent = await talentClient.record.getRecords({
+      const existingTalent = await talentClient.record.getAllRecords({
         app: appIds.talent,
-        query: `${TALENT_FIELDS.AUTH_USER_ID} = "${YAMADA_AUTH_USER_ID}"`,
+        condition: `${TALENT_FIELDS.AUTH_USER_ID} = "${YAMADA_AUTH_USER_ID}"`,
       });
 
-      if (existingTalent.records.length > 0) {
-        const talentRecordId = (existingTalent.records[0] as any).$id.value;
-        const currentST = (existingTalent.records[0] as any)[TALENT_FIELDS.ST]?.value || "";
+      if (existingTalent.length > 0) {
+        const talentRecordId = (existingTalent[0] as any).$id.value;
+        const currentST = (existingTalent[0] as any)[TALENT_FIELDS.ST]?.value || "";
 
         if (currentST === "退会") {
           await talentClient.record.updateRecord({
@@ -2350,9 +2349,9 @@ const upsertYamadaSeedData = async () => {
     console.log("=".repeat(80));
 
     // auth_user_id で既存レコードを検索
-    const existingTalents = await talentClient.record.getRecords({
+    const existingTalents = await talentClient.record.getAllRecords({
       app: appIds.talent,
-      query: `${TALENT_FIELDS.AUTH_USER_ID} = "${YAMADA_AUTH_USER_ID}"`,
+      condition: `${TALENT_FIELDS.AUTH_USER_ID} = "${YAMADA_AUTH_USER_ID}"`,
     });
 
     const talent = seedData.talents[0];
@@ -2383,9 +2382,9 @@ const upsertYamadaSeedData = async () => {
 
     let talentRecordId: string;
 
-    if (existingTalents.records.length > 0) {
+    if (existingTalents.length > 0) {
       // 更新
-      const existingId = (existingTalents.records[0] as any).$id.value;
+      const existingId = (existingTalents[0] as any).$id.value;
       await talentClient.record.updateRecord({
         app: appIds.talent,
         id: existingId,
@@ -2412,9 +2411,9 @@ const upsertYamadaSeedData = async () => {
 
     for (const job of seedData.jobs) {
       // 案件名で既存レコードを検索
-      const existingJobs = await jobClient.record.getRecords({
+      const existingJobs = await jobClient.record.getAllRecords({
         app: appIds.job,
-        query: `案件名 = "${job.案件名}"`,
+        condition: `案件名 = "${job.案件名}"`,
       });
 
       const jobRecord = {
@@ -2474,9 +2473,9 @@ const upsertYamadaSeedData = async () => {
       const jobId = jobIds[application.jobIndex];
 
       // auth_user_id と job_id で既存レコードを検索
-      const existingApplications = await applicationClient.record.getRecords({
+      const existingApplications = await applicationClient.record.getAllRecords({
         app: appIds.application,
-        query: `${APPLICATION_FIELDS.AUTH_USER_ID} = "${YAMADA_AUTH_USER_ID}" and ${APPLICATION_FIELDS.JOB_ID} = "${jobId}"`,
+        condition: `${APPLICATION_FIELDS.AUTH_USER_ID} = "${YAMADA_AUTH_USER_ID}" and ${APPLICATION_FIELDS.JOB_ID} = "${jobId}"`,
       });
 
       const applicationRecord: any = {
@@ -2490,9 +2489,9 @@ const upsertYamadaSeedData = async () => {
         applicationRecord[APPLICATION_FIELDS.CREATED_AT_DEV] = { value: (application as any).作成日時_開発環境 };
       }
 
-      if (existingApplications.records.length > 0) {
+      if (existingApplications.length > 0) {
         // 更新
-        const existingId = (existingApplications.records[0] as any).$id.value;
+        const existingId = (existingApplications[0] as any).$id.value;
         await applicationClient.record.updateRecord({
           app: appIds.application,
           id: existingId,
@@ -2521,9 +2520,9 @@ const upsertYamadaSeedData = async () => {
       const jobId = jobIds[recommendation.jobIndex];
 
       // 人材ID と 案件ID で既存レコードを検索
-      const existingRecommendations = await recommendationClient.record.getRecords({
+      const existingRecommendations = await recommendationClient.record.getAllRecords({
         app: appIds.recommendation,
-        query: `${RECOMMENDATION_FIELDS.TALENT_ID} = "${YAMADA_AUTH_USER_ID}" and ${RECOMMENDATION_FIELDS.JOB_ID} = "${jobId}"`,
+        condition: `${RECOMMENDATION_FIELDS.TALENT_ID} = "${YAMADA_AUTH_USER_ID}" and ${RECOMMENDATION_FIELDS.JOB_ID} = "${jobId}"`,
       });
 
       const recommendationRecord: any = {
@@ -2532,9 +2531,9 @@ const upsertYamadaSeedData = async () => {
         [RECOMMENDATION_FIELDS.SCORE]: { value: recommendation.score.toString() },
       };
 
-      if (existingRecommendations.records.length > 0) {
+      if (existingRecommendations.length > 0) {
         // 更新
-        const existingId = (existingRecommendations.records[0] as any).$id.value;
+        const existingId = (existingRecommendations[0] as any).$id.value;
         await recommendationClient.record.updateRecord({
           app: appIds.recommendation,
           id: existingId,
@@ -2562,9 +2561,9 @@ const upsertYamadaSeedData = async () => {
         const jobId = jobIds[recommendation.jobIndex];
 
         // 人材ID と 案件ID で既存レコードを検索
-        const existingRecommendations = await recommendationClient.record.getRecords({
+        const existingRecommendations = await recommendationClient.record.getAllRecords({
           app: appIds.recommendation,
-          query: `${RECOMMENDATION_FIELDS.TALENT_ID} = "${YAMADA_AUTH_USER_ID}" and ${RECOMMENDATION_FIELDS.JOB_ID} = "${jobId}"`,
+          condition: `${RECOMMENDATION_FIELDS.TALENT_ID} = "${YAMADA_AUTH_USER_ID}" and ${RECOMMENDATION_FIELDS.JOB_ID} = "${jobId}"`,
         });
 
         const recommendationRecord: any = {
@@ -2593,9 +2592,9 @@ const upsertYamadaSeedData = async () => {
           recommendationRecord[RECOMMENDATION_FIELDS.AI_EXECUTED_AT] = { value: new Date().toISOString() };
         }
 
-        if (existingRecommendations.records.length > 0) {
+        if (existingRecommendations.length > 0) {
           // 更新
-          const existingId = (existingRecommendations.records[0] as any).$id.value;
+          const existingId = (existingRecommendations[0] as any).$id.value;
           await recommendationClient.record.updateRecord({
             app: appIds.recommendation,
             id: existingId,
