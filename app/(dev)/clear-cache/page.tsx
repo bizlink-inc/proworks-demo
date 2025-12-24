@@ -7,6 +7,7 @@ const STORAGE_KEYS = [
   "seed_notification_initialized",
   "read_recommended_notifications",
   "previous_application_status",
+  "profile_notification_dismissed_at",
 ]
 
 export default function ClearCachePage() {

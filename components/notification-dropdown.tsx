@@ -37,20 +37,25 @@ const getNotificationTitle = (notification: Notification): string => {
     } else {
       return "あなたのスキルにマッチする案件をAIが見つけました！"
     }
+  } else if (notification.type === "profile_incomplete") {
+    return "プロフィールに未入力の項目があります。"
   }
   return ""
 }
 
-// 通知の説明文を取得（status_changeのみ）
+// 通知の説明文を取得
 const getNotificationDescription = (notification: Notification): string | null => {
   if (notification.type === "status_change") {
     return "ご登録いただいているメールアドレス宛にメールを送信しましたのでご確認ください。"
+  }
+  if (notification.type === "profile_incomplete") {
+    return `未入力の項目: ${notification.missingFields.join("、")}`
   }
   return null
 }
 
 export const NotificationDropdown = () => {
-  const { notifications, removeNotification, fetchRecommendedNotifications } = useNotifications()
+  const { notifications, removeNotification, fetchRecommendedNotifications, fetchProfileIncompleteNotification } = useNotifications()
   const [isOpen, setIsOpen] = useState(false)
   const router = useRouter()
   const pathname = usePathname()
@@ -58,10 +63,11 @@ export const NotificationDropdown = () => {
   // ステータス変更を監視
   useApplicationStatusMonitor()
 
-  // 初回マウント時におすすめ通知を取得
+  // 初回マウント時に通知を取得
   useEffect(() => {
     fetchRecommendedNotifications()
-  }, [fetchRecommendedNotifications])
+    fetchProfileIncompleteNotification()
+  }, [fetchRecommendedNotifications, fetchProfileIncompleteNotification])
 
   // 通知を新しい順にソート
   const sortedNotifications = [...notifications].sort(
@@ -75,6 +81,9 @@ export const NotificationDropdown = () => {
     if (notification.type === "recommended") {
       // 担当者おすすめ・AIマッチ両方とも案件詳細モーダルを開く
       router.push(`/?jobId=${notification.jobId}`)
+    } else if (notification.type === "profile_incomplete") {
+      // プロフィール未入力通知は該当タブへ遷移
+      router.push(`/me?tab=${notification.tab}`)
     } else {
       // ステータス変更は応募履歴ページへ遷移し、対象案件の詳細を開く
       router.push(`/applications?jobId=${notification.jobId}`)

@@ -23,8 +23,17 @@ export type RecommendedNotification = BaseNotification & {
   recommendationType: "staff" | "program_match"  // 担当者おすすめ or プログラムマッチ
 }
 
+// プロフィール未入力通知
+export type ProfileIncompleteNotification = {
+  id: string
+  type: "profile_incomplete"
+  missingFields: string[]
+  tab: string // 遷移先タブ（work-history | preferences）
+  timestamp: string
+}
+
 // 統合された通知型
-export type Notification = StatusChangeNotification | RecommendedNotification
+export type Notification = StatusChangeNotification | RecommendedNotification | ProfileIncompleteNotification
 
 // 後方互換性のためのヘルパー型（旧形式のNotification）
 export type LegacyNotification = {
@@ -42,6 +51,7 @@ type NotificationContextType = {
   removeNotification: (id: string) => void
   clearAllNotifications: () => void
   fetchRecommendedNotifications: () => Promise<void>
+  fetchProfileIncompleteNotification: () => Promise<void>
   isLoading: boolean
 }
 
@@ -93,6 +103,12 @@ const READ_RECOMMENDED_NOTIFICATIONS_KEY = "read_recommended_notifications"
 // 初期通知が設定済みかどうかを確認するキー
 const SEED_NOTIFICATION_INITIALIZED_KEY = "seed_notification_initialized"
 
+// プロフィール未入力通知を閉じた時刻を保存するキー
+const PROFILE_NOTIFICATION_DISMISSED_AT_KEY = "profile_notification_dismissed_at"
+
+// プロフィール通知の再表示間隔（ミリ秒） - 1日
+const PROFILE_NOTIFICATION_INTERVAL_MS = 24 * 60 * 60 * 1000
+
 // 既読のおすすめ通知IDを取得
 const getReadRecommendedIds = (): Set<string> => {
   try {
@@ -111,6 +127,34 @@ const saveReadRecommendedId = (id: string) => {
   const readIds = getReadRecommendedIds()
   readIds.add(id)
   localStorage.setItem(READ_RECOMMENDED_NOTIFICATIONS_KEY, JSON.stringify([...readIds]))
+}
+
+// プロフィール通知を閉じた時刻を取得
+const getProfileNotificationDismissedAt = (): number | null => {
+  try {
+    const stored = localStorage.getItem(PROFILE_NOTIFICATION_DISMISSED_AT_KEY)
+    if (stored) {
+      return parseInt(stored, 10)
+    }
+  } catch (error) {
+    console.error("Failed to parse profile notification dismissed at:", error)
+  }
+  return null
+}
+
+// プロフィール通知を閉じた時刻を保存
+const saveProfileNotificationDismissedAt = () => {
+  localStorage.setItem(PROFILE_NOTIFICATION_DISMISSED_AT_KEY, Date.now().toString())
+}
+
+// プロフィール通知を表示すべきか判定（1日経過したらtrue）
+const shouldShowProfileNotification = (): boolean => {
+  const dismissedAt = getProfileNotificationDismissedAt()
+  if (dismissedAt === null) {
+    return true // 一度も閉じていない場合は表示
+  }
+  const elapsed = Date.now() - dismissedAt
+  return elapsed >= PROFILE_NOTIFICATION_INTERVAL_MS
 }
 
 // 旧形式の通知を新形式に変換
@@ -194,24 +238,74 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     }
   }, [])
 
+  // プロフィール未入力通知を取得
+  const fetchProfileIncompleteNotification = useCallback(async () => {
+    // 1日経過していない場合はスキップ
+    if (!shouldShowProfileNotification()) {
+      return
+    }
+
+    try {
+      const response = await fetch("/api/me")
+      if (!response.ok) {
+        return
+      }
+
+      const talent = await response.json()
+
+      // プロフィール検証関数を動的にインポート
+      const { checkRequiredFields, getProfileIncompleteTab } = await import("@/lib/utils/profile-validation")
+      const missingFields = checkRequiredFields(talent)
+      const tab = getProfileIncompleteTab(talent)
+
+      if (missingFields.length > 0 && tab) {
+        const profileNotification: ProfileIncompleteNotification = {
+          id: "profile_incomplete",
+          type: "profile_incomplete",
+          missingFields,
+          tab,
+          timestamp: new Date().toISOString(),
+        }
+
+        setNotifications((prev) => {
+          // 既に同じ通知がある場合は追加しない
+          const existingProfileNotification = prev.find((n) => n.type === "profile_incomplete")
+          if (existingProfileNotification) {
+            return prev
+          }
+          return [...prev, profileNotification]
+        })
+      }
+    } catch (error) {
+      console.error("Error fetching profile incomplete notification:", error)
+    }
+  }, [])
+
   const addNotification = (notification: Notification) => {
     setNotifications((prev) => [...prev, notification])
   }
 
   const removeNotification = (id: string) => {
-    // おすすめ通知の場合は既読として保存
     const notification = notifications.find((n) => n.id === id)
+    // おすすめ通知の場合は既読として保存
     if (notification?.type === "recommended") {
       saveReadRecommendedId(id)
+    }
+    // プロフィール未入力通知の場合は閉じた時刻を保存
+    if (notification?.type === "profile_incomplete") {
+      saveProfileNotificationDismissedAt()
     }
     setNotifications((prev) => prev.filter((n) => n.id !== id))
   }
 
   const clearAllNotifications = () => {
-    // おすすめ通知を全て既読として保存
+    // 通知タイプごとに既読状態を保存
     notifications.forEach((n) => {
       if (n.type === "recommended") {
         saveReadRecommendedId(n.id)
+      }
+      if (n.type === "profile_incomplete") {
+        saveProfileNotificationDismissedAt()
       }
     })
     setNotifications([])
@@ -225,6 +319,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         removeNotification,
         clearAllNotifications,
         fetchRecommendedNotifications,
+        fetchProfileIncompleteNotification,
         isLoading,
       }}
     >
