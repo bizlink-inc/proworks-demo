@@ -26,25 +26,20 @@ export function JobDetailModal({ jobId, onClose, onApply }: JobDetailModalProps)
       return
     }
 
-    console.log("[v0] 案件詳細取得開始:", jobId)
-
     setLoading(true)
     Promise.all([
       // 案件詳細を取得
       fetch(`/api/jobs/${jobId}`)
         .then((res) => res.json()),
-      // 応募済みの案件一覧を取得
-      fetch(`/api/applications/me`)
+      // 応募済みの案件ID一覧を取得（軽量版）
+      fetch(`/api/applications/applied-job-ids`)
         .then((res) => res.json())
     ])
-      .then(([jobData, applicationsData]) => {
-        console.log("[v0] 案件詳細取得成功:", jobData)
+      .then(([jobData, appliedData]) => {
         setJob(jobData)
-        
+
         // 現在の案件が応募済みかどうかをチェック
-        const isApplied = applicationsData.some(
-          (app: any) => app.jobId === jobId
-        )
+        const isApplied = appliedData.appliedJobIds?.includes(jobId) || false
         setIsAlreadyApplied(isApplied)
         setLoading(false)
       })
@@ -55,8 +50,6 @@ export function JobDetailModal({ jobId, onClose, onApply }: JobDetailModalProps)
   }, [jobId])
 
   const handleApply = () => {
-    console.log("[v0] 応募ボタンクリック:", { jobId: job?.id, jobTitle: job?.title })
-
     if (job) {
       onApply(job.id, job.title)
     }
@@ -138,10 +131,10 @@ export function JobDetailModal({ jobId, onClose, onApply }: JobDetailModalProps)
 
         {loading ? (
           <div className="py-8 text-center text-muted-foreground">読み込み中...</div>
-        ) : job ? (
+        ) : job && job.title ? (
           <div>
             <div className="px-8 pt-6 pb-4">
-            {job.features.length > 0 && (
+            {job.features && job.features.length > 0 && (
                 <div className="flex flex-wrap gap-2 mb-4 justify-end">
                   {job.features.slice(0, 3).map((feature, index) => (
                     <span
@@ -208,7 +201,7 @@ export function JobDetailModal({ jobId, onClose, onApply }: JobDetailModalProps)
 
               {renderBlueRow(
                 "職種ポジション",
-                job.position.length > 0 &&
+                job.position && job.position.length > 0 &&
                   job.position.map((pos, index) => (
                     <span
                       key={pos}
@@ -309,7 +302,11 @@ export function JobDetailModal({ jobId, onClose, onApply }: JobDetailModalProps)
               </div>
             )}
           </div>
-        ) : null}
+        ) : (
+          <div className="py-8 text-center text-muted-foreground">
+            案件情報を取得できませんでした
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   )
