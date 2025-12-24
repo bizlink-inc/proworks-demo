@@ -55,25 +55,31 @@ export const GET = async (request: NextRequest) => {
         const appIds = getAppIds();
 
         if (appIds.recommendation) {
-          const recommendationsResponse = await recommendationClient.record.getRecords({
+          // getAllRecordsで全件取得（getRecordsは100件制限あり）
+          const recommendations = await recommendationClient.record.getAllRecords({
             app: appIds.recommendation,
-            query: `${RECOMMENDATION_FIELDS.TALENT_ID} = "${session.user.id}"`,
+            condition: `${RECOMMENDATION_FIELDS.TALENT_ID} = "${session.user.id}"`,
             fields: [
               RECOMMENDATION_FIELDS.JOB_ID,
               RECOMMENDATION_FIELDS.SCORE,
               RECOMMENDATION_FIELDS.STAFF_RECOMMEND,
-              RECOMMENDATION_FIELDS.AI_EXECUTION_STATUS,
             ],
-          });
+          }) as RecommendationRecord[];
 
-          const recommendations = recommendationsResponse.records as RecommendationRecord[];
+          console.log(`[Jobs API] 推薦レコード取得: ${recommendations.length}件 (user: ${session.user.id})`);
 
           for (const rec of recommendations) {
             const jobId = rec[RECOMMENDATION_FIELDS.JOB_ID].value;
             const score = parseInt(rec[RECOMMENDATION_FIELDS.SCORE].value, 10) || 0;
-            const staffRecommend = rec[RECOMMENDATION_FIELDS.STAFF_RECOMMEND]?.value === "おすすめ";
-            const aiExecutionStatus = rec[RECOMMENDATION_FIELDS.AI_EXECUTION_STATUS]?.value || "";
-            const aiMatched = aiExecutionStatus === "実行済み";
+            const staffRecommendValue = rec[RECOMMENDATION_FIELDS.STAFF_RECOMMEND]?.value;
+            const staffRecommend = staffRecommendValue === "おすすめ";
+            // 推薦DBにレコードが存在すればAI Matchとする
+            const aiMatched = true;
+
+            // 担当者おすすめの場合はログ出力
+            if (staffRecommend) {
+              console.log(`[Jobs API] 担当者おすすめ発見: jobId=${jobId}, staffRecommendValue="${staffRecommendValue}"`);
+            }
 
             recommendationMap[jobId] = {
               score,
@@ -169,6 +175,18 @@ export const GET = async (request: NextRequest) => {
         const jobStation = job.nearestStation.replace(/駅$/g, "").toLowerCase();
         return jobStation.includes(stationQuery);
       });
+    }
+
+    // 推薦DBにあるが案件一覧に表示されない案件をログ出力
+    const recommendedJobIds = Object.keys(recommendationMap);
+    const displayedJobIds = new Set(jobs.map(job => job.id));
+    const missingJobIds = recommendedJobIds.filter(jobId => !displayedJobIds.has(jobId));
+    if (missingJobIds.length > 0) {
+      console.log(`[Jobs API] 推薦DBにあるが案件一覧に表示されない案件: ${missingJobIds.length}件`);
+      for (const jobId of missingJobIds) {
+        const isApplied = applicationsMap[jobId];
+        console.log(`  - jobId=${jobId}, 応募済み=${isApplied ? `はい(${isApplied})` : 'いいえ'}`);
+      }
     }
 
     // 案件に推薦情報と応募ステータスを追加
