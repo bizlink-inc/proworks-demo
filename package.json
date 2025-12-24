@@ -10,6 +10,7 @@
     "db:push": "npx drizzle-kit push",
     "delete-user": "npx tsx scripts/delete-test-user.ts",
     "test-signup": "npx tsx scripts/test-signup.ts",
+    "dev:signup": "npx tsx scripts/dev-signup.ts",
     "get-fields": "npx tsx scripts/get-kintone-fields.ts",
     "rds:access:add": "npx tsx scripts/rds-access-manager.ts add",
     "rds:access:remove": "npx tsx scripts/rds-access-manager.ts remove",
