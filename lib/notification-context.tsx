@@ -57,45 +57,10 @@ type NotificationContextType = {
 
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined)
 
-// シードデータ用の初期通知（デモ用）
-// 日付を生成するヘルパー関数
-const getDaysAgo = (days: number): string => {
-  const date = new Date()
-  date.setDate(date.getDate() - days)
-  return date.toISOString()
-}
-
-// 3種類のシードデータ
-const SEED_NOTIFICATIONS: Notification[] = [
-  // 1. ステータス変更通知（昨日）
-  {
-    id: "seed_notification_001",
-    type: "status_change",
-    jobId: "1",
-    jobTitle: "大手ECサイトのフロントエンド刷新案件",
-    oldStatus: "応募済み",
-    newStatus: "面談調整中",
-    timestamp: getDaysAgo(1),
-  },
-  // 2. 担当者おすすめ通知（2日前）
-  {
-    id: "seed_notification_002",
-    type: "recommended",
-    jobId: "2",
-    jobTitle: "金融系システムのバックエンド開発",
-    recommendationType: "staff",
-    timestamp: getDaysAgo(2),
-  },
-  // 3. AIマッチ通知（3日前）
-  {
-    id: "seed_notification_003",
-    type: "recommended",
-    jobId: "3",
-    jobTitle: "SaaS製品のフルスタック開発",
-    recommendationType: "program_match",
-    timestamp: getDaysAgo(3),
-  },
-]
+// シードデータ用の初期通知
+// ※APIから取得される通知と重複するため、空配列に設定
+// ※通知はfetchRecommendedNotificationsで取得される
+const SEED_NOTIFICATIONS: Notification[] = []
 
 // 既読のおすすめ通知IDを保存するキー
 const READ_RECOMMENDED_NOTIFICATIONS_KEY = "read_recommended_notifications"
@@ -221,16 +186,12 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       const newNotifications: RecommendedNotification[] = data.notifications
         .filter((n: RecommendedNotification) => !readIds.has(n.id))
 
-      if (newNotifications.length > 0) {
-        setNotifications((prev) => {
-          // 重複を避けるため、既存の通知IDを取得
-          const existingIds = new Set(prev.map((n) => n.id))
-          const uniqueNewNotifications = newNotifications.filter(
-            (n) => !existingIds.has(n.id)
-          )
-          return [...prev, ...uniqueNewNotifications]
-        })
-      }
+      // 推薦通知はAPIからの結果で置き換える（古いlocalStorageのデータをクリア）
+      setNotifications((prev) => {
+        // 推薦通知以外を保持（ステータス変更、プロフィール未入力など）
+        const nonRecommendedNotifications = prev.filter((n) => n.type !== "recommended")
+        return [...nonRecommendedNotifications, ...newNotifications]
+      })
     } catch (error) {
       console.error("Error fetching recommended notifications:", error)
     } finally {

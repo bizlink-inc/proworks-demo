@@ -563,18 +563,14 @@ SOC（セキュリティオペレーションセンター）での監視・分�
   // 山田太郎（seed_user_001）用の推薦データ
   // 案件一覧に表示される案件（応募していない案件）
   // 担当者おすすめやAIマッチのバッジ表示確認用
+  // ※通知数を抑えるため3件に限定
   recommendationsForYamada: [
     // seedData3の案件に対して推薦データを作成（jobIndexは統合後のインデックス）
-    // AIマッチのみ（応募済みの可能性がある案件）
+    // AIマッチのみ
     { talentIndex: 0, jobIndex: 8, score: 95, staffRecommend: false, aiMatched: true },
     { talentIndex: 0, jobIndex: 9, score: 88, staffRecommend: false, aiMatched: true },
-    // 担当者おすすめ + AIマッチ（確実に応募済みでない案件）
+    // 担当者おすすめ + AIマッチ（1件のみ）
     { talentIndex: 0, jobIndex: 10, score: 85, staffRecommend: true, aiMatched: true },
-    { talentIndex: 0, jobIndex: 11, score: 82, staffRecommend: true, aiMatched: true },
-    // AIマッチのみ
-    { talentIndex: 0, jobIndex: 12, score: 80, staffRecommend: false, aiMatched: true },
-    { talentIndex: 0, jobIndex: 13, score: 78, staffRecommend: false, aiMatched: true },
-    { talentIndex: 0, jobIndex: 14, score: 75, staffRecommend: false, aiMatched: true },
   ],
 
   // 田中花子（seed_user_002）用の推薦データ
@@ -1669,6 +1665,8 @@ export const createSeedData = async () => {
 
         for (const match of finalMatches) {
           if (!match.talentAuthUserId) continue;
+          // 山田太郎は recommendationsForYamada で別途管理するため除外
+          if (match.talentAuthUserId === "seed_user_001") continue;
 
           allRecommendationRecords.push({
             [RECOMMENDATION_FIELDS.TALENT_ID]: { value: match.talentAuthUserId },
@@ -1682,6 +1680,8 @@ export const createSeedData = async () => {
 
         for (const match of topMatches) {
           if (!match.talentAuthUserId) continue;
+          // 山田太郎は recommendationsForYamada で別途管理するため除外
+          if (match.talentAuthUserId === "seed_user_001") continue;
 
           allRecommendationRecords.push({
             [RECOMMENDATION_FIELDS.TALENT_ID]: { value: match.talentAuthUserId },
