@@ -38,6 +38,10 @@ const createSchema = async () => {
         email TEXT NOT NULL UNIQUE,
         "emailVerified" BOOLEAN NOT NULL DEFAULT false,
         image TEXT,
+        "lastName" TEXT,
+        "firstName" TEXT,
+        phone TEXT,
+        "birthDate" TEXT,
         "createdAt" TIMESTAMP NOT NULL,
         "updatedAt" TIMESTAMP NOT NULL
       );

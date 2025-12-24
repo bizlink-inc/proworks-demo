@@ -64,6 +64,26 @@ const auth = betterAuth({
     database: drizzleAdapter(db, {
       provider: "pg",
     }),
+    user: {
+      additionalFields: {
+        lastName: {
+          type: "string",
+          required: false,
+        },
+        firstName: {
+          type: "string",
+          required: false,
+        },
+        phone: {
+          type: "string",
+          required: false,
+        },
+        birthDate: {
+          type: "string",
+          required: false,
+        },
+      },
+    },
     databaseHooks: {
       session: {
         create: {

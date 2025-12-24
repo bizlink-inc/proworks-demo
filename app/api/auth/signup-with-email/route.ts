@@ -32,11 +32,16 @@ export const POST = async (request: NextRequest) => {
     console.log("   ログイン保持:", rememberMe ? "有効" : "無効");
 
     // Better Authでユーザー登録（メール認証付き）
+    // カスタムフィールド（lastName, firstName, phone, birthDate）も一緒に保存
     await auth.api.signUpEmail({
       body: {
         email,
         password: userPassword,
         name: `${lastName} ${firstName}`.trim() || email.split("@")[0],
+        lastName: lastName || "",
+        firstName: firstName || "",
+        phone: phone || "",
+        birthDate: birthDate || "",
       },
       headers: await headers(),
     });
@@ -88,9 +93,17 @@ export const POST = async (request: NextRequest) => {
     return response;
   } catch (error: any) {
     console.error("❌ サインアップエラー:", error);
+    console.error("   エラーメッセージ:", error.message);
+    console.error("   エラー詳細:", JSON.stringify(error, null, 2));
 
-    // 重複メールアドレスのエラーハンドリング
-    if (error.message?.includes("email") || error.message?.includes("unique") || error.message?.includes("already")) {
+    // 重複メールアドレスのエラーハンドリング（より厳密に判定）
+    const errorMsg = error.message?.toLowerCase() || "";
+    if (
+      errorMsg.includes("already exists") ||
+      errorMsg.includes("duplicate") ||
+      errorMsg.includes("unique constraint") ||
+      (errorMsg.includes("email") && errorMsg.includes("registered"))
+    ) {
       return NextResponse.json(
         { error: "このメールアドレスは既に登録されています。" },
         { status: 400 }
@@ -98,7 +111,7 @@ export const POST = async (request: NextRequest) => {
     }
 
     return NextResponse.json(
-      { error: "ユーザー登録に失敗しました。" },
+      { error: error.message || "ユーザー登録に失敗しました。" },
       { status: 500 }
     );
   }

@@ -27,10 +27,42 @@ export const GET = async (request: NextRequest) => {
     if (signupDataCookie) {
       try {
         signupData = JSON.parse(signupDataCookie);
-        console.log("📋 サインアップデータを復元:", signupData);
+        console.log("📋 サインアップデータをクッキーから復元:", signupData);
       } catch (e) {
         console.warn("⚠️ サインアップデータの解析に失敗:", e);
       }
+    }
+
+    // クッキーから取得できない場合、セッションのカスタムフィールドから取得
+    const userWithFields = session.user as any;
+
+    if (!signupData.lastName && userWithFields.lastName) {
+      signupData.lastName = userWithFields.lastName;
+      console.log("📋 セッションから姓を取得:", signupData.lastName);
+    }
+    if (!signupData.firstName && userWithFields.firstName) {
+      signupData.firstName = userWithFields.firstName;
+      console.log("📋 セッションから名を取得:", signupData.firstName);
+    }
+    if (!signupData.phone && userWithFields.phone) {
+      signupData.phone = userWithFields.phone;
+      console.log("📋 セッションから電話番号を取得:", signupData.phone);
+    }
+    if (!signupData.birthDate && userWithFields.birthDate) {
+      signupData.birthDate = userWithFields.birthDate;
+      console.log("📋 セッションから生年月日を取得:", signupData.birthDate);
+    }
+
+    // フォールバック: session.user.nameから姓名を分割
+    if (!signupData.lastName && !signupData.firstName && session.user.name) {
+      const nameParts = session.user.name.trim().split(/\s+/);
+      if (nameParts.length >= 2) {
+        signupData.lastName = nameParts[0];
+        signupData.firstName = nameParts.slice(1).join(" ");
+      } else if (nameParts.length === 1) {
+        signupData.firstName = nameParts[0];
+      }
+      console.log("📋 session.user.nameから姓名を分割:", signupData.lastName, signupData.firstName);
     }
 
     // kintoneに人材レコードが既に存在するかチェック
