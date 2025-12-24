@@ -33,13 +33,13 @@ export const PATCH = async (
     const appId = getAppIds().application;
 
     // ユーザーが所有する応募履歴か確認（応募取り消しを含む全件を取得するため、直接クエリを実行）
-    const response = await client.record.getRecords({
+    const records = await client.record.getAllRecords({
       app: appId,
-      query: `${APPLICATION_FIELDS.AUTH_USER_ID} = "${session.user.id}"`,
+      condition: `${APPLICATION_FIELDS.AUTH_USER_ID} = "${session.user.id}"`,
     });
 
     // レコードIDで応募履歴を検索（文字列と数値の両方に対応）
-    const application = response.records.find((record: any) => {
+    const application = records.find((record: any) => {
       const recordId = record[APPLICATION_FIELDS.ID].value;
       // 文字列として比較、または数値として比較
       return String(recordId) === String(applicationId) || recordId === applicationId;

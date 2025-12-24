@@ -42,13 +42,13 @@ const checkWithdrawnUser = async (userId: string): Promise<boolean> => {
     const client = createTalentClient();
     const appIds = getAppIds();
 
-    const response = await client.record.getRecords({
+    const records = await client.record.getAllRecords({
       app: appIds.talent,
-      query: `${TALENT_FIELDS.AUTH_USER_ID} = "${userId}"`,
+      condition: `${TALENT_FIELDS.AUTH_USER_ID} = "${userId}"`,
     });
 
-    if (response.records.length > 0) {
-      const record = response.records[0] as any;
+    if (records.length > 0) {
+      const record = records[0] as any;
       const st = record[TALENT_FIELDS.ST]?.value || "";
       return st === "退会";
     }

@@ -37,13 +37,13 @@ const deleteTestUser = async (email: string) => {
         const client = createTalentClient();
         const appId = getAppIds().talent;
 
-        const response = await client.record.getRecords({
+        const records = await client.record.getAllRecords({
           app: appId,
-          query: `メールアドレス = "${email}"`,
+          condition: `メールアドレス = "${email}"`,
         });
 
-        if (response.records.length > 0) {
-          const recordId = response.records[0].$id.value;
+        if (records.length > 0) {
+          const recordId = (records[0] as any).$id.value;
           await client.record.deleteRecords({
             app: appId,
             ids: [recordId],

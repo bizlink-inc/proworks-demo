@@ -98,16 +98,16 @@ export const getJobByTitle = async (title: string): Promise<Job | null> => {
   const appId = getAppIds().job;
 
   try {
-    const response = await client.record.getRecords({
+    const records = await client.record.getAllRecords({
       app: appId,
-      query: `案件名 = "${title}"`,
+      condition: `案件名 = "${title}"`,
     });
 
-    if (response.records.length === 0) {
+    if (records.length === 0) {
       return null;
     }
 
-    return convertJobRecord(response.records[0] as JobRecord);
+    return convertJobRecord(records[0] as JobRecord);
   } catch (error) {
     console.error("案件の検索に失敗:", error);
     return null;

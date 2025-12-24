@@ -50,16 +50,16 @@ export const getTalentByAuthUserId = async (authUserId: string): Promise<Talent 
   const appId = getAppIds().talent;
 
   try {
-    const response = await client.record.getRecords({
+    const records = await client.record.getAllRecords({
       app: appId,
-      query: `auth_user_id = "${authUserId}"`,
+      condition: `auth_user_id = "${authUserId}"`,
     });
 
-    if (response.records.length === 0) {
+    if (records.length === 0) {
       return null;
     }
 
-    return convertTalentRecord(response.records[0] as TalentRecord);
+    return convertTalentRecord(records[0] as TalentRecord);
   } catch (error) {
     console.error("タレント情報の取得に失敗:", error);
     throw error;

@@ -38,33 +38,38 @@ export const getAnnouncements = async (): Promise<Announcement[]> => {
     console.log("お知らせ取得クエリ:", query);
     console.log("今日の日付（JST）:", todayStr);
 
-    const response = await client.record.getRecords({
+    // 条件部分とソート部分を分離（getAllRecordsはconditionにorder byを含められない）
+    const condition = `掲載開始日 <= "${todayStr}" and 掲載終了日 >= "${todayStr}"`;
+    const orderBy = `掲載開始日 desc, 掲載終了日 asc`;
+
+    const records = await client.record.getAllRecords({
       app: appId,
-      query,
+      condition,
+      orderBy,
     });
 
-    console.log("お知らせ取得結果:", response.records.length, "件");
-    
+    console.log("お知らせ取得結果:", records.length, "件");
+
     // デバッグ: 取得されたレコードの詳細をログ出力
-    if (response.records.length > 0) {
+    if (records.length > 0) {
       console.log("取得されたレコード詳細:");
-      response.records.forEach((record: any, index: number) => {
+      records.forEach((record: any, index: number) => {
         console.log(`  [${index + 1}] レコード番号: ${record.$id.value}, 掲載種別: ${record.掲載種別.value}, 掲載開始日: ${record.掲載開始日.value}, 掲載終了日: ${record.掲載終了日.value}`);
       });
     } else {
       // デバッグ: クエリ条件を緩和して全件取得してみる
       console.log("デバッグ: 全件取得して確認中...");
-      const allResponse = await client.record.getRecords({
+      const allRecords = await client.record.getAllRecords({
         app: appId,
-        query: `order by 掲載開始日 desc`,
+        orderBy: `掲載開始日 desc`,
       });
-      console.log(`全件数: ${allResponse.records.length}件`);
-      allResponse.records.forEach((record: any) => {
+      console.log(`全件数: ${allRecords.length}件`);
+      allRecords.forEach((record: any) => {
         console.log(`  レコード番号: ${record.$id.value}, 掲載種別: ${record.掲載種別.value}, 掲載開始日: ${record.掲載開始日.value}, 掲載終了日: ${record.掲載終了日.value}`);
       });
     }
 
-    return response.records.map((record) => convertAnnouncementRecord(record as AnnouncementRecord));
+    return records.map((record) => convertAnnouncementRecord(record as AnnouncementRecord));
   } catch (error) {
     console.error("お知らせの取得に失敗:", error);
     return [];

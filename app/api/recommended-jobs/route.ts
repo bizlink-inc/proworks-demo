@@ -41,9 +41,9 @@ export const GET = async (request: NextRequest) => {
       return NextResponse.json({ items: [], total: 0 });
     }
 
-    const recommendationsResponse = await recommendationClient.record.getRecords({
+    const recommendations = await recommendationClient.record.getAllRecords({
       app: appIds.recommendation,
-      query: `${RECOMMENDATION_FIELDS.TALENT_ID} = "${authUserId}"`,
+      condition: `${RECOMMENDATION_FIELDS.TALENT_ID} = "${authUserId}"`,
       fields: [
         RECOMMENDATION_FIELDS.JOB_ID,
         RECOMMENDATION_FIELDS.SCORE,
@@ -51,9 +51,7 @@ export const GET = async (request: NextRequest) => {
         RECOMMENDATION_FIELDS.AI_EXECUTION_STATUS,
         RECOMMENDATION_FIELDS.AI_OVERALL_SCORE,
       ],
-    });
-
-    const recommendations = recommendationsResponse.records as RecommendationRecord[];
+    }) as RecommendationRecord[];
 
     // 推薦データをマップ化（案件IDをキーに）
     const recommendationMap = new Map<string, {
@@ -130,4 +128,6 @@ export const GET = async (request: NextRequest) => {
     );
   }
 };
+
+
 

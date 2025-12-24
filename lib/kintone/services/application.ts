@@ -36,12 +36,12 @@ export const getApplicationsByAuthUserId = async (authUserId: string): Promise<A
   const appId = getAppIds().application;
 
   try {
-    const response = await client.record.getRecords({
+    const records = await client.record.getAllRecords({
       app: appId,
-      query: `auth_user_id = "${authUserId}"`,
+      condition: `auth_user_id = "${authUserId}"`,
     });
 
-    return response.records.map((record) => convertApplicationRecord(record as ApplicationRecord));
+    return records.map((record) => convertApplicationRecord(record as ApplicationRecord));
   } catch (error) {
     console.error("応募履歴の取得に失敗:", error);
     throw error;
@@ -84,12 +84,12 @@ export const checkDuplicateApplication = async (
   const appId = getAppIds().application;
 
   try {
-    const response = await client.record.getRecords({
+    const records = await client.record.getAllRecords({
       app: appId,
-      query: `${APPLICATION_FIELDS.AUTH_USER_ID} = "${authUserId}" and ${APPLICATION_FIELDS.JOB_ID} = "${jobId}"`,
+      condition: `${APPLICATION_FIELDS.AUTH_USER_ID} = "${authUserId}" and ${APPLICATION_FIELDS.JOB_ID} = "${jobId}"`,
     });
 
-    return response.records.length > 0;
+    return records.length > 0;
   } catch (error) {
     console.error("重複チェックに失敗:", error);
     throw error;

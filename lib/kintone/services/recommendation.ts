@@ -29,12 +29,12 @@ export const getRecommendationsByAuthUserId = async (authUserId: string): Promis
   }
 
   try {
-    const response = await client.record.getRecords({
+    const records = await client.record.getAllRecords({
       app: appId,
-      query: `${RECOMMENDATION_FIELDS.TALENT_ID} = "${authUserId}"`,
+      condition: `${RECOMMENDATION_FIELDS.TALENT_ID} = "${authUserId}"`,
     });
 
-    return response.records.map((record) => convertRecommendationRecord(record as RecommendationRecord));
+    return records.map((record) => convertRecommendationRecord(record as RecommendationRecord));
   } catch (error) {
     console.error("推薦データの取得に失敗:", error);
     return [];
@@ -61,4 +61,6 @@ export const getRecommendationScoreMap = async (authUserId: string): Promise<Rec
   
   return scoreMap;
 };
+
+
 
