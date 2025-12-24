@@ -15,10 +15,6 @@ export const createTalentClient = () => {
     throw new Error("KINTONE_TALENT_API_TOKEN is not defined");
   }
 
-  console.log("✅ kintone Talent Client 初期化成功");
-  console.log("   Base URL:", baseUrl);
-  console.log("   API Token:", apiToken.substring(0, 10) + "...");
-
   return new KintoneRestAPIClient({
     baseUrl,
     auth: {
@@ -41,10 +37,6 @@ export const createJobClient = () => {
     console.error("❌ KINTONE_JOB_API_TOKEN が設定されていません");
     throw new Error("KINTONE_JOB_API_TOKEN is not defined");
   }
-
-  console.log("✅ kintone Job Client 初期化成功");
-  console.log("   Base URL:", baseUrl);
-  console.log("   API Token:", apiToken.substring(0, 10) + "...");
 
   return new KintoneRestAPIClient({
     baseUrl,
@@ -85,10 +77,6 @@ export const createApplicationClient = () => {
   // 複数のAPIトークンをカンマ区切りで連結
   const combinedToken = [applicationToken, talentToken, jobToken].join(",");
 
-  console.log("✅ kintone Application Client 初期化成功");
-  console.log("   Base URL:", baseUrl);
-  console.log("   Combined API Tokens: 3つのトークンを連結");
-
   return new KintoneRestAPIClient({
     baseUrl,
     auth: {
@@ -128,10 +116,6 @@ export const createRecommendationClient = () => {
   // 複数のAPIトークンをカンマ区切りで連結（ルックアップ参照用）
   const combinedToken = [recommendationToken, talentToken, jobToken].join(",");
 
-  console.log("✅ kintone Recommendation Client 初期化成功");
-  console.log("   Base URL:", baseUrl);
-  console.log("   Combined API Tokens: 3つのトークンを連結（推薦DB + 人材DB + 案件DB）");
-
   return new KintoneRestAPIClient({
     baseUrl,
     auth: {
@@ -165,10 +149,6 @@ export const createInquiryClient = () => {
   // 複数のAPIトークンをカンマ区切りで連結（ルックアップ参照用）
   const combinedToken = [inquiryToken, talentToken].join(",");
 
-  console.log("✅ kintone Inquiry Client 初期化成功");
-  console.log("   Base URL:", baseUrl);
-  console.log("   Combined API Tokens: 2つのトークンを連結（問い合わせDB + 人材DB）");
-
   return new KintoneRestAPIClient({
     baseUrl,
     auth: {
@@ -191,10 +171,6 @@ export const createAnnouncementClient = () => {
     console.error("❌ KINTONE_ANNOUNCEMENT_API_TOKEN が設定されていません");
     throw new Error("KINTONE_ANNOUNCEMENT_API_TOKEN is not defined");
   }
-
-  console.log("✅ kintone Announcement Client 初期化成功");
-  console.log("   Base URL:", baseUrl);
-  console.log("   API Token:", apiToken.substring(0, 10) + "...");
 
   return new KintoneRestAPIClient({
     baseUrl,
@@ -226,27 +202,6 @@ export const getAppIds = () => {
   if (!applicationAppId) {
     console.error("❌ KINTONE_APPLICATION_APP_ID が設定されていません");
     throw new Error("KINTONE_APPLICATION_APP_ID is not defined");
-  }
-
-  // 推薦DBはオプション（なくても動作する）
-  if (recommendationAppId) {
-    console.log("✅ kintone App IDs 取得成功");
-    console.log("   Talent App ID:", talentAppId);
-    console.log("   Job App ID:", jobAppId);
-    console.log("   Application App ID:", applicationAppId);
-    console.log("   Recommendation App ID:", recommendationAppId);
-    if (announcementAppId) {
-      console.log("   Announcement App ID:", announcementAppId);
-    }
-  } else {
-  console.log("✅ kintone App IDs 取得成功");
-  console.log("   Talent App ID:", talentAppId);
-  console.log("   Job App ID:", jobAppId);
-  console.log("   Application App ID:", applicationAppId);
-    console.log("   ⚠️ Recommendation App ID: 未設定");
-    if (announcementAppId) {
-      console.log("   Announcement App ID:", announcementAppId);
-    }
   }
 
   return {

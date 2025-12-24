@@ -57,7 +57,6 @@ export function MyPageClient({ user: sessionUser }: MyPageClientProps) {
 
         if (res.status === 404) {
           // 404の場合は新規ユーザーとして空のデータを設定
-          console.log("User not found in Kintone, treating as new user")
           const emptyUser: Talent = {
             id: "",
             auth_user_id: sessionUser.id || "",
@@ -93,7 +92,6 @@ export function MyPageClient({ user: sessionUser }: MyPageClientProps) {
       }
 
       const data = await res.json()
-      console.log("Fetched user data:", data)
       setUser(data)
     } catch (error) {
       console.error("Error fetching user:", error)

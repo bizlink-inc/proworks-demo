@@ -47,7 +47,6 @@ export const AnnouncementBanner = () => {
         }
       }
       keysToRemove.forEach((key) => localStorage.removeItem(key));
-      console.log(`✅ ${keysToRemove.length}件のキャッシュをクリアしました`);
 
       // Cookieを削除
       document.cookie = "clear_announcement_cache=; max-age=0; path=/";
@@ -57,26 +56,21 @@ export const AnnouncementBanner = () => {
       try {
         const response = await fetch("/api/announcements")
         if (!response.ok) {
-          console.error("お知らせAPIのレスポンスエラー:", response.status, response.statusText)
           return
         }
-        
+
         const data = await response.json()
-        console.log("お知らせデータ取得:", data)
-        
+
         if (data.announcements && Array.isArray(data.announcements)) {
           // ローカルストレージをチェックして、閉じられていないお知らせのみフィルタリング
           const visible = data.announcements.filter((announcement: Announcement) => {
             const dismissed = localStorage.getItem(`${ANNOUNCEMENT_STORAGE_KEY_PREFIX}${announcement.id}`)
             return !dismissed
           })
-          
-          console.log("表示対象のお知らせ:", visible.length, "件")
+
           setAnnouncements(visible)
           setTotalCount(visible.length) // 初期の全件数を設定
           setCurrentIndex(1) // 最初は1件目から開始
-        } else {
-          console.log("お知らせデータが空または不正な形式:", data)
         }
       } catch (error) {
         console.error("お知らせの取得に失敗:", error)
@@ -92,21 +86,12 @@ export const AnnouncementBanner = () => {
       return
     }
 
-    console.log(`閉じるボタンクリック: ID=${announcementId}`)
-    
     // ローカルストレージに閉じたことを保存（二度と表示されないようにする）
     localStorage.setItem(`${ANNOUNCEMENT_STORAGE_KEY_PREFIX}${announcementId}`, "true")
-    console.log(`ローカルストレージに保存: ${ANNOUNCEMENT_STORAGE_KEY_PREFIX}${announcementId}`)
-    
+
     // 現在表示しているお知らせをリストから削除
     const updatedAnnouncements = announcements.filter((a) => a.id !== announcementId)
-    console.log(`お知らせを閉じました。残り: ${updatedAnnouncements.length}件`)
-    console.log("更新後のリスト:", updatedAnnouncements.map(a => `ID=${a.id}, 種別=${a.type}`))
-    
-    if (updatedAnnouncements.length > 0) {
-      console.log("次のお知らせ:", updatedAnnouncements[0])
-    }
-    
+
     // 現在の位置をインクリメント（次のお知らせの位置）
     const nextIndex = currentIndex + 1
     
@@ -139,8 +124,6 @@ export const AnnouncementBanner = () => {
   // 現在表示するお知らせ（1件ずつ表示、常に最初の1件）
   // お知らせが2件ある場合：最初は1件目を表示 → ×を押す → 2件目が表示される
   const displayAnnouncement = announcements[0]
-  
-  console.log(`現在表示中: ID=${displayAnnouncement.id}, 種別=${displayAnnouncement.type}, 全${totalCount}件中${currentIndex}件目`)
 
   return (
     <div
