@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
+import { useSearchParams } from "next/navigation"
 import { Header } from "@/components/header"
 import { FullWidthLayout } from "@/components/layouts"
 import { DashboardFilters, type JobFilters } from "@/components/dashboard-filters"
@@ -31,6 +32,7 @@ interface DashboardClientProps {
 
 export const DashboardClient = ({ user }: DashboardClientProps) => {
   const { toast } = useToast()
+  const searchParams = useSearchParams()
   useApplicationStatusMonitor()
   const { handleWithdrawalError } = useWithdrawalCheck()
 
@@ -53,6 +55,14 @@ export const DashboardClient = ({ user }: DashboardClientProps) => {
   } | null>(null)
   const [sortDropdownOpen, setSortDropdownOpen] = useState(false)
   const sortDropdownRef = useRef<HTMLDivElement>(null)
+
+  // URLパラメータからjobIdを取得してモーダルを開く
+  useEffect(() => {
+    const jobIdParam = searchParams.get("jobId")
+    if (jobIdParam) {
+      setSelectedJobId(jobIdParam)
+    }
+  }, [searchParams])
 
   // 初回ロード時に退会チェック
   useEffect(() => {
@@ -130,16 +140,12 @@ export const DashboardClient = ({ user }: DashboardClientProps) => {
   }
 
   const handleApply = async (jobId: string, jobTitle: string) => {
-    console.log("[v0] 応募処理開始:", { jobId, jobTitle })
-
     try {
       const res = await fetch("/api/applications", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ jobId }),
       })
-
-      console.log("[v0] 応募APIレスポンス:", { status: res.status, ok: res.ok })
 
       if (res.status === 409) {
         toast({
@@ -151,13 +157,10 @@ export const DashboardClient = ({ user }: DashboardClientProps) => {
       }
 
       if (!res.ok) {
-        const errorText = await res.text()
-        console.log("[v0] 応募エラー:", errorText)
         throw new Error("Failed to apply")
       }
 
       const application = await res.json()
-      console.log("[v0] 応募成功:", application)
 
       // 応募成功後、ユーザー情報を取得して必須項目をチェック
       let missingFields: string[] = []
