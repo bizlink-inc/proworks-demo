@@ -74,6 +74,31 @@ const PROFILE_NOTIFICATION_DISMISSED_AT_KEY = "profile_notification_dismissed_at
 // プロフィール通知の再表示間隔（ミリ秒） - 1日
 const PROFILE_NOTIFICATION_INTERVAL_MS = 24 * 60 * 60 * 1000
 
+// 現在のユーザーIDを管理するキー
+const CURRENT_USER_ID_KEY = "pw_current_user_id"
+
+// 全通知関連のlocalStorageをクリア
+const clearNotificationStorage = () => {
+  localStorage.removeItem("notifications")
+  localStorage.removeItem(READ_RECOMMENDED_NOTIFICATIONS_KEY)
+  localStorage.removeItem(SEED_NOTIFICATION_INITIALIZED_KEY)
+  localStorage.removeItem(PROFILE_NOTIFICATION_DISMISSED_AT_KEY)
+  localStorage.removeItem("previous_application_status")
+}
+
+// ユーザー変更検出とクリア
+const checkAndClearOnUserChange = (currentUserId: string): boolean => {
+  const lastUserId = localStorage.getItem(CURRENT_USER_ID_KEY)
+  if (lastUserId && lastUserId !== currentUserId) {
+    console.log(`🔄 ユーザー変更検出: ${lastUserId} → ${currentUserId}、通知データをクリア`)
+    clearNotificationStorage()
+    localStorage.setItem(CURRENT_USER_ID_KEY, currentUserId)
+    return true // クリアした
+  }
+  localStorage.setItem(CURRENT_USER_ID_KEY, currentUserId)
+  return false // クリアしなかった
+}
+
 // 既読のおすすめ通知IDを取得
 const getReadRecommendedIds = (): Set<string> => {
   try {
@@ -137,9 +162,39 @@ const migrateNotification = (notification: Notification | LegacyNotification): N
 export function NotificationProvider({ children }: { children: React.ReactNode }) {
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [isLoading, setIsLoading] = useState(false)
+  const [isUserChecked, setIsUserChecked] = useState(false)
+
+  // 初期化時にユーザーIDを確認し、変更があればlocalStorageをクリア
+  useEffect(() => {
+    const checkCurrentUser = async () => {
+      try {
+        const response = await fetch("/api/me")
+        if (response.ok) {
+          const data = await response.json()
+          const currentUserId = data.authUserId
+          if (currentUserId) {
+            const wasCleared = checkAndClearOnUserChange(currentUserId)
+            if (wasCleared) {
+              // クリアされた場合、空の状態から開始
+              setNotifications([])
+              setIsUserChecked(true)
+              return
+            }
+          }
+        }
+      } catch (error) {
+        // 未ログイン状態は無視
+      }
+      setIsUserChecked(true)
+    }
+    checkCurrentUser()
+  }, [])
 
   // ページロード時にlocalStorageから通知を復元、または初期通知を設定
+  // ユーザーチェック完了後に実行
   useEffect(() => {
+    if (!isUserChecked) return
+
     const stored = localStorage.getItem("notifications")
     const isInitialized = localStorage.getItem(SEED_NOTIFICATION_INITIALIZED_KEY)
 
@@ -156,7 +211,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       setNotifications(SEED_NOTIFICATIONS)
       localStorage.setItem(SEED_NOTIFICATION_INITIALIZED_KEY, "true")
     }
-  }, [])
+  }, [isUserChecked])
 
   // 通知が変更されたらlocalStorageに保存
   useEffect(() => {

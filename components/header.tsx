@@ -28,6 +28,13 @@ export function Header({ user }: HeaderProps) {
   }, [])
 
   const onSignOut = async () => {
+    // ログアウト時にlocalStorageの通知関連データをクリア
+    localStorage.removeItem("notifications")
+    localStorage.removeItem("previous_application_status")
+    localStorage.removeItem("seed_notification_initialized")
+    localStorage.removeItem("read_recommended_notifications")
+    localStorage.removeItem("profile_notification_dismissed_at")
+    localStorage.removeItem("pw_current_user_id")
     await handleSignOut()
   }
 
