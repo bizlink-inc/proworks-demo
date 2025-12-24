@@ -32,6 +32,7 @@
     "test:text-extraction": "npx tsx scripts/test-text-extraction.ts",
     "test:ai-match": "npx tsx scripts/test-ai-match.ts",
     "cache:clear:announcements": "npx tsx scripts/clear-announcement-cache.ts",
+    "cache:clear:notifications": "open http://localhost:3000/clear-cache",
     "env:push:dev": "npx tsx scripts/push-env-to-apprunner.ts dev",
     "env:push:prod": "npx tsx scripts/push-env-to-apprunner.ts prod",
     "apprunner:start:dev": "npx tsx scripts/apprunner-control.ts start dev",
