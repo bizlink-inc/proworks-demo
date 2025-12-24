@@ -34,12 +34,14 @@ export function useApplicationStatusMonitor() {
 
         const previousApplications: Application[] = JSON.parse(storedData)
 
-        // ステータス変更をチェック
+        // ステータス変更をチェック（「面談予定」への変更のみ通知）
         currentApplications.forEach((current) => {
           const previous = previousApplications.find((p) => p.jobId === current.jobId)
 
-          if (previous && previous.status !== current.status) {
-            // ステータスが変更された場合、通知を追加
+          // 「面談予定」への変更のみ通知
+          const isMeetingConfirmed = current.status === "面談予定"
+          if (previous && previous.status !== current.status && isMeetingConfirmed) {
+            // ステータスが「面談確定」に変更された場合、通知を追加
             addNotification({
               id: `${current.jobId}-${Date.now()}`,
               type: "status_change",

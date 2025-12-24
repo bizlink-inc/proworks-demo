@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useMemo } from "react"
+import { useSearchParams } from "next/navigation"
 import { Header } from "@/components/header"
 import { FullWidthLayout } from "@/components/layouts"
 import { DashboardFilters, type JobFilters } from "@/components/dashboard-filters"
@@ -40,6 +41,7 @@ const filterBlue = "#3966a2"
 export const ApplicationsClient = ({ user }: ApplicationsClientProps) => {
   useApplicationStatusMonitor()
   const { handleWithdrawalError } = useWithdrawalCheck()
+  const searchParams = useSearchParams()
 
   const [applications, setApplications] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -47,6 +49,14 @@ export const ApplicationsClient = ({ user }: ApplicationsClientProps) => {
   const [aiMatchedJobsLoading, setAiMatchedJobsLoading] = useState(false)
   const [selectedJobId, setSelectedJobId] = useState<string | null>(null)
   const [activeFilter, setActiveFilter] = useState<StatusFilter>("all")
+
+  // URLパラメータからjobIdを読み取り、案件詳細モーダルを開く
+  useEffect(() => {
+    const jobIdParam = searchParams.get("jobId")
+    if (jobIdParam) {
+      setSelectedJobId(jobIdParam)
+    }
+  }, [searchParams])
 
   // 初回ロード時に退会チェック
   useEffect(() => {

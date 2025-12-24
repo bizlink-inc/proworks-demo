@@ -76,8 +76,8 @@ export const NotificationDropdown = () => {
       // 担当者おすすめ・AIマッチ両方とも案件詳細モーダルを開く
       router.push(`/?jobId=${notification.jobId}`)
     } else {
-      // ステータス変更は応募履歴ページへ
-      router.push("/applications")
+      // ステータス変更は応募履歴ページへ遷移し、対象案件の詳細を開く
+      router.push(`/applications?jobId=${notification.jobId}`)
     }
   }
 
@@ -192,7 +192,7 @@ export const NotificationDropdown = () => {
                             className="mt-1"
                             style={{
                               fontSize: "12px",
-                              color: "#666666",
+                              color: "#333333",
                               lineHeight: "1.5"
                             }}
                           >
