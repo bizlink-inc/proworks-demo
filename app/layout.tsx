@@ -2,7 +2,7 @@ import type React from "react"
 import type { Metadata } from "next"
 import { Noto_Sans_JP } from "next/font/google"
 import { Toaster } from "@/components/ui/toaster"
-import { NotificationProvider } from "@/lib/notification-context"
+import { Providers } from "@/app/providers"
 import "./globals.css"
 
 const notoSansJP = Noto_Sans_JP({
@@ -26,10 +26,10 @@ export default function RootLayout({
   return (
     <html lang="ja">
       <body className={`${notoSansJP.variable} font-sans antialiased`}>
-        <NotificationProvider>
+        <Providers>
           {children}
           <Toaster />
-        </NotificationProvider>
+        </Providers>
       </body>
     </html>
   )
