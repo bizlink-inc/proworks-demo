@@ -50,6 +50,13 @@ export default function CompleteProfilePage() {
         throw new Error("プロフィールの更新に失敗しました")
       }
 
+      // 会員登録完了メールを送信（エラーがあっても継続）
+      try {
+        await fetch("/api/me/send-welcome-email", { method: "POST" })
+      } catch (emailError) {
+        console.error("会員登録完了メール送信エラー:", emailError)
+      }
+
       toast({
         title: "登録完了",
         description: "プロフィールが登録されました。",

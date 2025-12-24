@@ -174,9 +174,11 @@ export default function WelcomePage() {
               <p className="font-medium text-sm" style={{ color: "var(--pw-alert-success)" }}>
                 基本情報の登録が完了しました
               </p>
-              <p className="text-xs" style={{ color: "var(--pw-text-gray)" }}>
-                {profileData?.lastName} {profileData?.firstName} さん
-              </p>
+              {(profileData?.lastName || profileData?.firstName) && (
+                <p className="text-xs" style={{ color: "var(--pw-text-gray)" }}>
+                  {profileData?.lastName} {profileData?.firstName} さん
+                </p>
+              )}
             </div>
           </div>
 

@@ -40,8 +40,8 @@ export const sendVerificationEmail = async (
   to: string,
   verificationUrl: string
 ): Promise<SendEmailResult> => {
-  const subject = "【PRO WORKS】メールアドレスの確認";
-  
+  const subject = "【PRO WORKS】ご登録ありがとうございます - メールアドレスの確認";
+
   const htmlContent = `
 <!DOCTYPE html>
 <html lang="ja">
@@ -52,30 +52,53 @@ export const sendVerificationEmail = async (
 <body style="font-family: 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #30373f; max-width: 600px; margin: 0 auto; padding: 20px;">
   <div style="background-color: #f3f9fd; padding: 30px; border-radius: 8px;">
     <h1 style="color: #1f3151; font-size: 24px; margin-bottom: 20px;">PRO WORKS</h1>
-    
-    <p style="margin-bottom: 20px;">PRO WORKS へのご登録ありがとうございます。</p>
-    
-    <p style="margin-bottom: 20px;">以下のボタンをクリックして、メールアドレスの確認を完了してください。</p>
-    
+
+    <p style="margin-bottom: 20px; font-size: 18px; font-weight: bold; color: #1f3151;">
+      ご登録ありがとうございます！
+    </p>
+
+    <p style="margin-bottom: 20px;">
+      PRO WORKS へようこそ！<br>
+      ご入力いただいたメールアドレス宛に確認メールを送信しました。
+    </p>
+
+    <p style="margin-bottom: 20px;">
+      以下のボタンをクリックして、メールアドレスの確認を完了してください。
+    </p>
+
     <div style="text-align: center; margin: 30px 0;">
-      <a href="${verificationUrl}" 
+      <a href="${verificationUrl}"
          style="display: inline-block; background-color: #63b2cd; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: bold;">
         メールアドレスを確認する
       </a>
     </div>
-    
+
+    <div style="background-color: #ffffff; padding: 20px; border-radius: 6px; margin: 20px 0; border-left: 4px solid #63b2cd;">
+      <p style="margin: 0; font-weight: bold; color: #1f3151;">📝 次のステップ</p>
+      <p style="margin: 10px 0 0 0; color: #686868;">
+        メール確認後、マイページからプロフィールをご記入ください。<br>
+        プロフィールを充実させることで、より良い案件とマッチングできます！
+      </p>
+    </div>
+
     <p style="color: #686868; font-size: 14px; margin-bottom: 10px;">
       ボタンが機能しない場合は、以下のURLをブラウザに貼り付けてください：
     </p>
     <p style="color: #63b2cd; font-size: 12px; word-break: break-all;">
       ${verificationUrl}
     </p>
-    
+
     <hr style="border: none; border-top: 1px solid #d5e5f0; margin: 30px 0;">
-    
+
     <p style="color: #686868; font-size: 12px;">
       ※ このリンクの有効期限は1時間です。<br>
       ※ このメールに心当たりがない場合は、削除してください。
+    </p>
+
+    <hr style="border: none; border-top: 1px solid #d5e5f0; margin: 20px 0;">
+
+    <p style="color: #686868; font-size: 12px; text-align: center;">
+      PRO WORKS 運営チーム/株式会社アルマ
     </p>
   </div>
 </body>
@@ -83,14 +106,28 @@ export const sendVerificationEmail = async (
   `;
 
   const textContent = `
-PRO WORKS へのご登録ありがとうございます。
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ご登録ありがとうございます！
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+PRO WORKS へようこそ！
+ご入力いただいたメールアドレス宛に確認メールを送信しました。
 
 以下のリンクをクリックして、メールアドレスの確認を完了してください。
 
 ▶ ${verificationUrl}
 
+────────────────────────────────────
+📝 次のステップ
+────────────────────────────────────
+メール確認後、マイページからプロフィールをご記入ください。
+プロフィールを充実させることで、より良い案件とマッチングできます！
+
+────────────────────────────────────
 ※ このリンクの有効期限は1時間です。
 ※ このメールに心当たりがない場合は、削除してください。
+
+PRO WORKS 運営チーム/株式会社アルマ
   `;
 
   return sendEmail({ to, subject, html: htmlContent, text: textContent });
@@ -444,6 +481,108 @@ PRO WORKS 運営チーム/株式会社アルマ
 };
 
 /**
+ * 会員登録完了メールを送信（プロフィール完成時）
+ */
+export const sendRegistrationCompleteEmail = async (
+  to: string,
+  userName: string,
+  baseUrl: string
+): Promise<SendEmailResult> => {
+  const subject = "【PRO WORKS】会員登録ありがとうございます";
+
+  const myPageUrl = `${baseUrl}/me`;
+  const helpfulInfoUrl = `${baseUrl}/media`;
+  const contactUrl = `${baseUrl}/me?tab=contact`;
+  const homeUrl = baseUrl;
+
+  const htmlContent = `
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="font-family: 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #30373f; max-width: 600px; margin: 0 auto; padding: 20px;">
+  <div style="background-color: #f3f9fd; padding: 30px; border-radius: 8px;">
+    <h1 style="color: #1f3151; font-size: 24px; margin-bottom: 20px;">PRO WORKS</h1>
+
+    <p style="margin-bottom: 20px;">${userName} 様</p>
+
+    <p style="margin-bottom: 20px;">
+      この度は、【PRO WORKS】にご登録いただき、誠にありがとうございます。
+    </p>
+
+    <p style="margin-bottom: 20px;">
+      ご自身のスキルやご経験をプロフィールに記載いただくことで、<br>
+      案件応募や案件紹介、AIマッチング機能が利用できるようになります。
+    </p>
+
+    <p style="margin-bottom: 20px;">以下のリンクより、プロフィールのご記入をお願いいたします。</p>
+
+    <div style="text-align: center; margin: 30px 0;">
+      <a href="${myPageUrl}"
+         style="display: inline-block; background-color: #63b2cd; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: bold;">
+        マイページはこちら
+      </a>
+    </div>
+
+    <hr style="border: none; border-top: 1px solid #d5e5f0; margin: 30px 0;">
+
+    <p style="color: #686868; font-size: 12px;">
+      【ご注意】<br>
+      本メールに身に覚えのない場合は、本メールを破棄していただきますようお願いいたします。
+    </p>
+
+    <hr style="border: none; border-top: 1px solid #d5e5f0; margin: 20px 0;">
+
+    <div style="font-size: 12px; color: #686868;">
+      <p style="margin: 5px 0;">▽お役立ち情報: <a href="${helpfulInfoUrl}" style="color: #63b2cd;">${helpfulInfoUrl}</a></p>
+      <p style="margin: 5px 0;">▽お問い合わせ先: <a href="${contactUrl}" style="color: #63b2cd;">${contactUrl}</a></p>
+      <p style="margin: 5px 0;">▽PRO WORKS: <a href="${homeUrl}" style="color: #63b2cd;">${homeUrl}</a></p>
+    </div>
+
+    <p style="color: #686868; font-size: 12px; text-align: center; margin-top: 20px;">
+      PRO WORKS 運営チーム/株式会社アルマ
+    </p>
+  </div>
+</body>
+</html>
+  `;
+
+  const textContent = `
+${userName} 様
+
+この度は、【PRO WORKS】にご登録いただき、誠にありがとうございます。
+
+ご自身のスキルやご経験をプロフィールに記載いただくことで、
+案件応募や案件紹介、AIマッチング機能が利用できるようになります。
+
+以下のリンクより、プロフィールのご記入をお願いいたします。
+
+▼マイページはこちら
+${myPageUrl}
+
+————————————————————
+【ご注意】
+本メールに身に覚えのない場合は、本メールを破棄していただきますようお願いいたします。
+————————————————————
+
+▽お役立ち情報
+${helpfulInfoUrl}
+
+▽お問い合わせ先
+${contactUrl}
+
+▽PRO WORKS
+${homeUrl}
+
+PRO WORKS 運営チーム/株式会社アルマ
+  `;
+
+  return sendEmail({ to, subject, html: htmlContent, text: textContent });
+};
+
+/**
  * コンソール出力用のヘルパー関数（開発環境専用）
  * Better Auth のコールバックから呼び出される
  */
@@ -452,22 +591,68 @@ export const logEmailToConsole = (
   to: string,
   url: string
 ): void => {
-  const titles: Record<typeof type, string> = {
-    verification: "📧 【PRO WORKS】メールアドレスの確認",
-    reset: "🔑 【PRO WORKS】パスワードリセット",
-    "email-change": "📧 【PRO WORKS】メールアドレス変更の確認",
+  const subjects: Record<typeof type, string> = {
+    verification: "【PRO WORKS】ご登録ありがとうございます - メールアドレスの確認",
+    reset: "【PRO WORKS】パスワードのリセット",
+    "email-change": "【PRO WORKS】メールアドレス変更の確認",
+  };
+
+  const bodies: Record<typeof type, string> = {
+    verification: `
+ご登録ありがとうございます！
+
+PRO WORKS へようこそ！
+ご入力いただいたメールアドレス宛に確認メールを送信しました。
+
+以下のリンクをクリックして、メールアドレスの確認を完了してください。
+
+▶ ${url}
+
+────────────────────────────────────
+📝 次のステップ
+────────────────────────────────────
+メール確認後、マイページからプロフィールをご記入ください。
+プロフィールを充実させることで、より良い案件とマッチングできます！
+
+※ このリンクの有効期限は1時間です。`,
+    reset: `
+パスワードリセットのリクエストを受け付けました。
+
+以下のリンクをクリックして、新しいパスワードを設定してください。
+
+▶ ${url}
+
+※ このリンクの有効期限は1時間です。
+※ このリクエストに心当たりがない場合は、このメールを無視してください。`,
+    "email-change": `
+メールアドレス変更のリクエストを受け付けました。
+
+以下のリンクをクリックして、新しいメールアドレスを確認してください。
+
+▶ ${url}
+
+※ このリンクの有効期限は1時間です。
+※ このリクエストに心当たりがない場合は、このメールを無視してください。`,
+  };
+
+  const icons: Record<typeof type, string> = {
+    verification: "📧",
+    reset: "🔑",
+    "email-change": "📧",
   };
 
   console.log("\n" + "=".repeat(80));
-  console.log(titles[type]);
+  console.log(`${icons[type]} メール送信（開発環境）`);
   console.log("=".repeat(80));
-  console.log(`宛先: ${to}`);
   console.log("");
-  console.log("以下のリンクをクリックして、操作を完了してください。");
+  console.log(`【宛先】 ${to}`);
   console.log("");
-  console.log(`▶ ${url}`);
+  console.log(`【件名】 ${subjects[type]}`);
   console.log("");
-  console.log("※ このリンクの有効期限は1時間です。");
+  console.log("【本文】");
+  console.log("-".repeat(40));
+  console.log(bodies[type].trim());
+  console.log("-".repeat(40));
   console.log("=".repeat(80) + "\n");
 
   // E2Eテスト用: 認証リンクをファイルに書き出す
@@ -476,12 +661,12 @@ export const logEmailToConsole = (
       const fs = require("fs");
       const path = require("path");
       const testDataDir = path.join(process.cwd(), ".e2e-test-data");
-      
+
       // ディレクトリがなければ作成
       if (!fs.existsSync(testDataDir)) {
         fs.mkdirSync(testDataDir, { recursive: true });
       }
-      
+
       // 認証リンクをファイルに保存
       const data = JSON.stringify({ type, to, url, timestamp: Date.now() });
       fs.writeFileSync(path.join(testDataDir, "last-email.json"), data);
