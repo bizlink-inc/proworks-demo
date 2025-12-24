@@ -6,17 +6,27 @@ import { drizzle } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
 import * as schema from "./schema";
 
+// データベース接続URL定数
+const LOCAL_DB_URL = "postgresql://ss@localhost:5432/proworks_local";
+
 // データベース接続URL
+// USE_LOCAL_DB=true: ローカルDB（postgresql://ss@localhost:5432/proworks_local）を使用
+// USE_LOCAL_DB=false または未設定: DATABASE_URL（AWS RDS）を使用
 const getDatabaseUrl = (): string => {
+  // ローカル開発モードの場合はローカルDBを使用
+  if (process.env.USE_LOCAL_DB === "true") {
+    return LOCAL_DB_URL;
+  }
   if (process.env.DATABASE_URL) {
     return process.env.DATABASE_URL;
   }
-  // ローカル開発環境のデフォルト
-  return "postgresql://ss@localhost:5432/proworks_local";
+  // フォールバック: ローカル開発環境のデフォルト
+  return LOCAL_DB_URL;
 };
 
 // PostgreSQL プール（シングルトン）
 let pool: Pool | null = null;
+let currentDbTarget: "local" | "rds" | null = null;
 
 const getPool = (): Pool => {
   if (!pool) {
@@ -52,6 +62,32 @@ export const query = async (sql: string, params?: unknown[]) => {
     client.release();
   }
 };
+
+// データベースを切り替える（シードスクリプト用）
+export const switchDatabase = async (target: "local" | "rds"): Promise<void> => {
+  // 現在のプールを閉じる
+  if (pool) {
+    await pool.end();
+    pool = null;
+  }
+
+  // 接続先を決定
+  const connectionString = target === "local"
+    ? LOCAL_DB_URL
+    : process.env.DATABASE_URL || LOCAL_DB_URL;
+
+  // 新しいプールを作成
+  pool = new Pool({
+    connectionString,
+    ssl: connectionString.includes("rds.amazonaws.com") ? { rejectUnauthorized: false } : false,
+  });
+  currentDbTarget = target;
+
+  console.log(`🔗 データベース切り替え: ${target === "local" ? "ローカルDB" : "AWS RDS"}`);
+};
+
+// 現在のDB接続先を取得
+export const getCurrentDbTarget = (): "local" | "rds" | null => currentDbTarget;
 
 export { schema };
 

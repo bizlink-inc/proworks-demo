@@ -21,7 +21,7 @@ import { uploadFileToKintone } from "../lib/kintone/services/file";
 import { TALENT_FIELDS, JOB_FIELDS, APPLICATION_FIELDS, RECOMMENDATION_FIELDS, INQUIRY_FIELDS } from "../lib/kintone/fieldMapping";
 import { calculateTopMatches, TalentForMatching, JobForMatching } from "../lib/matching/calculateScore";
 import { seedData3 } from "./seed-data-large";
-import { getDb, closePool, query, schema } from "../lib/db/client";
+import { getDb, closePool, query, schema, switchDatabase } from "../lib/db/client";
 import { eq } from "drizzle-orm";
 import fs from "fs";
 import path from "path";
@@ -1218,115 +1218,128 @@ export const createSeedData = async () => {
     const jobClient = createJobClient();
     const applicationClient = createApplicationClient();
 
-    // 1. Better Authユーザーを作成
-    console.log(`\n[1/6] Better Authユーザーを作成中...`);
+    // 1. Better Authユーザーを作成（Dualモード時はスキップ）
+    const skipAuthUserCreation = process.env.SEED_KINTONE_ONLY === "true";
+    if (skipAuthUserCreation) {
+      console.log(`\n[1/6] Better Authユーザー作成をスキップ（Dualモード）`);
+    } else {
+      console.log(`\n[1/6] Better Authユーザーを作成中...`);
+    }
 
     const authUserIds: string[] = [];
     const db = getDb();
-    
+
     // 既存ユーザーのIDとメールアドレスを取得（tryブロック外で定義）
     const existingEmails = new Map<string, string>();
     const existingIds = new Map<string, string>();
     const existingEmailsForMapping = new Map<string, string>();
     const existingIdsForMapping = new Map<string, string>();
-    
-    try {
-      const existingRows = await db.select({ email: schema.user.email, id: schema.user.id }).from(schema.user);
-      for (const row of existingRows) {
-        existingEmails.set(row.email, row.id);
-        existingIds.set(row.id, row.id);
-        existingEmailsForMapping.set(row.email, row.id);
-        existingIdsForMapping.set(row.id, row.id);
+
+    // Kintoneのみモードの場合、auth_user_idはシードデータから取得（DB操作不要）
+    if (skipAuthUserCreation) {
+      for (const user of seedData.authUsers) {
+        authUserIds.push(user.id);
       }
-
-      // 新規ユーザーをフィルタリング（メールアドレスまたはユーザーIDで既存チェック）
-      const newUsers = seedData.authUsers.filter(user => {
-        // ユーザーIDが指定されている場合はIDでチェック、そうでない場合はメールアドレスでチェック
-        if (user.id) {
-          return !existingIds.has(user.id) && !existingEmails.has(user.email);
-        }
-        return !existingEmails.has(user.email);
-      });
-      const skippedUsers = seedData.authUsers.filter(user => {
-        if (user.id) {
-          return existingIds.has(user.id) || existingEmails.has(user.email);
-        }
-        return existingEmails.has(user.email);
-      });
-      
-      // スキップされるユーザーのIDを追加
-      for (const user of skippedUsers) {
-        const existingId = user.id && existingIds.has(user.id)
-          ? existingIds.get(user.id)!
-          : existingEmails.get(user.email)!;
-        authUserIds.push(existingId);
-      }
-
-      if (skippedUsers.length > 0) {
-        console.log(`   既存ユーザー: ${skippedUsers.length}人（スキップ）`);
-      }
-
-      if (newUsers.length > 0) {
-        // パスワードは全員同じなので、一度だけハッシュ化
-        const hashedPassword = await hashPasswordBetterAuth("password123");
-        const now = new Date();
-
-        // ユーザーとアカウントのレコードを一括で準備
-        const userRecords: any[] = [];
-        const accountRecords: any[] = [];
-
-        for (const user of newUsers) {
-          const userId = user.id || generateId(32);
-          const accountId = generateId(32);
-
-          userRecords.push({
-            id: userId,
-            name: user.name,
-            email: user.email,
-            emailVerified: true,
-            image: null,
-            createdAt: now,
-            updatedAt: now,
-          });
-
-          accountRecords.push({
-            id: accountId,
-            userId: userId,
-            accountId: userId,
-            providerId: "credential",
-            password: hashedPassword,
-            createdAt: now,
-            updatedAt: now,
-          });
-
-          authUserIds.push(userId);
+      console.log(`   → シードデータから${authUserIds.length}人のIDを取得`);
+    } else {
+      try {
+        const existingRows = await db.select({ email: schema.user.email, id: schema.user.id }).from(schema.user);
+        for (const row of existingRows) {
+          existingEmails.set(row.email, row.id);
+          existingIds.set(row.id, row.id);
+          existingEmailsForMapping.set(row.email, row.id);
+          existingIdsForMapping.set(row.id, row.id);
         }
 
-        // 一括挿入
-        if (userRecords.length > 0) {
-          await db.insert(schema.user).values(userRecords);
-          await db.insert(schema.account).values(accountRecords);
+        // 新規ユーザーをフィルタリング（メールアドレスまたはユーザーIDで既存チェック）
+        const newUsers = seedData.authUsers.filter(user => {
+          // ユーザーIDが指定されている場合はIDでチェック、そうでない場合はメールアドレスでチェック
+          if (user.id) {
+            return !existingIds.has(user.id) && !existingEmails.has(user.email);
+          }
+          return !existingEmails.has(user.email);
+        });
+        const skippedUsers = seedData.authUsers.filter(user => {
+          if (user.id) {
+            return existingIds.has(user.id) || existingEmails.has(user.email);
+          }
+          return existingEmails.has(user.email);
+        });
+
+        // スキップされるユーザーのIDを追加
+        for (const user of skippedUsers) {
+          const existingId = user.id && existingIds.has(user.id)
+            ? existingIds.get(user.id)!
+            : existingEmails.get(user.email)!;
+          authUserIds.push(existingId);
         }
 
-        console.log(`   新規作成: ${newUsers.length}人`);
-      }
-
-      console.log(`   → 合計${authUserIds.length}人を処理完了`);
-      
-      // auth_user_idマッピングを作成（seedData.authUsersの順序で）
-      // seedData.authUsersの各ユーザーに対応するIDをマッピング
-      const authUserIdMap = new Map<string, string>();
-      for (let i = 0; i < seedData.authUsers.length; i++) {
-        const user = seedData.authUsers[i];
-        const userId = user.id || authUserIds[i] || existingEmails.get(user.email);
-        if (userId) {
-          authUserIdMap.set(user.id || user.email, userId);
+        if (skippedUsers.length > 0) {
+          console.log(`   既存ユーザー: ${skippedUsers.length}人（スキップ）`);
         }
+
+        if (newUsers.length > 0) {
+          // パスワードは全員同じなので、一度だけハッシュ化
+          const hashedPassword = await hashPasswordBetterAuth("password123");
+          const now = new Date();
+
+          // ユーザーとアカウントのレコードを一括で準備
+          const userRecords: any[] = [];
+          const accountRecords: any[] = [];
+
+          for (const user of newUsers) {
+            const userId = user.id || generateId(32);
+            const accountId = generateId(32);
+
+            userRecords.push({
+              id: userId,
+              name: user.name,
+              email: user.email,
+              emailVerified: true,
+              image: null,
+              createdAt: now,
+              updatedAt: now,
+            });
+
+            accountRecords.push({
+              id: accountId,
+              userId: userId,
+              accountId: userId,
+              providerId: "credential",
+              password: hashedPassword,
+              createdAt: now,
+              updatedAt: now,
+            });
+
+            authUserIds.push(userId);
+          }
+
+          // 一括挿入
+          if (userRecords.length > 0) {
+            await db.insert(schema.user).values(userRecords);
+            await db.insert(schema.account).values(accountRecords);
+          }
+
+          console.log(`   新規作成: ${newUsers.length}人`);
+        }
+
+        console.log(`   → 合計${authUserIds.length}人を処理完了`);
+
+        // auth_user_idマッピングを作成（seedData.authUsersの順序で）
+        // seedData.authUsersの各ユーザーに対応するIDをマッピング
+        const authUserIdMap = new Map<string, string>();
+        for (let i = 0; i < seedData.authUsers.length; i++) {
+          const user = seedData.authUsers[i];
+          const userId = user.id || authUserIds[i] || existingEmails.get(user.email);
+          if (userId) {
+            authUserIdMap.set(user.id || user.email, userId);
+          }
+        }
+
+      } catch (error) {
+        console.error("ユーザー作成エラー:", error);
+        throw error;
       }
-      
-    } catch (error) {
-      console.error("ユーザー作成エラー:", error);
-      throw error;
     }
 
     // 2. 人材DBにレコード作成
@@ -2655,11 +2668,107 @@ const upsertYamadaSeedData = async () => {
   }
 };
 
+// --dual オプションがあるかチェック
+const isDualMode = process.argv.includes("--dual");
+
+// 認証ユーザーのみを特定のDBに作成する関数
+const createAuthUsersOnly = async (targetDb: "local" | "rds") => {
+  await switchDatabase(targetDb);
+  const db = getDb();
+
+  console.log(`\n📦 ${targetDb === "local" ? "ローカルDB" : "AWS RDS"} に認証ユーザーを作成します...`);
+
+  // シードデータの認証ユーザーを取得（セット1+セット2の全ユーザー）
+  const allAuthUsers = [
+    ...seedData1.authUsers,
+    ...seedData2.authUsers,
+  ];
+
+  for (const userData of allAuthUsers) {
+    try {
+      // 既存ユーザーをチェック
+      const existingUser = await db
+        .select()
+        .from(schema.user)
+        .where(eq(schema.user.email, userData.email))
+        .limit(1);
+
+      if (existingUser.length > 0) {
+        console.log(`⏭️  ユーザー ${userData.email} は既に存在します（${targetDb}）`);
+        continue;
+      }
+
+      // パスワードハッシュを生成
+      const hashedPassword = await hashPasswordBetterAuth(userData.password);
+
+      // ユーザーを作成
+      await db.insert(schema.user).values({
+        id: userData.id,
+        name: userData.name,
+        email: userData.email,
+        emailVerified: true,
+        image: userData.image,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+
+      // アカウントを作成
+      await db.insert(schema.account).values({
+        id: generateId(),
+        accountId: userData.id,
+        providerId: "credential",
+        userId: userData.id,
+        password: hashedPassword,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+
+      console.log(`✅ ユーザー作成成功: ${userData.email}（${targetDb}）`);
+    } catch (error: any) {
+      console.error(`❌ ユーザー作成エラー（${userData.email}）:`, error.message);
+    }
+  }
+};
+
+// Dual モード: 両環境に認証ユーザーを作成してからKintoneデータを作成
+const createSeedDataDual = async () => {
+  console.log("🔄 Dual モード: ローカルDB と AWS RDS の両方にシードデータを作成します\n");
+
+  // DATABASE_URL がないとRDSに接続できない
+  if (!process.env.DATABASE_URL) {
+    console.error("❌ DATABASE_URL が設定されていません。RDSへの接続ができません。");
+    console.error("   .env.local に DATABASE_URL を設定してください。");
+    process.exit(1);
+  }
+
+  // 1. ローカルDBに認証ユーザーを作成
+  await createAuthUsersOnly("local");
+
+  // 2. AWS RDSに認証ユーザーを作成
+  await createAuthUsersOnly("rds");
+
+  // 3. Kintoneデータは共有なので1回だけ作成（USE_LOCAL_DBの設定に関係なく動作）
+  console.log("\n📦 Kintone にタレント・案件データを作成します...");
+
+  // 元のcreateを呼ぶと認証ユーザーも作ろうとするので、Kintoneデータのみ作成するフラグを設定
+  process.env.SEED_KINTONE_ONLY = "true";
+  await createSeedData();
+  delete process.env.SEED_KINTONE_ONLY;
+
+  await closePool();
+  console.log("\n✅ Dual モード完了: 両環境でシードユーザーが使用可能です");
+  console.log("   ログイン: seed_yamada@example.com / password123");
+};
+
 // コマンドライン引数で処理を分岐
 const command = process.argv[2];
 
 if (command === "create") {
-  createSeedData();
+  if (isDualMode) {
+    createSeedDataDual();
+  } else {
+    createSeedData();
+  }
 } else if (command === "delete") {
   deleteSeedData();
 } else if (command === "upsert") {
@@ -2667,20 +2776,29 @@ if (command === "create") {
 } else if (command === "create:1") {
   // seed:create:1 用（引数なしでcreate呼び出し時のため）
   process.argv[3] = "1";
-  createSeedData();
+  if (isDualMode) {
+    createSeedDataDual();
+  } else {
+    createSeedData();
+  }
 } else if (command === "create:2") {
   process.argv[3] = "2";
-  createSeedData();
+  if (isDualMode) {
+    createSeedDataDual();
+  } else {
+    createSeedData();
+  }
 } else if (command === "create:3") {
   process.argv[3] = "3";
   createSeedData();
 } else {
   console.error("使用方法:");
-  console.error("  npm run seed:create      - シードデータを作成（デフォルト: セット2）");
-  console.error("  npm run seed:create:1    - セット1を作成（削除 + 作成）");
-  console.error("  npm run seed:create:2    - セット2を作成（削除 + 作成）");
-  console.error("  npm run seed:create:3    - セット3を作成（50人+50案件）");
-  console.error("  npm run seed:upsert      - yamada シードデータを Upsert（Vercel 連携用）");
-  console.error("  npm run seed:delete      - シードデータを全件削除");
+  console.error("  npm run seed:create            - シードデータを作成（デフォルト: セット2）");
+  console.error("  npm run seed:create -- --dual  - 両環境（ローカル+AWS）にシードを作成");
+  console.error("  npm run seed:create:1          - セット1を作成（削除 + 作成）");
+  console.error("  npm run seed:create:2          - セット2を作成（削除 + 作成）");
+  console.error("  npm run seed:create:3          - セット3を作成（50人+50案件）");
+  console.error("  npm run seed:upsert            - yamada シードデータを Upsert（Vercel 連携用）");
+  console.error("  npm run seed:delete            - シードデータを全件削除");
   process.exit(1);
 }

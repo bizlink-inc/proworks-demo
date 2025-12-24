@@ -14,13 +14,17 @@ const generateRandomPassword = () => {
 };
 
 // データベース接続URL
-// ローカル: postgresql://ss@localhost:5432/proworks_local
-// AWS RDS: 環境変数 DATABASE_URL から取得
+// USE_LOCAL_DB=true: ローカルDB（postgresql://ss@localhost:5432/proworks_local）を使用
+// USE_LOCAL_DB=false または未設定: DATABASE_URL（AWS RDS）を使用
 const getDatabaseUrl = (): string => {
+  // ローカル開発モードの場合はローカルDBを使用
+  if (process.env.USE_LOCAL_DB === "true") {
+    return "postgresql://ss@localhost:5432/proworks_local";
+  }
   if (process.env.DATABASE_URL) {
     return process.env.DATABASE_URL;
   }
-  // ローカル開発環境のデフォルト
+  // フォールバック: ローカル開発環境のデフォルト
   return "postgresql://ss@localhost:5432/proworks_local";
 };
 
