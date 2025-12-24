@@ -42,6 +42,7 @@ export function useApplicationStatusMonitor() {
             // ステータスが変更された場合、通知を追加
             addNotification({
               id: `${current.jobId}-${Date.now()}`,
+              type: "status_change",
               jobId: current.jobId,
               jobTitle: current.jobTitle,
               oldStatus: previous.status,
