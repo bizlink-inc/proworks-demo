@@ -22,7 +22,7 @@ export function ApplySuccessModal({ isOpen, missingFields, onClose }: ApplySucce
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:min-w-[500px] sm:max-w-[500px]">
+      <DialogContent className="sm:min-w-[500px] sm:max-w-[500px]" showCloseButton={false}>
         {/* アクセシビリティ用タイトル（画面上では非表示） */}
         <DialogTitle className="sr-only">応募完了</DialogTitle>
 
