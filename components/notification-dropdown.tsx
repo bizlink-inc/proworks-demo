@@ -221,7 +221,7 @@ export const NotificationDropdown = () => {
                             color: "#d22852"
                           }}
                         >
-                          確認する
+                          {notification.type === "status_change" ? "【応募済み案件】" : "確認する"}
                         </button>
                       </div>
                     </div>

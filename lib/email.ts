@@ -1021,6 +1021,102 @@ PRO WORKS 運営チーム/株式会社アルマ
 };
 
 /**
+ * 面談予定確定メールを送信
+ */
+export const sendInterviewConfirmedEmail = async (
+  to: string,
+  userName: string,
+  jobTitle: string,
+  baseUrl: string
+): Promise<SendEmailResult> => {
+  const subject = "【PROWORKS】面談予定が確定しました";
+
+  const applicationsUrl = `${baseUrl}/applications`;
+  const helpfulInfoUrl = `${baseUrl}/media`;
+  const contactUrl = `${baseUrl}/me?tab=contact`;
+  const homeUrl = baseUrl;
+
+  const htmlContent = `
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="font-family: 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #30373f; max-width: 600px; margin: 0 auto; padding: 20px;">
+  <div style="background-color: #f3f9fd; padding: 30px; border-radius: 8px;">
+    <h1 style="color: #1f3151; font-size: 24px; margin-bottom: 20px;">PRO WORKS</h1>
+
+    <p style="margin-bottom: 20px;">${userName}様</p>
+
+    <p style="margin-bottom: 20px;">いつもPRO WORKSをご利用いただき、誠にありがとうございます。</p>
+
+    <div style="background-color: #ffffff; padding: 20px; border-radius: 6px; margin: 20px 0; border-left: 4px solid #63b2cd;">
+      <p style="margin: 0; font-weight: bold; color: #1f3151;">面談予定確定案件</p>
+      <p style="margin: 10px 0 0 0; color: #30373f; font-size: 16px;">
+        ${jobTitle}
+      </p>
+    </div>
+
+    <p style="margin-bottom: 20px;">
+      について、面談予定が確定しました。
+    </p>
+
+    <p style="margin-bottom: 20px;">
+      PRO WORKS営業担当より、面談日程について別途ご連絡させていただきますのでご対応よろしくお願いいたします。
+    </p>
+
+    <hr style="border: none; border-top: 1px solid #d5e5f0; margin: 30px 0;">
+
+    <p style="color: #686868; font-size: 12px;">
+      【ご注意】<br>
+      本メールに身に覚えのない場合は、本メールを破棄していただきますようお願いいたします。<br>
+      ※ご連絡が取れない場合、面談を組むことができないため取消させていただくことがございます。ご了承ください。
+    </p>
+
+    <hr style="border: none; border-top: 1px solid #d5e5f0; margin: 20px 0;">
+
+    <div style="font-size: 12px; color: #686868;">
+      <p style="margin: 5px 0;">▽お役立ち情報: <a href="${helpfulInfoUrl}" style="color: #63b2cd;">${helpfulInfoUrl}</a></p>
+      <p style="margin: 5px 0;">▽お問い合わせ先: <a href="${contactUrl}" style="color: #63b2cd;">${contactUrl}</a></p>
+      <p style="margin: 5px 0;">▽PRO WORKS: <a href="${homeUrl}" style="color: #63b2cd;">${homeUrl}</a></p>
+    </div>
+
+    <p style="color: #686868; font-size: 12px; text-align: center; margin-top: 20px;">
+      PRO WORKS運営チーム/株式会社アルマ
+    </p>
+  </div>
+</body>
+</html>
+  `;
+
+  const textContent = `
+${userName}様
+
+いつもPRO WORKSをご利用いただき、誠にありがとうございます。
+
+${jobTitle}について、面談予定が確定しました。
+
+PRO WORKS営業担当より、面談日程について別途ご連絡させていただきますのでご対応よろしくお願いいたします。
+
+【ご注意】
+本メールに身に覚えのない場合は、本メールを破棄していただきますようお願いいたします。
+※ご連絡が取れない場合、面談を組むことができないため取消させていただくことがございます。ご了承ください。
+――――――――――――――――――
+▽お役立ち情報
+${helpfulInfoUrl}
+▽お問い合わせ先
+${contactUrl}
+▽PRO WORKS
+${homeUrl}
+PRO WORKS運営チーム/株式会社アルマ
+――――――――――――――――――
+  `;
+
+  return sendEmail({ to, subject, html: htmlContent, text: textContent });
+};
+
+/**
  * コンソール出力用のヘルパー関数（開発環境専用）
  * Better Auth のコールバックから呼び出される
  */
