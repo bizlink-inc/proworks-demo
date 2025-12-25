@@ -1,17 +1,19 @@
 /**
  * AIマッチ実行API
  * POST /api/admin/ai-match
- * 
+ *
  * 選択された人材に対してAI評価を実行し、
  * 結果をKintone推薦DBに保存する
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { headers } from "next/headers";
 import { verifyAdminSession } from "@/lib/admin-auth";
 import { createTalentClient, createJobClient, createRecommendationClient, getAppIds } from "@/lib/kintone/client";
 import { executeAIMatch, AIMatchResult } from "@/lib/gemini/client";
 import { downloadFileFromKintone } from "@/lib/kintone/services/file";
 import { extractTextFromFile } from "@/lib/kintone/services/text-extraction";
+import { sendAIMatchNotificationEmail } from "@/lib/email";
 
 // リクエスト型
 type AIMatchRequestBody = {
@@ -24,6 +26,7 @@ type TalentRecord = {
   $id: { value: string };
   auth_user_id: { value: string };
   氏名: { value: string };
+  メールアドレス: { value: string };
   複数選択: { value: string[] };
   言語_ツール: { value: string };
   主な実績_PR_職務経歴: { value: string };
@@ -130,7 +133,7 @@ export const POST = async (request: NextRequest) => {
     const talentsResponse = await talentClient.record.getAllRecords({
       app: appIds.talent,
       condition: talentCondition,
-      fields: ["$id", "auth_user_id", "氏名", "複数選択", "言語_ツール", "主な実績_PR_職務経歴", "希望案件_作業内容", "職務経歴書データ"],
+      fields: ["$id", "auth_user_id", "氏名", "メールアドレス", "複数選択", "言語_ツール", "主な実績_PR_職務経歴", "希望案件_作業内容", "職務経歴書データ"],
     });
 
     const talents = talentsResponse as TalentRecord[];
@@ -298,6 +301,43 @@ export const POST = async (request: NextRequest) => {
     }
 
     console.log(`🎉 AI評価完了: ${results.length}人`);
+
+    // 5. AIマッチ完了した人材にメール通知を送信
+    const successResults = results.filter((r) => !r.result.error);
+    if (successResults.length > 0) {
+      try {
+        // ベースURLを取得
+        const headersList = await headers();
+        const host = headersList.get("host") || "localhost:3000";
+        const protocol = process.env.NODE_ENV === "production" ? "https" : "http";
+        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || `${protocol}://${host}`;
+        const jobUrl = `${baseUrl}/?jobId=${jobId}`;
+        const jobTitle = jobRecord.案件名?.value || "";
+
+        console.log(`📧 AIマッチ通知メール送信開始: ${successResults.length}人`);
+        for (const result of successResults) {
+          const talent = talentMap.get(result.talentAuthUserId);
+          if (talent && talent.メールアドレス?.value) {
+            try {
+              await sendAIMatchNotificationEmail(
+                talent.メールアドレス.value,
+                talent.氏名?.value || "会員",
+                jobTitle,
+                jobUrl,
+                baseUrl
+              );
+              console.log(`  ✅ メール送信成功: ${talent.メールアドレス.value}`);
+            } catch (emailError) {
+              console.error(`  ❌ メール送信失敗: ${talent.メールアドレス.value}`, emailError);
+            }
+          }
+        }
+        console.log(`📧 AIマッチ通知メール送信完了`);
+      } catch (emailError) {
+        // メール送信エラーがあってもAPIは成功として返す
+        console.error("AIマッチ通知メール送信エラー:", emailError);
+      }
+    }
 
     return NextResponse.json({
       success: true,

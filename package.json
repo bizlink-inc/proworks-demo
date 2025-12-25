@@ -32,6 +32,7 @@
     "test:signup": "npx playwright test signup-flow --headed",
     "test:text-extraction": "npx tsx scripts/test-text-extraction.ts",
     "test:ai-match": "npx tsx scripts/test-ai-match.ts",
+    "test:notification": "NODE_ENV=development npx tsx scripts/test-notification.ts",
     "cache:clear:announcements": "npx tsx scripts/clear-announcement-cache.ts",
     "cache:clear:notifications": "open http://localhost:3000/clear-cache",
     "env:push:dev": "npx tsx scripts/push-env-to-apprunner.ts dev",

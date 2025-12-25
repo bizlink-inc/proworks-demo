@@ -1,16 +1,18 @@
 /**
  * 担当者おすすめ設定API
  * POST /api/admin/staff-recommend
- * 
+ *
  * 選択された人材に対して「担当者おすすめ」フラグを設定する
  * ⚠️ 重要: このAPIはRECOMMENDATION_FIELDSの定数を使用してkintoneに保存します。
  * ハードコードではなく必ず定数を参照してください。
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { headers } from "next/headers";
 import { verifyAdminSession } from "@/lib/admin-auth";
-import { createRecommendationClient, getAppIds } from "@/lib/kintone/client";
-import { RECOMMENDATION_FIELDS } from "@/lib/kintone/fieldMapping";
+import { createRecommendationClient, createTalentClient, createJobClient, getAppIds } from "@/lib/kintone/client";
+import { RECOMMENDATION_FIELDS, TALENT_FIELDS } from "@/lib/kintone/fieldMapping";
+import { sendStaffRecommendNotificationEmail } from "@/lib/email";
 
 // リクエスト型
 type StaffRecommendRequestBody = {
@@ -25,6 +27,20 @@ type RecommendationRecord = {
   人材ID: { value: string };
   案件ID: { value: string };
   [key: string]: { value: string } | { value: string[] } | undefined;
+};
+
+// 人材レコード型
+type TalentRecord = {
+  $id: { value: string };
+  auth_user_id: { value: string };
+  氏名: { value: string };
+  メールアドレス: { value: string };
+};
+
+// 案件レコード型
+type JobRecord = {
+  $id: { value: string };
+  案件名: { value: string };
 };
 
 export const POST = async (request: NextRequest) => {
@@ -124,6 +140,73 @@ export const POST = async (request: NextRequest) => {
 
     const successCount = results.filter((r) => r.success).length;
     console.log(`🎉 担当者おすすめ${recommend ? "設定" : "解除"}完了: ${successCount}/${talentAuthUserIds.length}人`);
+
+    // 3. おすすめ設定時のみメール通知を送信
+    if (recommend && successCount > 0) {
+      try {
+        const talentClient = createTalentClient();
+        const jobClient = createJobClient();
+
+        // 案件情報を取得
+        const jobResponse = await jobClient.record.getRecord({
+          app: appIds.job,
+          id: parseInt(jobId, 10),
+        });
+        const jobRecord = jobResponse.record as JobRecord;
+        const jobTitle = jobRecord.案件名?.value || "";
+
+        // 成功した人材のauth_user_idリスト
+        const successAuthUserIds = results
+          .filter((r) => r.success)
+          .map((r) => r.talentAuthUserId);
+
+        // 人材情報を取得
+        const talentCondition = successAuthUserIds
+          .map((id) => `${TALENT_FIELDS.AUTH_USER_ID} = "${id}"`)
+          .join(" or ");
+
+        const talentsResponse = await talentClient.record.getAllRecords({
+          app: appIds.talent,
+          condition: talentCondition,
+          fields: ["$id", TALENT_FIELDS.AUTH_USER_ID, TALENT_FIELDS.FULL_NAME, TALENT_FIELDS.EMAIL],
+        });
+
+        const talents = talentsResponse as TalentRecord[];
+
+        // ベースURLを取得
+        const headersList = await headers();
+        const host = headersList.get("host") || "localhost:3000";
+        const protocol = process.env.NODE_ENV === "production" ? "https" : "http";
+        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || `${protocol}://${host}`;
+        const jobUrl = `${baseUrl}/?jobId=${jobId}`;
+
+        // 各人材にメール送信
+        console.log(`📧 担当者おすすめ通知メール送信開始: ${talents.length}人`);
+        for (const talent of talents) {
+          const email = talent[TALENT_FIELDS.EMAIL as keyof TalentRecord]?.value as string;
+          const userName = talent[TALENT_FIELDS.FULL_NAME as keyof TalentRecord]?.value as string || "会員";
+
+          if (email) {
+            try {
+              await sendStaffRecommendNotificationEmail(
+                email,
+                userName,
+                jobTitle,
+                jobUrl,
+                baseUrl
+              );
+              console.log(`  ✅ メール送信成功: ${email}`);
+            } catch (emailError) {
+              console.error(`  ❌ メール送信失敗: ${email}`, emailError);
+            }
+          }
+        }
+        console.log(`📧 担当者おすすめ通知メール送信完了`);
+      } catch (emailError) {
+        // メール送信エラーがあってもAPIは成功として返す
+        console.error("担当者おすすめ通知メール送信エラー:", emailError);
+      }
+    }
 
     return NextResponse.json({
       success: true,

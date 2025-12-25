@@ -8,21 +8,27 @@
  */
 import { SESClient, SendEmailCommand } from "@aws-sdk/client-ses";
 
-// 環境判定
-const isDevelopment = process.env.NODE_ENV === "development";
+// 環境判定（動的に評価するため関数化）
+const isDevelopment = () => process.env.NODE_ENV === "development";
 
-// SES クライアント初期化（本番環境のみ）
+// SES クライアント（遅延初期化）
 let sesClient: SESClient | null = null;
 
-if (!isDevelopment) {
-  sesClient = new SESClient({
-    region: process.env.AWS_SES_REGION || "ap-northeast-1",
-    credentials: process.env.AWS_ACCESS_KEY_ID ? {
-      accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-      secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
-    } : undefined, // IAMロールを使用する場合はundefined
-  });
-}
+const getSESClient = (): SESClient | null => {
+  if (isDevelopment()) {
+    return null;
+  }
+  if (!sesClient) {
+    sesClient = new SESClient({
+      region: process.env.AWS_SES_REGION || "ap-northeast-1",
+      credentials: process.env.AWS_ACCESS_KEY_ID ? {
+        accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
+      } : undefined, // IAMロールを使用する場合はundefined
+    });
+  }
+  return sesClient;
+};
 
 // 送信元メールアドレス
 const FROM_EMAIL = process.env.EMAIL_FROM || "PRO WORKS <noreply@proworks.jp>";
@@ -272,7 +278,7 @@ type SendEmailParams = {
 
 const sendEmail = async ({ to, subject, html, text }: SendEmailParams): Promise<SendEmailResult> => {
   // 開発環境: コンソールに出力
-  if (isDevelopment) {
+  if (isDevelopment()) {
     console.log("\n" + "=".repeat(80));
     console.log(`📧 ${subject}`);
     console.log("=".repeat(80));
@@ -284,7 +290,8 @@ const sendEmail = async ({ to, subject, html, text }: SendEmailParams): Promise<
   }
 
   // 本番環境: Amazon SES で送信
-  if (!sesClient) {
+  const client = getSESClient();
+  if (!client) {
     console.error("❌ Amazon SES クライアントが初期化されていません");
     return { success: false, error: "メール送信サービスが設定されていません" };
   }
@@ -313,7 +320,7 @@ const sendEmail = async ({ to, subject, html, text }: SendEmailParams): Promise<
       },
     });
 
-    await sesClient.send(command);
+    await client.send(command);
 
     console.log(`✅ メール送信成功: ${to} - ${subject}`);
     return { success: true };
@@ -589,6 +596,216 @@ ${myPageUrl}
 
 ▽お役立ち情報
 ${helpfulInfoUrl}
+
+▽お問い合わせ先
+${contactUrl}
+
+▽PRO WORKS
+${homeUrl}
+
+PRO WORKS 運営チーム/株式会社アルマ
+  `;
+
+  return sendEmail({ to, subject, html: htmlContent, text: textContent });
+};
+
+/**
+ * 担当者おすすめ通知メールを送信
+ */
+export const sendStaffRecommendNotificationEmail = async (
+  to: string,
+  userName: string,
+  jobTitle: string,
+  jobUrl: string,
+  baseUrl: string
+): Promise<SendEmailResult> => {
+  const subject = "【PRO WORKS】担当者からあなたにおすすめの案件があります";
+
+  const myPageUrl = `${baseUrl}/me`;
+  const contactUrl = `${baseUrl}/me?tab=contact`;
+  const homeUrl = baseUrl;
+
+  const htmlContent = `
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="font-family: 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #30373f; max-width: 600px; margin: 0 auto; padding: 20px;">
+  <div style="background-color: #f3f9fd; padding: 30px; border-radius: 8px;">
+    <h1 style="color: #1f3151; font-size: 24px; margin-bottom: 20px;">PRO WORKS</h1>
+
+    <p style="margin-bottom: 20px;">${userName} 様</p>
+
+    <p style="margin-bottom: 20px;">
+      担当者があなたのスキル・経験にマッチする案件をおすすめしています。
+    </p>
+
+    <div style="background-color: #ffffff; padding: 20px; border-radius: 6px; margin: 20px 0; border-left: 4px solid #63b2cd;">
+      <p style="margin: 0; font-weight: bold; color: #1f3151;">おすすめ案件</p>
+      <p style="margin: 10px 0 0 0; color: #30373f; font-size: 16px;">
+        ${jobTitle}
+      </p>
+    </div>
+
+    <p style="margin-bottom: 20px;">以下のリンクより、案件の詳細をご確認ください。</p>
+
+    <div style="text-align: center; margin: 30px 0;">
+      <a href="${jobUrl}"
+         style="display: inline-block; background-color: #63b2cd; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: bold;">
+        案件詳細を見る
+      </a>
+    </div>
+
+    <hr style="border: none; border-top: 1px solid #d5e5f0; margin: 30px 0;">
+
+    <p style="color: #686868; font-size: 12px;">
+      【ご注意】<br>
+      本メールに身に覚えのない場合は、本メールを破棄していただきますようお願いいたします。
+    </p>
+
+    <hr style="border: none; border-top: 1px solid #d5e5f0; margin: 20px 0;">
+
+    <div style="font-size: 12px; color: #686868;">
+      <p style="margin: 5px 0;">▽マイページ: <a href="${myPageUrl}" style="color: #63b2cd;">${myPageUrl}</a></p>
+      <p style="margin: 5px 0;">▽お問い合わせ先: <a href="${contactUrl}" style="color: #63b2cd;">${contactUrl}</a></p>
+      <p style="margin: 5px 0;">▽PRO WORKS: <a href="${homeUrl}" style="color: #63b2cd;">${homeUrl}</a></p>
+    </div>
+
+    <p style="color: #686868; font-size: 12px; text-align: center; margin-top: 20px;">
+      PRO WORKS 運営チーム/株式会社アルマ
+    </p>
+  </div>
+</body>
+</html>
+  `;
+
+  const textContent = `
+${userName} 様
+
+担当者があなたのスキル・経験にマッチする案件をおすすめしています。
+
+────────────────────────────────────
+■ おすすめ案件
+────────────────────────────────────
+${jobTitle}
+
+▼案件詳細はこちら
+${jobUrl}
+
+————————————————————
+【ご注意】
+本メールに身に覚えのない場合は、本メールを破棄していただきますようお願いいたします。
+————————————————————
+
+▽マイページ
+${myPageUrl}
+
+▽お問い合わせ先
+${contactUrl}
+
+▽PRO WORKS
+${homeUrl}
+
+PRO WORKS 運営チーム/株式会社アルマ
+  `;
+
+  return sendEmail({ to, subject, html: htmlContent, text: textContent });
+};
+
+/**
+ * AIマッチ通知メールを送信
+ */
+export const sendAIMatchNotificationEmail = async (
+  to: string,
+  userName: string,
+  jobTitle: string,
+  jobUrl: string,
+  baseUrl: string
+): Promise<SendEmailResult> => {
+  const subject = "【PRO WORKS】あなたのスキルにマッチする案件が見つかりました";
+
+  const myPageUrl = `${baseUrl}/me`;
+  const contactUrl = `${baseUrl}/me?tab=contact`;
+  const homeUrl = baseUrl;
+
+  const htmlContent = `
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="font-family: 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #30373f; max-width: 600px; margin: 0 auto; padding: 20px;">
+  <div style="background-color: #f3f9fd; padding: 30px; border-radius: 8px;">
+    <h1 style="color: #1f3151; font-size: 24px; margin-bottom: 20px;">PRO WORKS</h1>
+
+    <p style="margin-bottom: 20px;">${userName} 様</p>
+
+    <p style="margin-bottom: 20px;">
+      AIがあなたのスキル・経験を分析し、マッチする案件を見つけました。
+    </p>
+
+    <div style="background-color: #ffffff; padding: 20px; border-radius: 6px; margin: 20px 0; border-left: 4px solid #63b2cd;">
+      <p style="margin: 0; font-weight: bold; color: #1f3151;">AIマッチ案件</p>
+      <p style="margin: 10px 0 0 0; color: #30373f; font-size: 16px;">
+        ${jobTitle}
+      </p>
+    </div>
+
+    <p style="margin-bottom: 20px;">以下のリンクより、案件の詳細をご確認ください。</p>
+
+    <div style="text-align: center; margin: 30px 0;">
+      <a href="${jobUrl}"
+         style="display: inline-block; background-color: #63b2cd; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: bold;">
+        案件詳細を見る
+      </a>
+    </div>
+
+    <hr style="border: none; border-top: 1px solid #d5e5f0; margin: 30px 0;">
+
+    <p style="color: #686868; font-size: 12px;">
+      【ご注意】<br>
+      本メールに身に覚えのない場合は、本メールを破棄していただきますようお願いいたします。
+    </p>
+
+    <hr style="border: none; border-top: 1px solid #d5e5f0; margin: 20px 0;">
+
+    <div style="font-size: 12px; color: #686868;">
+      <p style="margin: 5px 0;">▽マイページ: <a href="${myPageUrl}" style="color: #63b2cd;">${myPageUrl}</a></p>
+      <p style="margin: 5px 0;">▽お問い合わせ先: <a href="${contactUrl}" style="color: #63b2cd;">${contactUrl}</a></p>
+      <p style="margin: 5px 0;">▽PRO WORKS: <a href="${homeUrl}" style="color: #63b2cd;">${homeUrl}</a></p>
+    </div>
+
+    <p style="color: #686868; font-size: 12px; text-align: center; margin-top: 20px;">
+      PRO WORKS 運営チーム/株式会社アルマ
+    </p>
+  </div>
+</body>
+</html>
+  `;
+
+  const textContent = `
+${userName} 様
+
+AIがあなたのスキル・経験を分析し、マッチする案件を見つけました。
+
+────────────────────────────────────
+■ AIマッチ案件
+────────────────────────────────────
+${jobTitle}
+
+▼案件詳細はこちら
+${jobUrl}
+
+————————————————————
+【ご注意】
+本メールに身に覚えのない場合は、本メールを破棄していただきますようお願いいたします。
+————————————————————
+
+▽マイページ
+${myPageUrl}
 
 ▽お問い合わせ先
 ${contactUrl}
