@@ -715,6 +715,102 @@ PRO WORKS 運営チーム/株式会社アルマ
 };
 
 /**
+ * パスワード変更完了通知メールを送信
+ */
+export const sendPasswordChangedNotificationEmail = async (
+  to: string,
+  userName: string,
+  baseUrl: string
+): Promise<SendEmailResult> => {
+  const subject = "【PRO WORKS】パスワード変更のお知らせ";
+
+  const loginUrl = `${baseUrl}/login`;
+  const helpfulInfoUrl = `${baseUrl}/media`;
+  const contactUrl = `${baseUrl}/me?tab=contact`;
+  const homeUrl = baseUrl;
+
+  const htmlContent = `
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="font-family: 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #30373f; max-width: 600px; margin: 0 auto; padding: 20px;">
+  <div style="background-color: #f3f9fd; padding: 30px; border-radius: 8px;">
+    <h1 style="color: #1f3151; font-size: 24px; margin-bottom: 20px;">PRO WORKS</h1>
+
+    <p style="margin-bottom: 20px;">${userName} 様</p>
+
+    <p style="margin-bottom: 20px;">いつもPRO WORKSをご利用いただき、誠にありがとうございます。</p>
+
+    <p style="margin-bottom: 20px;">
+      パスワードの変更が正常に完了しました。<br>
+      以下のリンクより、再度ログインをお願いいたします。
+    </p>
+
+    <div style="text-align: center; margin: 30px 0;">
+      <a href="${loginUrl}"
+         style="display: inline-block; background-color: #63b2cd; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: bold;">
+        ログインはこちら
+      </a>
+    </div>
+
+    <hr style="border: none; border-top: 1px solid #d5e5f0; margin: 30px 0;">
+
+    <p style="color: #686868; font-size: 12px;">
+      【ご注意】<br>
+      本メールに身に覚えのない場合は、本メールを破棄していただきますようお願いいたします。
+    </p>
+
+    <hr style="border: none; border-top: 1px solid #d5e5f0; margin: 20px 0;">
+
+    <div style="font-size: 12px; color: #686868;">
+      <p style="margin: 5px 0;">▽お役立ち情報: <a href="${helpfulInfoUrl}" style="color: #63b2cd;">${helpfulInfoUrl}</a></p>
+      <p style="margin: 5px 0;">▽お問い合わせ先: <a href="${contactUrl}" style="color: #63b2cd;">${contactUrl}</a></p>
+      <p style="margin: 5px 0;">▽PRO WORKS: <a href="${homeUrl}" style="color: #63b2cd;">${homeUrl}</a></p>
+    </div>
+
+    <p style="color: #686868; font-size: 12px; text-align: center; margin-top: 20px;">
+      PRO WORKS 運営チーム/株式会社アルマ
+    </p>
+  </div>
+</body>
+</html>
+  `;
+
+  const textContent = `
+${userName} 様
+
+いつもPRO WORKSをご利用いただき、誠にありがとうございます。
+
+パスワードの変更が正常に完了しました。
+以下のリンクより、再度ログインをお願いいたします。
+
+▼ログインはこちら
+${loginUrl}
+
+————————————————————
+【ご注意】
+本メールに身に覚えのない場合は、本メールを破棄していただきますようお願いいたします。
+————————————————————
+
+▽お役立ち情報
+${helpfulInfoUrl}
+
+▽お問い合わせ先
+${contactUrl}
+
+▽PRO WORKS
+${homeUrl}
+
+PRO WORKS 運営チーム/株式会社アルマ
+  `;
+
+  return sendEmail({ to, subject, html: htmlContent, text: textContent });
+};
+
+/**
  * AIマッチ通知メールを送信
  */
 export const sendAIMatchNotificationEmail = async (

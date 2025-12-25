@@ -173,8 +173,8 @@ export const SettingsForm = ({ user }: SettingsFormProps) => {
       }
 
       toast({
-        title: "パスワード変更完了",
-        description: "パスワードが正常に変更されました。",
+        title: "パスワードの変更が完了しました。",
+        description: "ご登録いただいているメールアドレス宛に確認メールを送信しました。",
       })
 
       // フォームをリセット

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
+import { sendPasswordChangedNotificationEmail } from "@/lib/email";
 
 export const POST = async (request: NextRequest) => {
   try {
@@ -21,13 +22,27 @@ export const POST = async (request: NextRequest) => {
       );
     }
 
+    const reqHeaders = await headers();
+
+    // セッションからユーザー情報を取得
+    const session = await auth.api.getSession({
+      headers: reqHeaders,
+    });
+
+    if (!session?.user) {
+      return NextResponse.json(
+        { error: "ログインが必要です" },
+        { status: 401 }
+      );
+    }
+
     // Better Authの標準APIを使用してパスワードを変更
     const result = await auth.api.changePassword({
       body: {
         currentPassword,
         newPassword,
       },
-      headers: await headers(),
+      headers: reqHeaders,
     });
 
     if (!result) {
@@ -38,6 +53,16 @@ export const POST = async (request: NextRequest) => {
     }
 
     console.log("✅ パスワード変更成功");
+
+    // パスワード変更完了通知メールを送信（失敗してもパスワード変更自体は成功扱い）
+    try {
+      const userName = session.user.name || "ユーザー";
+      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://proworks.jp";
+      await sendPasswordChangedNotificationEmail(session.user.email, userName, baseUrl);
+      console.log("✅ パスワード変更通知メール送信成功");
+    } catch (emailError) {
+      console.error("⚠️ パスワード変更通知メール送信失敗:", emailError);
+    }
 
     return NextResponse.json(
       { message: "パスワードが変更されました" },
