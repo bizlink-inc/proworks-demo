@@ -2,34 +2,39 @@
 
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
-import { CheckCircle2, AlertCircle } from "lucide-react"
-import { format } from "date-fns"
+import { CheckCircle2, AlertCircle, ArrowLeft } from "lucide-react"
 import Link from "next/link"
 
 type ApplySuccessModalProps = {
   isOpen: boolean
-  jobTitle: string
-  appliedAt: string
+  jobTitle?: string
+  appliedAt?: string
   missingFields?: string[]
   onClose: () => void
 }
 
-export function ApplySuccessModal({ isOpen, jobTitle, appliedAt, missingFields, onClose }: ApplySuccessModalProps) {
+export function ApplySuccessModal({ isOpen, missingFields, onClose }: ApplySuccessModalProps) {
+  const handleBackToList = () => {
+    onClose()
+    // ハードリロードで案件一覧を最新状態に（応募済み案件を除外）
+    window.location.href = "/"
+  }
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:min-w-[500px] sm:max-w-[500px]">
         {/* アクセシビリティ用タイトル（画面上では非表示） */}
         <DialogTitle className="sr-only">応募完了</DialogTitle>
-        
+
         <div className="px-8">
           {/* タイトル部分 */}
-          <div 
+          <div
             className="flex items-center justify-center gap-3 py-6"
             style={{
               borderBottom: "1px solid #d5e5f0"
             }}
           >
-            <CheckCircle2 
+            <CheckCircle2
               className="w-8 h-8"
               style={{ color: "#3f9c78" }}
             />
@@ -40,65 +45,24 @@ export function ApplySuccessModal({ isOpen, jobTitle, appliedAt, missingFields, 
                 color: "#1f3151"
               }}
             >
-              応募が完了しました
+              案件の応募が完了しました！
             </h2>
           </div>
 
-          {/* 情報行 */}
-          <div>
-            <div
-              className="flex"
-              style={{ borderTop: "1px solid #d5e5f0" }}
+          {/* 説明メッセージ */}
+          <div
+            className="py-6"
+            style={{ borderBottom: "1px solid #d5e5f0" }}
+          >
+            <p
+              style={{
+                fontSize: "14px",
+                color: "#30373f",
+                textAlign: "center",
+              }}
             >
-              <div
-                className="py-3 pr-4"
-                style={{
-                  width: "120px",
-                  fontSize: "13px",
-                  fontWeight: 600,
-                  color: "#30373f",
-                }}
-              >
-                案件名
-              </div>
-              <div
-                className="flex-1 py-3"
-                style={{
-                  fontSize: "13px",
-                  color: "#000000",
-                  lineHeight: 1.6,
-                }}
-              >
-                {jobTitle}
-              </div>
-            </div>
-
-            <div
-              className="flex"
-              style={{ borderTop: "1px solid #d5e5f0" }}
-            >
-              <div
-                className="py-3 pr-4"
-                style={{
-                  width: "120px",
-                  fontSize: "13px",
-                  fontWeight: 600,
-                  color: "#30373f",
-                }}
-              >
-                応募受付日
-              </div>
-              <div
-                className="flex-1 py-3"
-                style={{
-                  fontSize: "13px",
-                  color: "#000000",
-                  lineHeight: 1.6,
-                }}
-              >
-                {format(new Date(appliedAt), "yyyy/MM/dd HH:mm")}
-              </div>
-            </div>
+              案件の進捗は「応募済み案件一覧」からご確認いただけます。
+            </p>
           </div>
 
           {/* 未入力項目がある場合のメッセージ */}
@@ -108,7 +72,7 @@ export function ApplySuccessModal({ isOpen, jobTitle, appliedAt, missingFields, 
               style={{ borderTop: "1px solid #d5e5f0" }}
             >
               <div className="flex items-start gap-3 mb-4">
-                <AlertCircle 
+                <AlertCircle
                   className="w-5 h-5 flex-shrink-0 mt-0.5"
                   style={{ color: "#ea8737" }}
                 />
@@ -145,7 +109,7 @@ export function ApplySuccessModal({ isOpen, jobTitle, appliedAt, missingFields, 
                     ))}
                   </ul>
                   <Link href="/me">
-                    <Button 
+                    <Button
                       variant="pw-primary"
                       className="w-full"
                       style={{ fontSize: "14px" }}
@@ -160,16 +124,27 @@ export function ApplySuccessModal({ isOpen, jobTitle, appliedAt, missingFields, 
 
           {/* フッターボタン */}
           <div
-            className="py-6 flex justify-center"
+            className="py-6 flex flex-col sm:flex-row gap-3 justify-center"
             style={{ borderTop: "1px solid #d5e5f0" }}
           >
-            <Button 
-              onClick={onClose}
-              variant="pw-primary"
-              className="w-full max-w-[180px]"
-              style={{ fontSize: "15px" }}
+            <Link href="/applications">
+              <Button
+                variant="pw-primary"
+                className="w-full sm:w-auto"
+                style={{ fontSize: "14px" }}
+              >
+                <CheckCircle2 className="w-4 h-4 mr-1" />
+                応募済み案件を確認する
+              </Button>
+            </Link>
+            <Button
+              onClick={handleBackToList}
+              variant="pw-outline"
+              className="w-full sm:w-auto"
+              style={{ fontSize: "14px" }}
             >
-              OK
+              <ArrowLeft className="w-4 h-4 mr-1" />
+              案件一覧に戻る
             </Button>
           </div>
         </div>
