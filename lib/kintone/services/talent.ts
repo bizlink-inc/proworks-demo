@@ -3,6 +3,39 @@ import type { TalentRecord, Talent } from "../types";
 import { FileInfo, getFileInfoFromKintone } from "./file";
 import { TALENT_FIELDS } from "../fieldMapping";
 
+// タレント情報取得用の必須フィールド
+const TALENT_LIST_FIELDS = [
+  TALENT_FIELDS.ID,
+  TALENT_FIELDS.AUTH_USER_ID,
+  TALENT_FIELDS.LAST_NAME,
+  TALENT_FIELDS.FIRST_NAME,
+  TALENT_FIELDS.FULL_NAME,
+  TALENT_FIELDS.LAST_NAME_KANA,
+  TALENT_FIELDS.FIRST_NAME_KANA,
+  TALENT_FIELDS.EMAIL,
+  TALENT_FIELDS.BIRTH_DATE,
+  TALENT_FIELDS.POSTAL_CODE,
+  TALENT_FIELDS.ADDRESS,
+  TALENT_FIELDS.PHONE,
+  TALENT_FIELDS.SKILLS,
+  TALENT_FIELDS.EXPERIENCE,
+  TALENT_FIELDS.RESUME_FILES,
+  TALENT_FIELDS.PORTFOLIO_URL,
+  TALENT_FIELDS.AVAILABLE_FROM,
+  TALENT_FIELDS.DESIRED_RATE,
+  TALENT_FIELDS.DESIRED_WORK_DAYS,
+  TALENT_FIELDS.DESIRED_COMMUTE,
+  TALENT_FIELDS.DESIRED_WORK_STYLE,
+  TALENT_FIELDS.DESIRED_WORK_HOURS,
+  TALENT_FIELDS.DESIRED_WORK,
+  TALENT_FIELDS.NG_COMPANIES,
+  TALENT_FIELDS.OTHER_REQUESTS,
+  TALENT_FIELDS.ST,
+  // メール配信設定と利用規約同意フィールド（存在する場合のみ取得）
+  'メール配信設定',
+  '利用規約同意',
+];
+
 // kintoneレコードをフロントエンド用の型に変換
 const convertTalentRecord = (record: TalentRecord): Talent => {
   return {
@@ -44,22 +77,24 @@ const convertTalentRecord = (record: TalentRecord): Talent => {
   };
 };
 
-// auth_user_idでタレント情報を取得
+// auth_user_idでタレント情報を取得（最適化：getRecords + limit 1 + fields）
 export const getTalentByAuthUserId = async (authUserId: string): Promise<Talent | null> => {
   const client = createTalentClient();
   const appId = getAppIds().talent;
 
   try {
-    const records = await client.record.getAllRecords({
+    // getRecordsで1件のみ取得（getAllRecordsの100件ページングを回避）
+    const response = await client.record.getRecords({
       app: appId,
-      condition: `auth_user_id = "${authUserId}"`,
+      query: `${TALENT_FIELDS.AUTH_USER_ID} = "${authUserId}" limit 1`,
+      fields: TALENT_LIST_FIELDS,
     });
 
-    if (records.length === 0) {
+    if (response.records.length === 0) {
       return null;
     }
 
-    return convertTalentRecord(records[0] as TalentRecord);
+    return convertTalentRecord(response.records[0] as TalentRecord);
   } catch (error) {
     console.error("タレント情報の取得に失敗:", error);
     throw error;

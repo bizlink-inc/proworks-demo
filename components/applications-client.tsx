@@ -21,6 +21,8 @@ interface ApplicationsClientProps {
     name?: string | null
     email?: string | null
   }
+  // SSRで事前取得した応募データ（初期表示高速化用）
+  initialApplications?: any[]
 }
 
 // ステータスフィルターの定義（kintoneの値をキーとして使用、表示は変換後のラベル）
@@ -38,13 +40,20 @@ const STATUS_FILTERS: { id: StatusFilter; kintoneValues: string[]; label: string
 // フィルター用の青色
 const filterBlue = "#3966a2"
 
-export const ApplicationsClient = ({ user }: ApplicationsClientProps) => {
-  useApplicationStatusMonitor()
+export const ApplicationsClient = ({ user, initialApplications = [] }: ApplicationsClientProps) => {
   const { handleWithdrawalError } = useWithdrawalCheck()
   const searchParams = useSearchParams()
 
-  const [applications, setApplications] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
+  // SSRで事前取得したデータがあれば即座に表示（loading=false）
+  const hasInitialData = initialApplications.length > 0
+  const [applications, setApplications] = useState<any[]>(initialApplications)
+  const [loading, setLoading] = useState(!hasInitialData)
+
+  // ステータス監視フックに取得済みデータを渡す（重複API呼び出し削減）
+  useApplicationStatusMonitor(applications)
+
+  // 応募済み案件IDをメモ化（JobDetailModalに渡すため）
+  const appliedJobIds = useMemo(() => applications.map(app => app.jobId), [applications])
   const [aiMatchedJobs, setAiMatchedJobs] = useState<Job[]>([])
   const [aiMatchedJobsLoading, setAiMatchedJobsLoading] = useState(false)
   const [selectedJobId, setSelectedJobId] = useState<string | null>(null)
@@ -58,40 +67,48 @@ export const ApplicationsClient = ({ user }: ApplicationsClientProps) => {
     }
   }, [searchParams])
 
-  // 初回ロード時に退会チェック
+  // 初回ロード時の処理
+  // SSRでデータ取得済みの場合は退会チェックのみ、そうでなければ両方取得
   useEffect(() => {
-    const checkWithdrawal = async () => {
+    const fetchData = async () => {
       try {
-        const res = await fetch("/api/me")
-        if (!res.ok) {
-          await handleWithdrawalError(res)
+        // SSRでデータ取得済みの場合
+        if (hasInitialData) {
+          // 退会チェックのみ実行（バックグラウンド）
+          const meRes = await fetch("/api/me")
+          if (!meRes.ok) {
+            await handleWithdrawalError(meRes)
+          }
+          return
         }
-      } catch (error) {
-        console.error("退会チェックエラー:", error)
-      }
-    }
-    checkWithdrawal()
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
 
-  // 応募済み案件を取得
-  useEffect(() => {
-    const fetchApplications = async () => {
-      try {
+        // SSRでデータがない場合はCSRフォールバック
         setLoading(true)
-        const res = await fetch("/api/applications/me")
-        if (res.ok) {
-          const data = await res.json()
+        const [meRes, applicationsRes] = await Promise.all([
+          fetch("/api/me"),
+          fetch("/api/applications/me"),
+        ])
+
+        if (!meRes.ok) {
+          await handleWithdrawalError(meRes)
+          return
+        }
+
+        if (applicationsRes.ok) {
+          const data = await applicationsRes.json()
           setApplications(data)
         }
       } catch (error) {
-        console.error("Failed to fetch applications:", error)
+        console.error("データ取得エラー:", error)
       } finally {
-        setLoading(false)
+        if (!hasInitialData) {
+          setLoading(false)
+        }
       }
     }
 
-    fetchApplications()
+    fetchData()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   // AIマッチ案件を取得（応募済み案件が0件の場合のみ）
@@ -337,6 +354,7 @@ export const ApplicationsClient = ({ user }: ApplicationsClientProps) => {
           jobId={selectedJobId}
           onClose={() => setSelectedJobId(null)}
           onApply={handleApply}
+          appliedJobIds={appliedJobIds}
         />
       </div>
     )
@@ -478,6 +496,7 @@ export const ApplicationsClient = ({ user }: ApplicationsClientProps) => {
         jobId={selectedJobId}
         onClose={() => setSelectedJobId(null)}
         onApply={handleApply}
+        appliedJobIds={appliedJobIds}
       />
     </div>
   )

@@ -35,6 +35,8 @@
     "test:notification": "NODE_ENV=development npx tsx scripts/test-notification.ts",
     "cache:clear:announcements": "npx tsx scripts/clear-announcement-cache.ts",
     "cache:clear:notifications": "open http://localhost:3000/clear-cache",
+    "cache:clear:all": "rm -rf .next node_modules/.cache && echo 'All caches cleared'",
+    "dev:fresh": "rm -rf .next node_modules/.cache && npm run dev",
     "env:push:dev": "npx tsx scripts/push-env-to-apprunner.ts dev",
     "env:push:prod": "npx tsx scripts/push-env-to-apprunner.ts prod",
     "apprunner:start:dev": "npx tsx scripts/apprunner-control.ts start dev",

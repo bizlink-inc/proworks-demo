@@ -18,6 +18,9 @@ export const GET = async (request: NextRequest) => {
     const positionsParam = searchParams.get("positions") || "";
     const location = searchParams.get("location") || "";
     const nearestStation = searchParams.get("nearestStation") || "";
+    // ページネーションパラメータ
+    const skip = parseInt(searchParams.get("skip") || "0", 10);
+    const limit = parseInt(searchParams.get("limit") || "0", 10); // 0 = 全件
 
     // フィルターをパース（カンマ区切り）
     const remoteFilters = remoteParam ? remoteParam.split(",") : [];
@@ -55,16 +58,17 @@ export const GET = async (request: NextRequest) => {
         const appIds = getAppIds();
 
         if (appIds.recommendation) {
-          // getAllRecordsで全件取得（getRecordsは100件制限あり）
-          const recommendations = await recommendationClient.record.getAllRecords({
+          // getRecordsで最大500件取得（getAllRecordsの100件ページングを回避）
+          const recommendationsResponse = await recommendationClient.record.getRecords({
             app: appIds.recommendation,
-            condition: `${RECOMMENDATION_FIELDS.TALENT_ID} = "${session.user.id}"`,
+            query: `${RECOMMENDATION_FIELDS.TALENT_ID} = "${session.user.id}" limit 500`,
             fields: [
               RECOMMENDATION_FIELDS.JOB_ID,
               RECOMMENDATION_FIELDS.SCORE,
               RECOMMENDATION_FIELDS.STAFF_RECOMMEND,
             ],
-          }) as RecommendationRecord[];
+          });
+          const recommendations = recommendationsResponse.records as RecommendationRecord[];
 
           console.log(`[Jobs API] 推薦レコード取得: ${recommendations.length}件 (user: ${session.user.id})`);
 
@@ -247,9 +251,15 @@ export const GET = async (request: NextRequest) => {
       });
     }
 
+    // ページネーション適用
+    const total = sortedJobs.length;
+    const paginatedJobs = limit > 0
+      ? sortedJobs.slice(skip, skip + limit)
+      : sortedJobs;
+
     return NextResponse.json({
-      items: sortedJobs,
-      total: sortedJobs.length,
+      items: paginatedJobs,
+      total,
     });
   } catch (error) {
     console.error("案件一覧の取得に失敗:", error);

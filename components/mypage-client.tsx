@@ -20,9 +20,11 @@ interface MyPageClientProps {
     name?: string | null
     email?: string | null
   }
+  // SSRで事前取得したタレントデータ（初期表示高速化用）
+  initialTalent?: Talent | null
 }
 
-export function MyPageClient({ user: sessionUser }: MyPageClientProps) {
+export function MyPageClient({ user: sessionUser, initialTalent = null }: MyPageClientProps) {
   useApplicationStatusMonitor()
   const { handleWithdrawalError } = useWithdrawalCheck()
 
@@ -30,10 +32,16 @@ export function MyPageClient({ user: sessionUser }: MyPageClientProps) {
   const tabParam = searchParams.get("tab") as MenuItem | null
 
   const [activeMenu, setActiveMenu] = useState<MenuItem>(tabParam || "profile")
-  const [user, setUser] = useState<Talent | null>(null)
+  // SSRでデータ取得済みの場合は即座に表示
+  const [user, setUser] = useState<Talent | null>(initialTalent)
 
   useEffect(() => {
-    fetchUser()
+    // SSRでデータ取得済みの場合はAPIを呼ばない
+    // SSRの段階でセッションが有効かつタレントデータが取得できていれば
+    // ユーザーは退会していないことが保証されている
+    if (!initialTalent) {
+      fetchUser()
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 

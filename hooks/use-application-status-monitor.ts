@@ -62,7 +62,7 @@ const sendInterviewConfirmedNotification = async (jobId: string, jobTitle: strin
   }
 }
 
-export function useApplicationStatusMonitor() {
+export function useApplicationStatusMonitor(prefetchedApplications?: Application[]) {
   const { addNotification } = useNotifications()
 
   useEffect(() => {
@@ -70,14 +70,27 @@ export function useApplicationStatusMonitor() {
       console.log("📋 [ステータス監視] チェック開始")
 
       try {
-        // 現在の応募状況を取得
-        const res = await fetch("/api/applications/me")
-        if (!res.ok) {
-          console.log("📋 [ステータス監視] API応答エラー:", res.status)
-          return
+        let currentApplications: Application[]
+
+        // 親コンポーネントからデータを受け取った場合はAPIを呼ばない
+        if (prefetchedApplications && prefetchedApplications.length > 0) {
+          console.log("📋 [ステータス監視] 親コンポーネントからデータを受信")
+          currentApplications = prefetchedApplications.map(app => ({
+            id: app.id,
+            jobId: app.jobId,
+            jobTitle: app.jobTitle,
+            status: app.status,
+          }))
+        } else {
+          // フォールバック: APIから取得
+          const res = await fetch("/api/applications/me")
+          if (!res.ok) {
+            console.log("📋 [ステータス監視] API応答エラー:", res.status)
+            return
+          }
+          currentApplications = await res.json()
         }
 
-        const currentApplications: Application[] = await res.json()
         console.log(`📋 [ステータス監視] 現在の応募件数: ${currentApplications.length}`)
 
         // localStorageから前回の状態を取得
@@ -130,6 +143,6 @@ export function useApplicationStatusMonitor() {
     }
 
     checkStatusChanges()
-  }, [addNotification])
+  }, [addNotification, prefetchedApplications])
 }
 

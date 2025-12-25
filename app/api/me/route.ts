@@ -53,22 +53,23 @@ export const PATCH = async (request: NextRequest) => {
 
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+    }
 
-    // kintoneから人材情報を取得
+    // kintoneから人材情報を取得（1回のみ）
     const talent = await getTalentByAuthUserId(session.user.id);
 
     if (!talent) {
       return NextResponse.json({ error: "Talent not found" }, { status: 404 });
-  }
+    }
 
     const body = await request.json();
 
     // kintoneの人材情報を更新
     await updateTalent(talent.id, body);
 
-    // 更新後のデータを取得
-    const updatedTalent = await getTalentByAuthUserId(session.user.id);
+    // 更新後は入力データをマージして返す（再取得不要）
+    // クライアントが送信したデータは正常に保存されたと信頼する
+    const updatedTalent = { ...talent, ...body };
 
     return NextResponse.json(updatedTalent);
   } catch (error) {
@@ -77,5 +78,5 @@ export const PATCH = async (request: NextRequest) => {
       { error: "人材情報の更新に失敗しました" },
       { status: 500 }
     );
-}
+  }
 };

@@ -32,24 +32,19 @@ export const PATCH = async (
     const client = createApplicationClient();
     const appId = getAppIds().application;
 
-    // ユーザーが所有する応募履歴か確認（応募取り消しを含む全件を取得するため、直接クエリを実行）
-    const records = await client.record.getAllRecords({
+    // ユーザーが所有する応募履歴か確認（対象レコード1件のみ取得でパフォーマンス最適化）
+    const response = await client.record.getRecords({
       app: appId,
-      condition: `${APPLICATION_FIELDS.AUTH_USER_ID} = "${session.user.id}"`,
+      query: `${APPLICATION_FIELDS.ID} = "${applicationId}" and ${APPLICATION_FIELDS.AUTH_USER_ID} = "${session.user.id}" limit 1`,
+      fields: [APPLICATION_FIELDS.ID, APPLICATION_FIELDS.STATUS],
     });
 
-    // レコードIDで応募履歴を検索（文字列と数値の両方に対応）
-    const application = records.find((record: any) => {
-      const recordId = record[APPLICATION_FIELDS.ID].value;
-      // 文字列として比較、または数値として比較
-      return String(recordId) === String(applicationId) || recordId === applicationId;
-    });
-
-    if (!application) {
+    if (response.records.length === 0) {
       return NextResponse.json({ error: "Application not found" }, { status: 404 });
     }
 
-    const currentStatus = application[APPLICATION_FIELDS.STATUS].value;
+    const application = response.records[0];
+    const currentStatus = (application[APPLICATION_FIELDS.STATUS] as { value: string }).value;
 
     // 応募取消しの場合、現在のステータスが「応募済み」でない場合は取り消し不可
     if (status === "応募取消し" && currentStatus !== "応募済み") {

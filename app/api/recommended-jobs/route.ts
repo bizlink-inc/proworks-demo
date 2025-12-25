@@ -41,9 +41,10 @@ export const GET = async (request: NextRequest) => {
       return NextResponse.json({ items: [], total: 0 });
     }
 
-    const recommendations = await recommendationClient.record.getAllRecords({
+    // getRecordsで最大500件取得（getAllRecordsの100件ページングを回避）
+    const recommendationsResponse = await recommendationClient.record.getRecords({
       app: appIds.recommendation,
-      condition: `${RECOMMENDATION_FIELDS.TALENT_ID} = "${authUserId}"`,
+      query: `${RECOMMENDATION_FIELDS.TALENT_ID} = "${authUserId}" limit 500`,
       fields: [
         RECOMMENDATION_FIELDS.JOB_ID,
         RECOMMENDATION_FIELDS.SCORE,
@@ -51,7 +52,8 @@ export const GET = async (request: NextRequest) => {
         RECOMMENDATION_FIELDS.AI_EXECUTION_STATUS,
         RECOMMENDATION_FIELDS.AI_OVERALL_SCORE,
       ],
-    }) as RecommendationRecord[];
+    });
+    const recommendations = recommendationsResponse.records as RecommendationRecord[];
 
     // 推薦データをマップ化（案件IDをキーに）
     const recommendationMap = new Map<string, {

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useCallback } from "react"
 import { useSearchParams } from "next/navigation"
 import { Header } from "@/components/header"
 import { FullWidthLayout } from "@/components/layouts"
@@ -12,6 +12,7 @@ import { AnnouncementBanner } from "@/components/announcement-banner"
 import { useToast } from "@/hooks/use-toast"
 import { useApplicationStatusMonitor } from "@/hooks/use-application-status-monitor"
 import { useWithdrawalCheck } from "@/hooks/use-withdrawal-check"
+import { usePrefetch, usePrefetchNextPage } from "@/hooks/use-prefetch"
 import { ChevronDown } from "lucide-react"
 import type { Job } from "@/lib/kintone/types"
 
@@ -28,17 +29,31 @@ interface DashboardClientProps {
     name?: string | null
     email?: string | null
   }
+  // SSRで事前取得した案件データ（初期表示高速化用）
+  initialJobs?: Job[]
+  initialTotal?: number
 }
 
-export const DashboardClient = ({ user }: DashboardClientProps) => {
+export const DashboardClient = ({ user, initialJobs = [], initialTotal = 0 }: DashboardClientProps) => {
   const { toast } = useToast()
   const searchParams = useSearchParams()
   useApplicationStatusMonitor()
   const { handleWithdrawalError } = useWithdrawalCheck()
 
-  const [jobs, setJobs] = useState<Job[]>([])
-  const [total, setTotal] = useState(0)
+  // 他ページ（/me, /applications）をバックグラウンドで先読み
+  usePrefetch()
+
+  // SSRでデータ取得済みの場合は即座に表示
+  const hasInitialData = initialJobs.length > 0
+  const size = 21 // 3列×7行
+
+  // サーバーサイドページネーション：現在ページのデータのみ保持
+  const [jobs, setJobs] = useState<Job[]>(initialJobs)
+  const [total, setTotal] = useState(initialTotal)
   const [page, setPage] = useState(1)
+  const [isLoading, setIsLoading] = useState(false)
+  // APIから取得するかどうかのフラグ（SSRデータありなら初回はスキップ）
+  const [needsFetch, setNeedsFetch] = useState(!hasInitialData)
   const [filters, setFilters] = useState<JobFilters>({ 
     query: "", 
     sort: "recommend", // デフォルトをおすすめ順に変更
@@ -91,47 +106,107 @@ export const DashboardClient = ({ user }: DashboardClientProps) => {
     return () => document.removeEventListener("mousedown", handleClickOutside)
   }, [])
 
-  const size = 21 // 3列×7行
   const totalPages = Math.ceil(total / size)
 
-  useEffect(() => {
-    fetchJobs()
-  }, [page, filters])
-
-  const fetchJobs = async () => {
+  // 次ページのデータを先読み（ページ変更をスムーズに）
+  const buildNextPageUrl = useCallback((pageNum: number) => {
     const params = new URLSearchParams({
       query: filters.query,
       sort: filters.sort,
+      skip: String((pageNum - 1) * size),
+      limit: String(size),
     })
-    
-    // リモートフィルター（複数選択可）
+    if (filters.remote.length > 0) params.set("remote", filters.remote.join(","))
+    if (filters.positions.length > 0) params.set("positions", filters.positions.join(","))
+    if (filters.location) params.set("location", filters.location)
+    if (filters.nearestStation) params.set("nearestStation", filters.nearestStation)
+    return `/api/jobs?${params}`
+  }, [filters, size])
+  usePrefetchNextPage(page, totalPages, buildNextPageUrl)
+
+  // 初回マウント時：SSRデータがない場合のみAPIから取得
+  useEffect(() => {
+    if (needsFetch) {
+      fetchJobs()
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // フィルター変更時はAPIから取得
+  const filtersRef = useRef(filters)
+  useEffect(() => {
+    // 初回マウント時はスキップ（上のuseEffectで処理）
+    if (filtersRef.current === filters) return
+    filtersRef.current = filters
+    setNeedsFetch(true)
+    fetchJobs()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filters])
+
+  // ページ変更時の処理（サーバーサイドページネーション）
+  const pageRef = useRef(page)
+  useEffect(() => {
+    // 初回マウント時（page=1）はSSRデータを使用するのでスキップ
+    if (page === 1 && pageRef.current === 1 && hasInitialData) {
+      pageRef.current = page
+      return
+    }
+    pageRef.current = page
+    fetchPage(page)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page])
+
+  // 共通のクエリパラメータを構築
+  const buildParams = (pageNum: number) => {
+    const params = new URLSearchParams({
+      query: filters.query,
+      sort: filters.sort,
+      skip: String((pageNum - 1) * size),
+      limit: String(size),
+    })
+
     if (filters.remote.length > 0) {
       params.set("remote", filters.remote.join(","))
     }
-    
-    // 職種フィルター（複数選択可）
     if (filters.positions.length > 0) {
       params.set("positions", filters.positions.join(","))
     }
-    
-    // 勤務地エリアフィルター
     if (filters.location) {
       params.set("location", filters.location)
     }
-    
-    // 最寄駅フィルター
     if (filters.nearestStation) {
       params.set("nearestStation", filters.nearestStation)
     }
 
-    const res = await fetch(`/api/jobs?${params}`)
-    const data = await res.json()
-    
-    // ページネーション処理（クライアント側で実施）
-    const startIndex = (page - 1) * size
-    const endIndex = startIndex + size
-    setJobs(data.items.slice(startIndex, endIndex))
-    setTotal(data.total)
+    return params
+  }
+
+  // フィルター変更時の取得（ページ1にリセット）
+  const fetchJobs = async () => {
+    setIsLoading(true)
+    try {
+      const params = buildParams(1)
+      const res = await fetch(`/api/jobs?${params}`)
+      const data = await res.json()
+      setJobs(data.items)
+      setTotal(data.total)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  // ページ変更時の取得
+  const fetchPage = async (pageNum: number) => {
+    setIsLoading(true)
+    try {
+      const params = buildParams(pageNum)
+      const res = await fetch(`/api/jobs?${params}`)
+      const data = await res.json()
+      setJobs(data.items)
+      setTotal(data.total)
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   const handleSearch = (newFilters: JobFilters) => {
@@ -162,25 +237,12 @@ export const DashboardClient = ({ user }: DashboardClientProps) => {
 
       const application = await res.json()
 
-      // 応募成功後、ユーザー情報を取得して必須項目をチェック
-      let missingFields: string[] = []
-      try {
-        const userRes = await fetch("/api/me")
-        if (userRes.ok) {
-          const { checkRequiredFields } = await import("@/lib/utils/profile-validation")
-          const userData = await userRes.json()
-          missingFields = checkRequiredFields(userData)
-        }
-      } catch (error) {
-        console.error("ユーザー情報の取得に失敗:", error)
-        // エラーが発生しても応募成功モーダルは表示する
-      }
-
+      // APIレスポンスから直接 missingFields を取得（パフォーマンス改善）
       setSelectedJobId(null)
       setApplySuccess({
         jobTitle,
         appliedAt: application.appliedAt,
-        missingFields: missingFields.length > 0 ? missingFields : undefined,
+        missingFields: application.missingFields,
       })
     } catch (error) {
       console.error("[v0] 応募処理エラー:", error)

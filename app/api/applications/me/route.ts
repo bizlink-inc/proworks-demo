@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth-server";
 import { getApplicationsByAuthUserId } from "@/lib/kintone/services/application";
-import { getJobById } from "@/lib/kintone/services/job";
+import { getJobsByIds } from "@/lib/kintone/services/job";
 
 export const GET = async () => {
   try {
@@ -11,32 +11,18 @@ export const GET = async () => {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // kintoneから応募履歴を取得（auth_user_idで検索）
+    // kintoneから応募履歴を取得（auth_user_idで検索、3ヶ月以内、応募取消し除外済み）
     const applications = await getApplicationsByAuthUserId(session.user.id);
 
-    // 応募取消しのレコードを除外
-    const activeApplications = applications.filter((app) => app.status !== "応募取消し");
+    // 案件情報を一括取得（N+1問題解消）
+    const jobIds = applications.map(app => app.jobId);
+    const jobMap = await getJobsByIds(jobIds);
 
-    // 3ヶ月以上前の応募履歴を除外
-    const threeMonthsAgo = new Date();
-    threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
-    
-    const recentApplications = activeApplications.filter((app) => {
-      if (!app.appliedAt) return false;
-      const appliedDate = new Date(app.appliedAt);
-      return appliedDate >= threeMonthsAgo;
-    });
-
-    // 各応募に対して案件情報を取得
-    const applicationsWithJobs = await Promise.all(
-      recentApplications.map(async (app) => {
-        const job = await getJobById(app.jobId);
-        return {
-          ...app,
-          job: job || null,
-        };
-      })
-    );
+    // 各応募に案件情報を紐付け
+    const applicationsWithJobs = applications.map((app) => ({
+      ...app,
+      job: jobMap.get(app.jobId) || null,
+    }));
 
     return NextResponse.json(applicationsWithJobs);
   } catch (error) {

@@ -10,12 +10,14 @@ type JobDetailModalProps = {
   jobId: string | null
   onClose: () => void
   onApply: (jobId: string, jobTitle: string) => Promise<void> | void
+  // 応募済み案件IDの配列（渡された場合はAPIを呼ばずにこれを使用）
+  appliedJobIds?: string[]
 }
 
 // 青色（案件タイトル等と同じ色）
 const blueColor = "#3d8ab8"
 
-export function JobDetailModal({ jobId, onClose, onApply }: JobDetailModalProps) {
+export function JobDetailModal({ jobId, onClose, onApply, appliedJobIds }: JobDetailModalProps) {
   const [job, setJob] = useState<Job | null>(null)
   const [loading, setLoading] = useState(false)
   const [isAlreadyApplied, setIsAlreadyApplied] = useState(false)
@@ -29,18 +31,32 @@ export function JobDetailModal({ jobId, onClose, onApply }: JobDetailModalProps)
     }
 
     setLoading(true)
+
+    // appliedJobIdsがPropsで渡された場合はAPIを呼ばない（パフォーマンス最適化）
+    if (appliedJobIds !== undefined) {
+      fetch(`/api/jobs/${jobId}`)
+        .then((res) => res.json())
+        .then((jobData) => {
+          setJob(jobData)
+          setIsAlreadyApplied(appliedJobIds.includes(jobId))
+          setLoading(false)
+        })
+        .catch((error) => {
+          console.error("[v0] 案件詳細取得エラー:", error)
+          setLoading(false)
+        })
+      return
+    }
+
+    // appliedJobIdsが渡されていない場合は従来通りAPIから取得
     Promise.all([
-      // 案件詳細を取得
       fetch(`/api/jobs/${jobId}`)
         .then((res) => res.json()),
-      // 応募済みの案件ID一覧を取得（軽量版）
       fetch(`/api/applications/applied-job-ids`)
         .then((res) => res.json())
     ])
       .then(([jobData, appliedData]) => {
         setJob(jobData)
-
-        // 現在の案件が応募済みかどうかをチェック
         const isApplied = appliedData.appliedJobIds?.includes(jobId) || false
         setIsAlreadyApplied(isApplied)
         setLoading(false)
@@ -49,7 +65,7 @@ export function JobDetailModal({ jobId, onClose, onApply }: JobDetailModalProps)
         console.error("[v0] 案件詳細取得エラー:", error)
         setLoading(false)
       })
-  }, [jobId])
+  }, [jobId, appliedJobIds])
 
   const handleApply = async () => {
     if (job && !isApplying) {
