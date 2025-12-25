@@ -517,7 +517,19 @@ export const sendRegistrationCompleteEmail = async (
       案件応募や案件紹介、AIマッチング機能が利用できるようになります。
     </p>
 
-    <p style="margin-bottom: 20px;">以下のリンクより、プロフィールのご記入をお願いいたします。</p>
+    <div style="background-color: #ffffff; padding: 20px; border-radius: 6px; margin: 20px 0; border-left: 4px solid #63b2cd;">
+      <p style="margin: 0; font-weight: bold; color: #1f3151;">プロフィールを充実させましょう</p>
+      <p style="margin: 10px 0 0 0; color: #686868; font-size: 14px;">
+        以下の項目を追加すると、より良い案件とマッチングしやすくなります：
+      </p>
+      <ul style="margin: 10px 0 0 0; padding-left: 20px; color: #686868; font-size: 14px;">
+        <li>職務経歴・スキルシート</li>
+        <li>保有資格・得意分野</li>
+        <li>自己PR・ポートフォリオ</li>
+      </ul>
+    </div>
+
+    <p style="margin-bottom: 20px;">以下のリンクより、プロフィールの充実をお願いいたします。</p>
 
     <div style="text-align: center; margin: 30px 0;">
       <a href="${myPageUrl}"
@@ -557,7 +569,15 @@ ${userName} 様
 ご自身のスキルやご経験をプロフィールに記載いただくことで、
 案件応募や案件紹介、AIマッチング機能が利用できるようになります。
 
-以下のリンクより、プロフィールのご記入をお願いいたします。
+────────────────────────────────────
+■ プロフィールを充実させましょう
+────────────────────────────────────
+以下の項目を追加すると、より良い案件とマッチングしやすくなります：
+・職務経歴・スキルシート
+・保有資格・得意分野
+・自己PR・ポートフォリオ
+
+以下のリンクより、プロフィールの充実をお願いいたします。
 
 ▼マイページはこちら
 ${myPageUrl}
