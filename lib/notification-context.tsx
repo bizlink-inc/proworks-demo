@@ -172,6 +172,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [isUserChecked, setIsUserChecked] = useState(false)
+  const [isInitialized, setIsInitialized] = useState(false)
 
   // 初期化時にユーザーIDを確認し、変更があればlocalStorageをクリア
   useEffect(() => {
@@ -205,7 +206,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     if (!isUserChecked) return
 
     const stored = localStorage.getItem("notifications")
-    const isInitialized = localStorage.getItem(SEED_NOTIFICATION_INITIALIZED_KEY)
+    const seedInitialized = localStorage.getItem(SEED_NOTIFICATION_INITIALIZED_KEY)
 
     if (stored) {
       try {
@@ -215,21 +216,26 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       } catch (error) {
         console.error("Failed to parse notifications:", error)
       }
-    } else if (!isInitialized) {
-      // 初回アクセス時：シード通知を追加（デモ用3種類）
+    } else if (!seedInitialized) {
+      // 初回アクセス時：シード通知を追加
       setNotifications(SEED_NOTIFICATIONS)
       localStorage.setItem(SEED_NOTIFICATION_INITIALIZED_KEY, "true")
     }
+    // 初期化完了をマーク
+    setIsInitialized(true)
   }, [isUserChecked])
 
   // 通知が変更されたらlocalStorageに保存
+  // 初期化完了後のみ保存（初期状態での誤削除を防ぐ）
   useEffect(() => {
+    if (!isInitialized) return
+
     if (notifications.length > 0) {
       localStorage.setItem("notifications", JSON.stringify(notifications))
     } else {
       localStorage.removeItem("notifications")
     }
-  }, [notifications])
+  }, [notifications, isInitialized])
 
   // おすすめ案件通知をAPIから取得
   const fetchRecommendedNotifications = useCallback(async () => {
