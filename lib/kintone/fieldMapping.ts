@@ -32,6 +32,8 @@ export const TALENT_FIELDS = {
   NG_COMPANIES: 'NG企業',
   OTHER_REQUESTS: 'その他要望',
   ST: 'ST', // ステータス（退会時に「退会」に更新）
+  EMAIL_DELIVERY_STATUS: 'メール配信設定',
+  TERMS_AGREED: '利用規約同意',
 } as const;
 
 // 案件DB（Job）のフィールドコード

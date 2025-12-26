@@ -94,7 +94,7 @@ export const getTalentByAuthUserId = async (authUserId: string): Promise<Talent 
       return null;
     }
 
-    return convertTalentRecord(response.records[0] as TalentRecord);
+    return convertTalentRecord(response.records[0] as unknown as TalentRecord);
   } catch (error) {
     console.error("タレント情報の取得に失敗:", error);
     throw error;

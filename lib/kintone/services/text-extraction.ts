@@ -27,7 +27,7 @@ const extractTextFromPDF = async (buffer: Buffer): Promise<string> => {
       return result.text || '';
     } else {
       // フォールバック: 直接関数として使用を試行
-      const pdf = pdfParseModule.default || (pdfParseModule as any);
+      const pdf = (pdfParseModule as any).default || pdfParseModule;
       if (typeof pdf === 'function') {
         const data = await pdf(buffer);
         return data.text || '';

@@ -72,9 +72,8 @@ export const POST = async (
       const jobResponse = await jobClient.record.getRecord({
         app: appIds.job,
         id: parseInt(jobId, 10),
-        fields: ["$id", "案件名", "職種_ポジション", "スキル"],
       });
-      jobRecord = jobResponse.record as JobRecord;
+      jobRecord = jobResponse.record as unknown as JobRecord;
     } catch (error) {
       console.error("案件取得エラー:", error);
       return NextResponse.json(
@@ -98,7 +97,7 @@ export const POST = async (
       fields: ["$id", "auth_user_id", "氏名", "複数選択", "言語_ツール", "主な実績_PR_職務経歴", "希望単価_月額"],
     });
 
-    const talents: TalentForMatching[] = (talentsResponse as TalentRecord[]).map((record) => ({
+    const talents: TalentForMatching[] = (talentsResponse as unknown as TalentRecord[]).map((record) => ({
       id: record.$id.value,
       authUserId: record.auth_user_id?.value || "",
       name: record.氏名?.value || "(名前なし)",
@@ -117,7 +116,7 @@ export const POST = async (
       condition: `案件ID = "${job.jobId}"`,
       fields: ["$id", "人材ID", "案件ID", "適合スコア"],
     });
-    const existingRecs = existingRecsResponse as RecommendationRecord[];
+    const existingRecs = existingRecsResponse as unknown as RecommendationRecord[];
 
     // 既存データをMapに変換
     const existingRecsMap = new Map<string, string>();

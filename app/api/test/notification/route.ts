@@ -88,7 +88,7 @@ export const POST = async (request: NextRequest) => {
       );
     }
 
-    const talent = talentResponse[0] as TalentRecord;
+    const talent = talentResponse[0] as unknown as TalentRecord;
     const talentEmail = talent[TALENT_FIELDS.EMAIL as keyof TalentRecord]?.value as string;
     const talentName = talent[TALENT_FIELDS.FULL_NAME as keyof TalentRecord]?.value as string || "会員";
 
@@ -110,7 +110,7 @@ export const POST = async (request: NextRequest) => {
         app: appIds.job,
         id: parseInt(jobId, 10),
       });
-      const job = jobResponse.record as JobRecord;
+      const job = jobResponse.record as unknown as JobRecord;
       jobTitle = job.案件名?.value || "";
     } else {
       // 最初の募集中案件を使用
@@ -128,7 +128,7 @@ export const POST = async (request: NextRequest) => {
         );
       }
 
-      const targetJob = jobsResponse[0] as JobRecord;
+      const targetJob = jobsResponse[0] as unknown as JobRecord;
       jobId = targetJob.$id.value;
       jobTitle = targetJob.案件名?.value || "";
     }
@@ -149,7 +149,7 @@ export const POST = async (request: NextRequest) => {
 
     // 既存レコードがあれば削除
     if (existingRecResponse.length > 0) {
-      const existingRec = existingRecResponse[0] as RecommendationRecord;
+      const existingRec = existingRecResponse[0] as unknown as RecommendationRecord;
       const existingRecId = existingRec.$id.value;
       console.log(`  🗑️  既存の推薦レコードを削除 (ID: ${existingRecId})`);
       await recommendationClient.record.deleteRecords({

@@ -204,6 +204,11 @@ export const getAppIds = () => {
     throw new Error("KINTONE_APPLICATION_APP_ID is not defined");
   }
 
+  if (!recommendationAppId) {
+    console.error("❌ KINTONE_RECOMMENDATION_APP_ID が設定されていません");
+    throw new Error("KINTONE_RECOMMENDATION_APP_ID is not defined");
+  }
+
   return {
     talent: talentAppId,
     job: jobAppId,

@@ -67,30 +67,30 @@ export function MyPageClient({ user: sessionUser, initialTalent = null }: MyPage
           // 404の場合は新規ユーザーとして空のデータを設定
           const emptyUser: Talent = {
             id: "",
-            auth_user_id: sessionUser.id || "",
-            email: sessionUser.email || "",
+            authUserId: sessionUser.id || "",
             lastName: "",
             firstName: "",
+            fullName: "",
             lastNameKana: "",
             firstNameKana: "",
-            phone: "",
+            email: sessionUser.email || "",
             birthDate: "",
-            gender: "",
             postalCode: "",
             address: "",
-            nearestStation: "",
-            employmentStatus: "",
-            desiredWorkLocation: [],
-            desiredIndustry: [],
-            desiredOccupation: [],
-            skills: [],
-            certifications: [],
-            workHistory: [],
-            selfPR: "",
+            phone: "",
+            skills: "",
+            experience: "",
+            resumeFiles: [],
             portfolioUrl: "",
-            githubUrl: "",
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
+            availableFrom: "",
+            desiredRate: "",
+            desiredWorkDays: "",
+            desiredCommute: "",
+            desiredWorkStyle: [],
+            desiredWorkHours: "",
+            desiredWork: "",
+            ngCompanies: "",
+            otherRequests: "",
           }
           setUser(emptyUser)
           return
@@ -119,7 +119,7 @@ export function MyPageClient({ user: sessionUser, initialTalent = null }: MyPage
 
       <SidebarLayout
         activeMenu={activeMenu}
-        onMenuChange={setActiveMenu}
+        onMenuChange={(menuId) => setActiveMenu(menuId as MenuItem)}
       >
         {/* コンテンツ全体の外枠は付けず、フォーム側のカードだけを表示する */}
         <div className="p-4 md:p-6">

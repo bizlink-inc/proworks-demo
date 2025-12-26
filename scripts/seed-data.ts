@@ -1476,13 +1476,13 @@ export const createSeedData = async () => {
           外国籍: { value: job.外国籍 },
           数値: { value: job.募集人数 },
           新着フラグ: { value: job.新着フラグ || "" },
-          作成日時_開発環境: job.作成日時_開発環境 ? { value: job.作成日時_開発環境 } : undefined,
+          ...(job.作成日時_開発環境 ? { 作成日時_開発環境: { value: job.作成日時_開発環境 } } : {}),
       };
       });
 
     const jobCreateResult = await jobClient.record.addRecords({
       app: appIds.job,
-      records: jobRecords,
+      records: jobRecords as any,
       });
 
     const jobIds = jobCreateResult.ids;
@@ -2457,9 +2457,9 @@ const upsertYamadaSeedData = async () => {
         数値: { value: job.募集人数 },
       };
 
-      if (existingJobs.records.length > 0) {
+      if (existingJobs.length > 0) {
         // 更新
-        const existingId = (existingJobs.records[0] as any).$id.value;
+        const existingId = (existingJobs[0] as any).$id.value;
         await jobClient.record.updateRecord({
           app: appIds.job,
           id: existingId,

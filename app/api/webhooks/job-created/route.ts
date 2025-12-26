@@ -110,7 +110,7 @@ export const POST = async (request: NextRequest) => {
       fields: ["$id", "auth_user_id", "氏名", "複数選択", "言語_ツール", "主な実績_PR_職務経歴", "希望単価_月額"],
     });
 
-    const talents: TalentForMatching[] = (talentsResponse as TalentRecord[]).map((record) => ({
+    const talents: TalentForMatching[] = (talentsResponse as unknown as TalentRecord[]).map((record) => ({
       id: record.$id.value,
       authUserId: record.auth_user_id?.value || "",
       name: record.氏名?.value || "(名前なし)",
@@ -141,7 +141,7 @@ export const POST = async (request: NextRequest) => {
       condition: `${RECOMMENDATION_FIELDS.JOB_ID} = "${jobId}"`,
       fields: ["$id", RECOMMENDATION_FIELDS.TALENT_ID, RECOMMENDATION_FIELDS.JOB_ID, RECOMMENDATION_FIELDS.SCORE],
     });
-    const existingRecs = existingRecsResponse as RecommendationRecord[];
+    const existingRecs = existingRecsResponse as unknown as RecommendationRecord[];
 
     const existingRecsMap = new Map<string, string>();
     for (const rec of existingRecs) {

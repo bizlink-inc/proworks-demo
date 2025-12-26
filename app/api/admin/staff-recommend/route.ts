@@ -86,7 +86,7 @@ export const POST = async (request: NextRequest) => {
       condition: `(${recCondition}) and ${RECOMMENDATION_FIELDS.JOB_ID} = "${jobId}"`,
     });
 
-    const existingRecs = existingRecsResponse as RecommendationRecord[];
+    const existingRecs = existingRecsResponse as unknown as RecommendationRecord[];
     
     // 人材ID→レコードIDのマップ
     const recMap = new Map<string, string>();
@@ -163,10 +163,10 @@ export const POST = async (request: NextRequest) => {
         const talentsResponse = await talentClient.record.getRecords({
           app: appIds.talent,
           query: talentCondition,
-          fields: ["$id", TALENT_FIELDS.AUTH_USER_ID, TALENT_FIELDS.NAME, TALENT_FIELDS.EMAIL],
+          fields: ["$id", TALENT_FIELDS.AUTH_USER_ID, TALENT_FIELDS.FULL_NAME, TALENT_FIELDS.EMAIL],
         });
 
-        const talents = talentsResponse.records as TalentRecord[];
+        const talents = talentsResponse.records as unknown as TalentRecord[];
 
         // 案件情報を取得
         const jobClient = createJobClient();
@@ -175,14 +175,14 @@ export const POST = async (request: NextRequest) => {
           id: parseInt(jobId, 10),
         });
 
-        const jobRecord = jobResponse.record as JobRecord;
+        const jobRecord = jobResponse.record as unknown as JobRecord;
         const jobTitle = jobRecord.案件名?.value || "(案件名不明)";
         const jobUrl = `${baseUrl}/?jobId=${jobId}`;
 
         // 各人材にメール送信
         for (const talent of talents) {
-          const email = talent[TALENT_FIELDS.EMAIL]?.value;
-          const name = talent[TALENT_FIELDS.NAME]?.value || "会員";
+          const email = talent.メールアドレス?.value;
+          const name = talent.氏名?.value || "会員";
 
           if (email) {
             try {

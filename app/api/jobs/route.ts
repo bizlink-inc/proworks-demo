@@ -68,7 +68,7 @@ export const GET = async (request: NextRequest) => {
               RECOMMENDATION_FIELDS.STAFF_RECOMMEND,
             ],
           });
-          const recommendations = recommendationsResponse.records as RecommendationRecord[];
+          const recommendations = recommendationsResponse.records as unknown as RecommendationRecord[];
 
           console.log(`[Jobs API] 推薦レコード取得: ${recommendations.length}件 (user: ${session.user.id})`);
 

@@ -6,8 +6,7 @@ export const GET = async () => {
     return NextResponse.json({
       desiredWorkDays: DROPDOWN_OPTIONS.DESIRED_WORK_DAYS,
       desiredCommute: DROPDOWN_OPTIONS.DESIRED_COMMUTE,
-      emailDeliveryStatus: DROPDOWN_OPTIONS.EMAIL_DELIVERY_STATUS,
-      termsAgreed: DROPDOWN_OPTIONS.TERMS_AGREED,
+      desiredWorkHours: DROPDOWN_OPTIONS.DESIRED_WORK_HOURS,
     });
   } catch (error) {
     console.error('フィールド選択肢取得エラー:', error);

@@ -89,7 +89,7 @@ export const getApplicationsByAuthUserId = async (authUserId: string): Promise<A
       fields: APPLICATION_LIST_FIELDS,
     });
 
-    const applications = response.records.map((record) => convertApplicationRecord(record as ApplicationRecord));
+    const applications = response.records.map((record) => convertApplicationRecord(record as unknown as ApplicationRecord));
 
     // キャッシュに保存
     applicationsCache.set(authUserId, { applications, cachedAt: now });

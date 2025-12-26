@@ -83,15 +83,10 @@ export const GET = async (
         // 担当者おすすめフィールド
         RECOMMENDATION_FIELDS.STAFF_RECOMMEND,
       ],
-      sortBy: [
-        {
-          field: RECOMMENDATION_FIELDS.SCORE,
-          order: "desc",
-        },
-      ],
+      orderBy: `${RECOMMENDATION_FIELDS.SCORE} desc`,
     });
 
-    const recommendations = recommendationsResponse as RecommendationRecord[];
+    const recommendations = recommendationsResponse as unknown as RecommendationRecord[];
 
     if (recommendations.length === 0) {
       return NextResponse.json({
@@ -122,7 +117,7 @@ export const GET = async (
       ],
     });
 
-    const talents = talentsResponse as TalentRecord[];
+    const talents = talentsResponse as unknown as TalentRecord[];
 
     // 4. 人材データをauth_user_idでマップ化
     const talentMap = new Map<string, TalentRecord>();
@@ -149,16 +144,16 @@ export const GET = async (
           positions: talent.複数選択?.value || [],
           score: parseInt(rec.適合スコア.value, 10) || 0,
           // AI評価データ
-          aiExecutionStatus: rec[RECOMMENDATION_FIELDS.AI_EXECUTION_STATUS]?.value || "",
-          aiSkillScore: parseInt(rec[RECOMMENDATION_FIELDS.AI_SKILL_SCORE]?.value || "0", 10) || 0,
-          aiProcessScore: parseInt(rec[RECOMMENDATION_FIELDS.AI_PROCESS_SCORE]?.value || "0", 10) || 0,
-          aiInfraScore: parseInt(rec[RECOMMENDATION_FIELDS.AI_INFRA_SCORE]?.value || "0", 10) || 0,
-          aiDomainScore: parseInt(rec[RECOMMENDATION_FIELDS.AI_DOMAIN_SCORE]?.value || "0", 10) || 0,
-          aiTeamScore: parseInt(rec[RECOMMENDATION_FIELDS.AI_TEAM_SCORE]?.value || "0", 10) || 0,
-          aiToolScore: parseInt(rec[RECOMMENDATION_FIELDS.AI_TOOL_SCORE]?.value || "0", 10) || 0,
-          aiOverallScore: parseInt(rec[RECOMMENDATION_FIELDS.AI_OVERALL_SCORE]?.value || "0", 10) || 0,
-          aiResult: rec[RECOMMENDATION_FIELDS.AI_RESULT]?.value || "",
-          aiExecutedAt: rec[RECOMMENDATION_FIELDS.AI_EXECUTED_AT]?.value || "",
+          aiExecutionStatus: (rec[RECOMMENDATION_FIELDS.AI_EXECUTION_STATUS]?.value as string) || "",
+          aiSkillScore: parseInt((rec[RECOMMENDATION_FIELDS.AI_SKILL_SCORE]?.value as string) || "0", 10) || 0,
+          aiProcessScore: parseInt((rec[RECOMMENDATION_FIELDS.AI_PROCESS_SCORE]?.value as string) || "0", 10) || 0,
+          aiInfraScore: parseInt((rec[RECOMMENDATION_FIELDS.AI_INFRA_SCORE]?.value as string) || "0", 10) || 0,
+          aiDomainScore: parseInt((rec[RECOMMENDATION_FIELDS.AI_DOMAIN_SCORE]?.value as string) || "0", 10) || 0,
+          aiTeamScore: parseInt((rec[RECOMMENDATION_FIELDS.AI_TEAM_SCORE]?.value as string) || "0", 10) || 0,
+          aiToolScore: parseInt((rec[RECOMMENDATION_FIELDS.AI_TOOL_SCORE]?.value as string) || "0", 10) || 0,
+          aiOverallScore: parseInt((rec[RECOMMENDATION_FIELDS.AI_OVERALL_SCORE]?.value as string) || "0", 10) || 0,
+          aiResult: (rec[RECOMMENDATION_FIELDS.AI_RESULT]?.value as string) || "",
+          aiExecutedAt: (rec[RECOMMENDATION_FIELDS.AI_EXECUTED_AT]?.value as string) || "",
           // 担当者おすすめ（"おすすめ"の場合true）
           staffRecommend: rec[RECOMMENDATION_FIELDS.STAFF_RECOMMEND]?.value === "おすすめ",
         };

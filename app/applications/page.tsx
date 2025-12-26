@@ -22,7 +22,7 @@ export default async function ApplicationsPage() {
 
   return (
     <ApplicationsClient
-      user={session}
+      user={session.user}
       initialApplications={initialApplications}
     />
   )

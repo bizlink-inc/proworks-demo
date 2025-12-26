@@ -22,7 +22,7 @@ export default async function MyPage() {
 
   return (
     <MyPageClient
-      user={session}
+      user={session.user}
       initialTalent={initialTalent}
     />
   )

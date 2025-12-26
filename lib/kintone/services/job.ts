@@ -105,8 +105,8 @@ const convertJobRecordForList = (record: Partial<JobRecord>): Job => {
   return {
     id: record.$id?.value || '',
     title: record.案件名?.value || '',
-    features: record.案件特徴?.value || '',
-    position: record.職種_ポジション?.value || '',
+    features: record.案件特徴?.value || [],
+    position: record.職種_ポジション?.value || [],
     skills: record.スキル?.value || [],
     description: '',  // 一覧では不要
     environment: '',  // 一覧では不要
@@ -171,7 +171,7 @@ export const getJobById = async (jobId: string): Promise<Job | null> => {
       id: jobId,
     });
 
-    return convertJobRecord(response.record as JobRecord);
+    return convertJobRecord(response.record as unknown as JobRecord);
   } catch (error) {
     console.error("案件詳細の取得に失敗:", error);
     return null;
@@ -247,7 +247,7 @@ export const getJobByTitle = async (title: string): Promise<Job | null> => {
       return null;
     }
 
-    return convertJobRecord(records[0] as JobRecord);
+    return convertJobRecord(records[0] as unknown as JobRecord);
   } catch (error) {
     console.error("案件の検索に失敗:", error);
     return null;

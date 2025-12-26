@@ -51,7 +51,7 @@ export const GET = async () => {
     });
 
     // フロントエンド用に整形
-    const jobs = (response as JobRecord[]).map((record) => ({
+    const jobs = (response as unknown as JobRecord[]).map((record) => ({
       id: record.$id.value,
       jobId: record.案件ID?.value || record.$id.value,
       title: record.案件名?.value || "(案件名なし)",

@@ -1,6 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { headers } from "next/headers";
 
 export const POST = async (request: NextRequest) => {
   try {
@@ -16,25 +14,34 @@ export const POST = async (request: NextRequest) => {
 
     console.log("📧 パスワードリセットリクエスト:", email);
 
-    // Better Auth の forgetPassword API を呼び出し
-    // これにより lib/auth.ts の sendResetPassword が呼び出される
-    await auth.api.forgetPassword({
-      body: {
-        email,
-        redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/reset-password`,
+    // Better Auth の forget-password エンドポイントを直接呼び出し
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+    const response = await fetch(`${appUrl}/api/auth/forget-password`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
       },
-      headers: await headers(),
+      body: JSON.stringify({
+        email,
+        redirectTo: `${appUrl}/auth/reset-password`,
+      }),
     });
 
-    console.log("✅ パスワードリセットメール送信完了:", email);
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      console.error("❌ パスワードリセットAPIエラー:", errorData);
+    } else {
+      console.log("✅ パスワードリセットメール送信完了:", email);
+    }
 
+    // セキュリティ上、成功・失敗に関わらず同じメッセージを返す
     return NextResponse.json(
       { message: "パスワードリセットメールを送信しました" },
       { status: 200 }
     );
   } catch (error) {
     console.error("❌ パスワードリセットエラー:", error);
-    
+
     // ユーザーが存在しない場合でもセキュリティ上、成功メッセージを返す
     return NextResponse.json(
       { message: "パスワードリセットメールを送信しました" },

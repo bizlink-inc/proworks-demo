@@ -69,7 +69,7 @@ export const getAnnouncements = async (): Promise<Announcement[]> => {
       });
     }
 
-    return records.map((record) => convertAnnouncementRecord(record as AnnouncementRecord));
+    return records.map((record) => convertAnnouncementRecord(record as unknown as AnnouncementRecord));
   } catch (error) {
     console.error("お知らせの取得に失敗:", error);
     return [];

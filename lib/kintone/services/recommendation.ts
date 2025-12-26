@@ -34,7 +34,7 @@ export const getRecommendationsByAuthUserId = async (authUserId: string): Promis
       condition: `${RECOMMENDATION_FIELDS.TALENT_ID} = "${authUserId}"`,
     });
 
-    return records.map((record) => convertRecommendationRecord(record as RecommendationRecord));
+    return records.map((record) => convertRecommendationRecord(record as unknown as RecommendationRecord));
   } catch (error) {
     console.error("推薦データの取得に失敗:", error);
     return [];

@@ -71,7 +71,7 @@ export async function getJobsWithRecommendations(
           RECOMMENDATION_FIELDS.STAFF_RECOMMEND,
         ],
       });
-      const recommendations = recommendationsResponse.records as RecommendationRecord[];
+      const recommendations = recommendationsResponse.records as unknown as RecommendationRecord[];
 
       for (const rec of recommendations) {
         const jobId = rec[RECOMMENDATION_FIELDS.JOB_ID].value;

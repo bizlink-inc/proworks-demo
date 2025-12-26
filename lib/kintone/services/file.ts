@@ -93,15 +93,41 @@ export const downloadFileFromKintone = async (
   try {
     console.log('📥 kintoneファイルダウンロード開始:', fileKey);
 
-    const response = await client.file.downloadFile({
+    // kintone SDKのdownloadFileはArrayBufferを返すが、
+    // 内部的には{data, headers}構造を持つ場合がある
+    const rawResponse = await client.file.downloadFile({
       fileKey,
     });
 
     console.log('✅ kintoneファイルダウンロード成功:', fileKey);
 
+    // レスポンスの型を判定
+    // kintone SDKの型定義はArrayBufferだが、実際には{data, headers}の場合がある
+    const response = rawResponse as unknown as {
+      data?: ArrayBuffer | Blob | Buffer | string;
+      headers?: Record<string, string>;
+    } | ArrayBuffer;
+
+    let fileData: ArrayBuffer | Blob | Buffer | string;
+    let headers: Record<string, string> | undefined;
+
+    if (response instanceof ArrayBuffer) {
+      // 直接ArrayBufferの場合
+      fileData = response;
+      headers = undefined;
+    } else if (response && typeof response === 'object' && 'data' in response) {
+      // {data, headers}構造の場合
+      fileData = response.data || new ArrayBuffer(0);
+      headers = response.headers;
+    } else {
+      // その他の場合
+      fileData = rawResponse as ArrayBuffer;
+      headers = undefined;
+    }
+
     // レスポンスからファイル名を取得（Content-Dispositionヘッダーから）
     let fileName = 'download';
-    const contentDisposition = response.headers?.['content-disposition'];
+    const contentDisposition = headers?.['content-disposition'];
     if (contentDisposition) {
       const fileNameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
       if (fileNameMatch) {
@@ -110,19 +136,22 @@ export const downloadFileFromKintone = async (
     }
 
     // Content-Typeを取得
-    const contentType = response.headers?.['content-type'] || 'application/octet-stream';
+    const contentType = headers?.['content-type'] || 'application/octet-stream';
 
-    // response.dataをBlob形式に変換
+    // dataをBlob形式に変換
     let blobData: Blob;
-    if (response.data instanceof Blob) {
-      blobData = response.data;
-    } else if (response.data instanceof Buffer) {
-      blobData = new Blob([response.data], { type: contentType });
-    } else if (typeof response.data === 'string') {
-      blobData = new Blob([response.data], { type: contentType });
+    if (fileData instanceof Blob) {
+      blobData = fileData;
+    } else if (Buffer.isBuffer(fileData)) {
+      // BufferをUint8Arrayに変換してBlobを作成
+      blobData = new Blob([new Uint8Array(fileData)], { type: contentType });
+    } else if (typeof fileData === 'string') {
+      blobData = new Blob([fileData], { type: contentType });
+    } else if (fileData instanceof ArrayBuffer) {
+      blobData = new Blob([fileData], { type: contentType });
     } else {
-      // ArrayBufferまたはその他の形式
-      blobData = new Blob([response.data], { type: contentType });
+      // その他の形式（ArrayBufferView等）
+      blobData = new Blob([fileData as BlobPart], { type: contentType });
     }
 
     return {
@@ -154,13 +183,28 @@ export const getFileInfoFromKintone = async (
         // kintoneのファイル情報取得APIは存在しないため、
         // ダウンロードAPIを使用してヘッダー情報のみ取得
         const client = createTalentClient();
-        const response = await client.file.downloadFile({
+        const rawResponse = await client.file.downloadFile({
           fileKey,
         });
 
+        // レスポンスの型を判定
+        const response = rawResponse as unknown as {
+          data?: ArrayBuffer | Blob | Buffer | string;
+          headers?: Record<string, string>;
+        } | ArrayBuffer;
+
+        let headers: Record<string, string> | undefined;
+        if (response instanceof ArrayBuffer) {
+          headers = undefined;
+        } else if (response && typeof response === 'object' && 'headers' in response) {
+          headers = response.headers;
+        } else {
+          headers = undefined;
+        }
+
         // ファイル名をContent-Dispositionから取得
         let fileName = 'unknown';
-        const contentDisposition = response.headers?.['content-disposition'];
+        const contentDisposition = headers?.['content-disposition'];
         if (contentDisposition) {
           const fileNameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
           if (fileNameMatch) {
@@ -169,11 +213,11 @@ export const getFileInfoFromKintone = async (
         }
 
         // ファイルサイズをContent-Lengthから取得
-        const contentLength = response.headers?.['content-length'];
+        const contentLength = headers?.['content-length'];
         const fileSize = contentLength ? parseInt(contentLength, 10) : 0;
 
         // Content-Typeを取得
-        const contentType = response.headers?.['content-type'] || 'application/octet-stream';
+        const contentType = headers?.['content-type'] || 'application/octet-stream';
 
         return {
           fileKey,

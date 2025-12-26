@@ -53,7 +53,7 @@ export const GET = async (request: NextRequest) => {
         RECOMMENDATION_FIELDS.AI_OVERALL_SCORE,
       ],
     });
-    const recommendations = recommendationsResponse.records as RecommendationRecord[];
+    const recommendations = recommendationsResponse.records as unknown as RecommendationRecord[];
 
     // 推薦データをマップ化（案件IDをキーに）
     const recommendationMap = new Map<string, {

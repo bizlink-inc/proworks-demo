@@ -58,7 +58,7 @@ const runBenchmark = async () => {
   const talentFetchEnd = performance.now();
   const talentFetchTime = talentFetchEnd - talentFetchStart;
 
-  const talents: TalentForMatching[] = (talentsResponse as TalentRecord[]).map((record) => ({
+  const talents: TalentForMatching[] = (talentsResponse as unknown as TalentRecord[]).map((record) => ({
     id: record.$id.value,
     authUserId: record.auth_user_id?.value || "",
     name: record.氏名?.value || "(名前なし)",
@@ -88,7 +88,7 @@ const runBenchmark = async () => {
   const jobFetchEnd = performance.now();
   const jobFetchTime = jobFetchEnd - jobFetchStart;
 
-  const jobs: JobForMatching[] = (jobsResponse as JobRecord[]).map((record) => ({
+  const jobs: JobForMatching[] = (jobsResponse as unknown as JobRecord[]).map((record) => ({
     id: record.$id.value,
     jobId: record.$id.value,
     title: record.案件名?.value || "(案件名なし)",
@@ -117,7 +117,7 @@ const runBenchmark = async () => {
       fields: ["$id", "auth_user_id", "氏名", "複数選択", "言語_ツール", "主な実績_PR_職務経歴", "希望単価_月額"],
     });
     
-    const freshTalents: TalentForMatching[] = (freshTalentsResponse as TalentRecord[]).map((record) => ({
+    const freshTalents: TalentForMatching[] = (freshTalentsResponse as unknown as TalentRecord[]).map((record) => ({
       id: record.$id.value,
       authUserId: record.auth_user_id?.value || "",
       name: record.氏名?.value || "(名前なし)",

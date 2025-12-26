@@ -60,7 +60,7 @@ export const GET = async () => {
       ],
     });
 
-    const recommendations = recommendationsResponse.records as RecommendationRecord[];
+    const recommendations = recommendationsResponse.records as unknown as RecommendationRecord[];
 
     if (recommendations.length === 0) {
       return NextResponse.json({ notifications: [] });
@@ -132,7 +132,7 @@ export const GET = async () => {
           jobTitle: job?.title || "(案件名不明)",
           recommendationType: "staff" as const,
           // 担当者おすすめは更新日時を優先（フラグ設定タイミングに近い）
-          timestamp: recUpdatedAt || recCreatedAt || new Date().toISOString(),
+          timestamp: (recUpdatedAt as string) || (recCreatedAt as string) || new Date().toISOString(),
         });
       }
     }

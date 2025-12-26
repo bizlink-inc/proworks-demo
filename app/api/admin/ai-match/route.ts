@@ -115,7 +115,7 @@ export const POST = async (request: NextRequest) => {
         app: appIds.job,
         id: parseInt(jobId, 10),
       });
-      jobRecord = jobResponse.record as JobRecord;
+      jobRecord = jobResponse.record as unknown as JobRecord;
     } catch (error) {
       console.error("案件取得エラー:", error);
       return NextResponse.json(
@@ -136,7 +136,7 @@ export const POST = async (request: NextRequest) => {
       fields: ["$id", "auth_user_id", "氏名", "メールアドレス", "複数選択", "言語_ツール", "主な実績_PR_職務経歴", "希望案件_作業内容", "職務経歴書データ"],
     });
 
-    const talents = talentsResponse as TalentRecord[];
+    const talents = talentsResponse as unknown as TalentRecord[];
     
     // auth_user_idでマップ化
     const talentMap = new Map<string, TalentRecord>();
@@ -155,7 +155,7 @@ export const POST = async (request: NextRequest) => {
       condition: `(${recCondition}) and 案件ID = "${jobId}"`,
     });
 
-    const existingRecs = existingRecsResponse as RecommendationRecord[];
+    const existingRecs = existingRecsResponse as unknown as RecommendationRecord[];
     
     // 人材ID→レコードIDのマップ
     const recMap = new Map<string, string>();
