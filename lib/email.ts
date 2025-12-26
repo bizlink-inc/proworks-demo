@@ -420,12 +420,19 @@ PRO WORKS 運営チーム/株式会社アルマ
  */
 export const sendWithdrawalCompletionEmail = async (
   to: string,
-  userName: string
+  userName: string,
+  baseUrl?: string
 ): Promise<SendEmailResult> => {
   const subject = "【PRO WORKS】退会手続き完了のお知らせ";
 
   const now = new Date();
   const withdrawalDate = `${now.getFullYear()}年${now.getMonth() + 1}月${now.getDate()}日 ${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')}`;
+
+  // baseUrlが渡されない場合は環境変数から取得
+  const siteUrl = baseUrl || process.env.NEXT_PUBLIC_APP_URL || "https://proworks.jp";
+  const helpfulInfoUrl = `${siteUrl}/media`;
+  const contactUrl = `${siteUrl}/me?tab=contact`;
+  const homeUrl = siteUrl;
 
   const htmlContent = `
 <!DOCTYPE html>
@@ -438,9 +445,9 @@ export const sendWithdrawalCompletionEmail = async (
   <div style="background-color: #f3f9fd; padding: 30px; border-radius: 8px;">
     <h1 style="color: #1f3151; font-size: 24px; margin-bottom: 20px;">PRO WORKS</h1>
 
-    <p style="margin-bottom: 20px;">${userName} 様</p>
+    <p style="margin-bottom: 20px;">${userName}様</p>
 
-    <p style="margin-bottom: 20px;">このたびは、PRO WORKS サービスをご利用いただきありがとうございました。<br>以下の通り、退会手続きが完了いたしました。</p>
+    <p style="margin-bottom: 20px;">このたびは、PRO WORKSサービスをご利用いただきありがとうございました。<br>以下の通り、退会手続きが完了いたしました。</p>
 
     <div style="background-color: #ffffff; padding: 20px; border-radius: 6px; margin: 20px 0;">
       <p style="margin: 0 0 10px 0;"><strong>退会日時：</strong>${withdrawalDate}</p>
@@ -464,8 +471,14 @@ export const sendWithdrawalCompletionEmail = async (
 
     <hr style="border: none; border-top: 1px solid #d5e5f0; margin: 20px 0;">
 
-    <p style="color: #686868; font-size: 12px; text-align: center;">
-      PRO WORKS 運営チーム/株式会社アルマ
+    <div style="font-size: 12px; color: #686868;">
+      <p style="margin: 5px 0;">▽お役立ち情報: <a href="${helpfulInfoUrl}" style="color: #63b2cd;">${helpfulInfoUrl}</a></p>
+      <p style="margin: 5px 0;">▽お問い合わせ先: <a href="${contactUrl}" style="color: #63b2cd;">${contactUrl}</a></p>
+      <p style="margin: 5px 0;">▽PRO WORKS: <a href="${homeUrl}" style="color: #63b2cd;">${homeUrl}</a></p>
+    </div>
+
+    <p style="color: #686868; font-size: 12px; text-align: center; margin-top: 20px;">
+      PRO WORKS運営チーム/株式会社アルマ
     </p>
   </div>
 </body>
@@ -473,15 +486,15 @@ export const sendWithdrawalCompletionEmail = async (
   `;
 
   const textContent = `
-${userName} 様
+${userName}様
 
-このたびは、PRO WORKS サービスをご利用いただきありがとうございました。
+このたびは、PRO WORKSサービスをご利用いただきありがとうございました。
 以下の通り、退会手続きが完了いたしました。
 
-————————————————————
+--------------------------------
 退会日時：${withdrawalDate}
 対象アカウント：${to}
-————————————————————
+--------------------------------
 
 退会後は、アカウント情報・応募履歴などは削除され、復元することはできません。
 
@@ -489,9 +502,15 @@ ${userName} 様
 またのご利用を心よりお待ちしております。
 
 ※本メールは退会完了の確認のために送信しています。
-
-————————————————————
-PRO WORKS 運営チーム/株式会社アルマ
+――――――――――――――――――
+▽お役立ち情報
+${helpfulInfoUrl}
+▽お問い合わせ先
+${contactUrl}
+▽PRO WORKS
+${homeUrl}
+PRO WORKS運営チーム/株式会社アルマ
+――――――――――――――――――
   `;
 
   return sendEmail({ to, subject, html: htmlContent, text: textContent });
