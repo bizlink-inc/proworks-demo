@@ -2,6 +2,7 @@ import {
   getApplicationsByAuthUserId,
   createApplication,
   checkDuplicateApplication,
+  clearApplicationsCache,
 } from '@/lib/kintone/services/application'
 import * as client from '@/lib/kintone/client'
 
@@ -13,6 +14,8 @@ const mockGetAppIds = client.getAppIds as jest.MockedFunction<typeof client.getA
 describe('Application Service', () => {
   beforeEach(() => {
     jest.clearAllMocks()
+    // キャッシュをクリア
+    clearApplicationsCache()
     mockGetAppIds.mockReturnValue({
       talent: 1,
       job: 2,
@@ -50,7 +53,8 @@ describe('Application Service', () => {
       expect(result[0].status).toBe('応募済み')
       expect(mockClientInstance.record.getRecords).toHaveBeenCalledWith({
         app: 3,
-        query: 'auth_user_id = "user-456"',
+        query: expect.stringContaining('auth_user_id = "user-456"'),
+        fields: expect.any(Array),
       })
     })
 
@@ -143,7 +147,8 @@ describe('Application Service', () => {
       expect(result).toBe(true)
       expect(mockClientInstance.record.getRecords).toHaveBeenCalledWith({
         app: 3,
-        query: 'auth_user_id = "user-456" and 案件ID = "job-789"',
+        query: 'auth_user_id = "user-456" and 案件ID = "job-789" limit 1',
+        fields: ['$id'],
       })
     })
 

@@ -69,7 +69,8 @@ describe('Talent Service', () => {
       expect(result?.email).toBe('yamada@example.com')
       expect(mockClientInstance.record.getRecords).toHaveBeenCalledWith({
         app: 1,
-        query: 'auth_user_id = "user-456"',
+        query: 'auth_user_id = "user-456" limit 1',
+        fields: expect.any(Array),
       })
     })
 

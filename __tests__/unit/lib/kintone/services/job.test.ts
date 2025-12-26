@@ -1,4 +1,4 @@
-import { getAllJobs, getJobById } from '@/lib/kintone/services/job'
+import { getAllJobs, getJobById, clearJobCache } from '@/lib/kintone/services/job'
 import * as client from '@/lib/kintone/client'
 
 jest.mock('@/lib/kintone/client')
@@ -9,6 +9,8 @@ const mockGetAppIds = client.getAppIds as jest.MockedFunction<typeof client.getA
 describe('Job Service', () => {
   beforeEach(() => {
     jest.clearAllMocks()
+    // キャッシュをクリア
+    clearJobCache()
     mockGetAppIds.mockReturnValue({
       talent: 1,
       job: 2,
@@ -39,7 +41,9 @@ describe('Job Service', () => {
     it('すべての案件を正常に取得できる', async () => {
       const mockClientInstance = {
         record: {
-          getAllRecords: jest.fn().mockResolvedValue([mockJobRecord, mockJobRecord]),
+          getRecords: jest.fn().mockResolvedValue({
+            records: [mockJobRecord, mockJobRecord],
+          }),
         },
       }
 
@@ -50,15 +54,17 @@ describe('Job Service', () => {
       expect(result).toHaveLength(2)
       expect(result[0].id).toBe('123')
       expect(result[0].title).toBe('React開発者募集')
-      expect(mockClientInstance.record.getAllRecords).toHaveBeenCalledWith({
+      expect(mockClientInstance.record.getRecords).toHaveBeenCalledWith({
         app: 2,
+        query: expect.stringContaining('募集ステータス'),
+        fields: expect.any(Array),
       })
     })
 
     it('案件が0件の場合は空配列を返す', async () => {
       const mockClientInstance = {
         record: {
-          getAllRecords: jest.fn().mockResolvedValue([]),
+          getRecords: jest.fn().mockResolvedValue({ records: [] }),
         },
       }
 
@@ -72,7 +78,7 @@ describe('Job Service', () => {
     it('kintoneエラー時はエラーをスロー', async () => {
       const mockClientInstance = {
         record: {
-          getAllRecords: jest.fn().mockRejectedValue(new Error('kintone API Error')),
+          getRecords: jest.fn().mockRejectedValue(new Error('kintone API Error')),
         },
       }
 
