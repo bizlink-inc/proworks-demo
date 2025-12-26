@@ -29,6 +29,7 @@ import { exec } from "child_process";
 // Better Authの公式ハッシュ関数を使用
 import { hashPassword as hashPasswordBetterAuth } from "better-auth/crypto";
 import { auth } from "../lib/auth";
+import { sendInterviewConfirmedEmail } from "../lib/email";
 
 // ランダムID生成（Better Auth互換）
 const generateId = (length: number = 32): string => {
@@ -2656,6 +2657,30 @@ const upsertYamadaSeedData = async () => {
     console.log("  ※ 各ステータスが1件ずつ表示されます");
 
     console.log("\n💡 Vercel 環境でも同じ auth_user_id でログインできます");
+
+    // 面談予定確定のメール送信（通知のトリガー）
+    console.log("\n📧 面談予定確定メールを送信します...");
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+    const interviewJobTitle = "スタートアップ向け新規サービス開発";
+    const userName = seedData.talents[0].氏名;
+    const userEmail = seedData.authUsers[0].email;
+
+    try {
+      const result = await sendInterviewConfirmedEmail(
+        userEmail,
+        userName,
+        interviewJobTitle,
+        baseUrl
+      );
+      if (result.success) {
+        console.log(`✅ 面談予定確定メール送信成功: ${userEmail}`);
+      } else {
+        console.log(`⚠️ 面談予定確定メール送信失敗: ${result.error}`);
+      }
+    } catch (emailError) {
+      console.log(`⚠️ 面談予定確定メール送信エラー:`, emailError);
+    }
+
     console.log("\n");
 
   } catch (error) {
