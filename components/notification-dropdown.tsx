@@ -43,6 +43,14 @@ const getNotificationTitle = (notification: Notification): string => {
   return ""
 }
 
+// 通知のサブタイトル（追加説明文）を取得
+const getNotificationSubtitle = (notification: Notification): string | null => {
+  if (notification.type === "recommended" && notification.recommendationType === "staff") {
+    return "スキルや希望条件に合った内容ですので、ぜひご確認ください。"
+  }
+  return null
+}
+
 // 通知の説明文を取得
 const getNotificationDescription = (notification: Notification): string | null => {
   if (notification.type === "status_change") {
@@ -195,6 +203,20 @@ export const NotificationDropdown = () => {
                           {getNotificationTitle(notification)}
                         </p>
 
+                        {/* サブタイトル（担当者おすすめのみ） */}
+                        {getNotificationSubtitle(notification) && (
+                          <p
+                            className="mt-1"
+                            style={{
+                              fontSize: "12px",
+                              color: "#333333",
+                              lineHeight: "1.5"
+                            }}
+                          >
+                            {getNotificationSubtitle(notification)}
+                          </p>
+                        )}
+
                         {/* 説明文（status_changeのみ） */}
                         {getNotificationDescription(notification) && (
                           <p
@@ -223,9 +245,11 @@ export const NotificationDropdown = () => {
                         >
                           {notification.type === "status_change"
                           ? "【応募済み案件】"
-                          : notification.type === "recommended" && notification.recommendationType !== "staff"
-                            ? "マッチした案件を確認する"
-                            : "確認する"}
+                          : notification.type === "recommended" && notification.recommendationType === "staff"
+                            ? "【オファーを確認する】"
+                            : notification.type === "recommended"
+                              ? "マッチした案件を確認する"
+                              : "確認する"}
                         </button>
                       </div>
                     </div>

@@ -123,7 +123,7 @@ export const GET = async () => {
         });
       }
 
-      // 担当者おすすめ通知（フラグが設定されている場合、AIマッチ通知とは別に生成）
+      // 担当者おすすめ通知
       if (isStaffRecommend) {
         notifications.push({
           id: `rec_${recId}_${jobId}_staff`,
