@@ -44,9 +44,19 @@ type SendEmailResult = {
  */
 export const sendVerificationEmail = async (
   to: string,
-  verificationUrl: string
+  verificationUrl: string,
+  userName?: string
 ): Promise<SendEmailResult> => {
-  const subject = "【PRO WORKS】ご登録ありがとうございます - メールアドレスの確認";
+  const subject = "【PRO WORKS】会員登録ありがとうございます";
+  const displayName = userName || "会員";
+
+  // verificationUrlからbaseUrlを抽出
+  const urlObj = new URL(verificationUrl);
+  const baseUrl = `${urlObj.protocol}//${urlObj.host}`;
+  const myPageUrl = `${baseUrl}/me`;
+  const helpfulInfoUrl = `${baseUrl}/media`;
+  const contactUrl = `${baseUrl}/me?tab=contact`;
+  const homeUrl = baseUrl;
 
   const htmlContent = `
 <!DOCTYPE html>
@@ -59,32 +69,24 @@ export const sendVerificationEmail = async (
   <div style="background-color: #f3f9fd; padding: 30px; border-radius: 8px;">
     <h1 style="color: #1f3151; font-size: 24px; margin-bottom: 20px;">PRO WORKS</h1>
 
-    <p style="margin-bottom: 20px; font-size: 18px; font-weight: bold; color: #1f3151;">
-      ご登録ありがとうございます！
+    <p style="margin-bottom: 20px;">${displayName} 様</p>
+
+    <p style="margin-bottom: 20px;">
+      この度は、【PRO WORKS】にご登録いただき、誠にありがとうございます。
     </p>
 
     <p style="margin-bottom: 20px;">
-      PRO WORKS へようこそ！<br>
-      ご入力いただいたメールアドレス宛に確認メールを送信しました。
+      ご自身のスキルやご経験をプロフィールに記載いただくことで、<br>
+      案件応募や案件紹介、AIマッチング機能が利用できるようになります。
     </p>
 
-    <p style="margin-bottom: 20px;">
-      以下のボタンをクリックして、メールアドレスの確認を完了してください。
-    </p>
+    <p style="margin-bottom: 20px;">以下のリンクより、プロフィールのご記入をお願いいたします。</p>
 
     <div style="text-align: center; margin: 30px 0;">
       <a href="${verificationUrl}"
          style="display: inline-block; background-color: #63b2cd; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: bold;">
-        メールアドレスを確認する
+        マイページはこちら
       </a>
-    </div>
-
-    <div style="background-color: #ffffff; padding: 20px; border-radius: 6px; margin: 20px 0; border-left: 4px solid #63b2cd;">
-      <p style="margin: 0; font-weight: bold; color: #1f3151;">📝 次のステップ</p>
-      <p style="margin: 10px 0 0 0; color: #686868;">
-        メール確認後、マイページからプロフィールをご記入ください。<br>
-        プロフィールを充実させることで、より良い案件とマッチングできます！
-      </p>
     </div>
 
     <p style="color: #686868; font-size: 14px; margin-bottom: 10px;">
@@ -97,14 +99,20 @@ export const sendVerificationEmail = async (
     <hr style="border: none; border-top: 1px solid #d5e5f0; margin: 30px 0;">
 
     <p style="color: #686868; font-size: 12px;">
-      ※ このリンクの有効期限は1時間です。<br>
-      ※ このメールに心当たりがない場合は、削除してください。
+      【ご注意】<br>
+      本メールに身に覚えのない場合は、本メールを破棄していただきますようお願いいたします。
     </p>
 
     <hr style="border: none; border-top: 1px solid #d5e5f0; margin: 20px 0;">
 
-    <p style="color: #686868; font-size: 12px; text-align: center;">
-      PRO WORKS 運営チーム/株式会社アルマ
+    <div style="font-size: 12px; color: #686868;">
+      <p style="margin: 5px 0;">▽お役立ち情報: <a href="${helpfulInfoUrl}" style="color: #63b2cd;">${helpfulInfoUrl}</a></p>
+      <p style="margin: 5px 0;">▽お問い合わせ先: <a href="${contactUrl}" style="color: #63b2cd;">${contactUrl}</a></p>
+      <p style="margin: 5px 0;">▽PRO WORKS: <a href="${homeUrl}" style="color: #63b2cd;">${homeUrl}</a></p>
+    </div>
+
+    <p style="color: #686868; font-size: 12px; text-align: center; margin-top: 20px;">
+      PRO WORKS運営チーム/株式会社アルマ
     </p>
   </div>
 </body>
@@ -112,28 +120,30 @@ export const sendVerificationEmail = async (
   `;
 
   const textContent = `
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-ご登録ありがとうございます！
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+${displayName} 様
 
-PRO WORKS へようこそ！
-ご入力いただいたメールアドレス宛に確認メールを送信しました。
+この度は、【PRO WORKS】にご登録いただき、誠にありがとうございます。
 
-以下のリンクをクリックして、メールアドレスの確認を完了してください。
+ご自身のスキルやご経験をプロフィールに記載いただくことで、
+案件応募や案件紹介、AIマッチング機能が利用できるようになります。
 
-▶ ${verificationUrl}
+以下のリンクより、プロフィールのご記入をお願いいたします。
 
-────────────────────────────────────
-📝 次のステップ
-────────────────────────────────────
-メール確認後、マイページからプロフィールをご記入ください。
-プロフィールを充実させることで、より良い案件とマッチングできます！
+▼マイページはこちら
+${verificationUrl}
 
-────────────────────────────────────
-※ このリンクの有効期限は1時間です。
-※ このメールに心当たりがない場合は、削除してください。
+【ご注意】
+本メールに身に覚えのない場合は、本メールを破棄していただきますようお願いいたします。
 
-PRO WORKS 運営チーム/株式会社アルマ
+――――――――――――――――――
+▽お役立ち情報
+${helpfulInfoUrl}
+▽お問い合わせ先
+${contactUrl}
+▽PRO WORKS
+${homeUrl}
+PRO WORKS運営チーム/株式会社アルマ
+――――――――――――――――――
   `;
 
   return sendEmail({ to, subject, html: htmlContent, text: textContent });
@@ -1126,29 +1136,31 @@ export const logEmailToConsole = (
   url: string
 ): void => {
   const subjects: Record<typeof type, string> = {
-    verification: "【PRO WORKS】ご登録ありがとうございます - メールアドレスの確認",
+    verification: "【PRO WORKS】会員登録ありがとうございます",
     reset: "【PRO WORKS】パスワードのリセット",
     "email-change": "【PRO WORKS】メールアドレス変更の確認",
   };
 
   const bodies: Record<typeof type, string> = {
     verification: `
-ご登録ありがとうございます！
+会員 様
 
-PRO WORKS へようこそ！
-ご入力いただいたメールアドレス宛に確認メールを送信しました。
+この度は、【PRO WORKS】にご登録いただき、誠にありがとうございます。
 
-以下のリンクをクリックして、メールアドレスの確認を完了してください。
+ご自身のスキルやご経験をプロフィールに記載いただくことで、
+案件応募や案件紹介、AIマッチング機能が利用できるようになります。
 
-▶ ${url}
+以下のリンクより、プロフィールのご記入をお願いいたします。
 
-────────────────────────────────────
-📝 次のステップ
-────────────────────────────────────
-メール確認後、マイページからプロフィールをご記入ください。
-プロフィールを充実させることで、より良い案件とマッチングできます！
+▼マイページはこちら
+${url}
 
-※ このリンクの有効期限は1時間です。`,
+【ご注意】
+本メールに身に覚えのない場合は、本メールを破棄していただきますようお願いいたします。
+
+――――――――――――――――――
+PRO WORKS運営チーム/株式会社アルマ
+――――――――――――――――――`,
     reset: `
 パスワードリセットのリクエストを受け付けました。
 

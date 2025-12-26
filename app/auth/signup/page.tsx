@@ -183,9 +183,11 @@ export default function SignUpPage() {
             className="text-[var(--pw-text-gray)]"
             style={{ fontSize: "var(--pw-text-sm)" }}
           >
-            {email} 宛に認証リンクを送信しました。
+            ご登録ありがとうございます。
             <br />
-            メール内のリンクをクリックして登録を完了してください。
+            ご入力いただいたメールアドレス宛に確認メールを送信しました。
+            <br />
+            メールをご確認のうえ、マイページからプロフィールをご記入ください。
           </p>
         </div>
 
