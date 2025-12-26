@@ -141,70 +141,67 @@ export const POST = async (request: NextRequest) => {
     const successCount = results.filter((r) => r.success).length;
     console.log(`🎉 担当者おすすめ${recommend ? "設定" : "解除"}完了: ${successCount}/${talentAuthUserIds.length}人`);
 
-    // 3. おすすめ設定時のみメール通知を送信
+    // 3. 担当者おすすめメール通知を送信
     if (recommend && successCount > 0) {
       try {
-        const talentClient = createTalentClient();
-        const jobClient = createJobClient();
+        const headersList = await headers();
+        const host = headersList.get("host") || "localhost:3000";
+        const protocol = host.includes("localhost") ? "http" : "https";
+        const baseUrl = `${protocol}://${host}`;
 
-        // 案件情報を取得
-        const jobResponse = await jobClient.record.getRecord({
-          app: appIds.job,
-          id: parseInt(jobId, 10),
-        });
-        const jobRecord = jobResponse.record as JobRecord;
-        const jobTitle = jobRecord.案件名?.value || "";
-
-        // 成功した人材のauth_user_idリスト
-        const successAuthUserIds = results
+        // 成功した人材のauth_user_idを取得
+        const successfulAuthUserIds = results
           .filter((r) => r.success)
           .map((r) => r.talentAuthUserId);
 
         // 人材情報を取得
-        const talentCondition = successAuthUserIds
+        const talentClient = createTalentClient();
+        const talentCondition = successfulAuthUserIds
           .map((id) => `${TALENT_FIELDS.AUTH_USER_ID} = "${id}"`)
           .join(" or ");
 
-        const talentsResponse = await talentClient.record.getAllRecords({
+        const talentsResponse = await talentClient.record.getRecords({
           app: appIds.talent,
-          condition: talentCondition,
-          fields: ["$id", TALENT_FIELDS.AUTH_USER_ID, TALENT_FIELDS.FULL_NAME, TALENT_FIELDS.EMAIL],
+          query: talentCondition,
+          fields: ["$id", TALENT_FIELDS.AUTH_USER_ID, TALENT_FIELDS.NAME, TALENT_FIELDS.EMAIL],
         });
 
-        const talents = talentsResponse as TalentRecord[];
+        const talents = talentsResponse.records as TalentRecord[];
 
-        // ベースURLを取得
-        const headersList = await headers();
-        const host = headersList.get("host") || "localhost:3000";
-        const protocol = process.env.NODE_ENV === "production" ? "https" : "http";
-        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || `${protocol}://${host}`;
+        // 案件情報を取得
+        const jobClient = createJobClient();
+        const jobResponse = await jobClient.record.getRecord({
+          app: appIds.job,
+          id: parseInt(jobId, 10),
+        });
+
+        const jobRecord = jobResponse.record as JobRecord;
+        const jobTitle = jobRecord.案件名?.value || "(案件名不明)";
         const jobUrl = `${baseUrl}/?jobId=${jobId}`;
 
         // 各人材にメール送信
-        console.log(`📧 担当者おすすめ通知メール送信開始: ${talents.length}人`);
         for (const talent of talents) {
-          const email = talent[TALENT_FIELDS.EMAIL as keyof TalentRecord]?.value as string;
-          const userName = talent[TALENT_FIELDS.FULL_NAME as keyof TalentRecord]?.value as string || "会員";
+          const email = talent[TALENT_FIELDS.EMAIL]?.value;
+          const name = talent[TALENT_FIELDS.NAME]?.value || "会員";
 
           if (email) {
             try {
               await sendStaffRecommendNotificationEmail(
                 email,
-                userName,
+                name,
                 jobTitle,
                 jobUrl,
                 baseUrl
               );
-              console.log(`  ✅ メール送信成功: ${email}`);
+              console.log(`📧 担当者おすすめメール送信完了: ${email}`);
             } catch (emailError) {
-              console.error(`  ❌ メール送信失敗: ${email}`, emailError);
+              console.error(`❌ メール送信エラー: ${email}`, emailError);
             }
           }
         }
-        console.log(`📧 担当者おすすめ通知メール送信完了`);
       } catch (emailError) {
-        // メール送信エラーがあってもAPIは成功として返す
-        console.error("担当者おすすめ通知メール送信エラー:", emailError);
+        console.error("❌ メール通知処理エラー:", emailError);
+        // メール送信エラーは全体の処理を失敗させない
       }
     }
 
