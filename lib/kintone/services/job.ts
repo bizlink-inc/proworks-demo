@@ -81,6 +81,7 @@ const JOB_LIST_FIELDS = [
   '案件名',
   '案件特徴',
   '職種_ポジション',
+  'スキル',
   '勤務地エリア',
   '最寄駅',
   '掲載単価',
@@ -106,7 +107,7 @@ const convertJobRecordForList = (record: Partial<JobRecord>): Job => {
     title: record.案件名?.value || '',
     features: record.案件特徴?.value || '',
     position: record.職種_ポジション?.value || '',
-    skills: [] as string[],  // 一覧では不要
+    skills: record.スキル?.value || [],
     description: '',  // 一覧では不要
     environment: '',  // 一覧では不要
     notes: '',  // 一覧では不要
