@@ -1055,7 +1055,6 @@ export const sendInterviewConfirmedEmail = async (
 ): Promise<SendEmailResult> => {
   const subject = "【PROWORKS】面談予定が確定しました";
 
-  const applicationsUrl = `${baseUrl}/applications`;
   const helpfulInfoUrl = `${baseUrl}/media`;
   const contactUrl = `${baseUrl}/me?tab=contact`;
   const homeUrl = baseUrl;
@@ -1075,15 +1074,8 @@ export const sendInterviewConfirmedEmail = async (
 
     <p style="margin-bottom: 20px;">いつもPRO WORKSをご利用いただき、誠にありがとうございます。</p>
 
-    <div style="background-color: #ffffff; padding: 20px; border-radius: 6px; margin: 20px 0; border-left: 4px solid #63b2cd;">
-      <p style="margin: 0; font-weight: bold; color: #1f3151;">面談予定確定案件</p>
-      <p style="margin: 10px 0 0 0; color: #30373f; font-size: 16px;">
-        ${jobTitle}
-      </p>
-    </div>
-
     <p style="margin-bottom: 20px;">
-      について、面談予定が確定しました。
+      ${jobTitle}について、面談予定が確定しました。
     </p>
 
     <p style="margin-bottom: 20px;">
@@ -1123,16 +1115,21 @@ ${jobTitle}について、面談予定が確定しました。
 
 PRO WORKS営業担当より、面談日程について別途ご連絡させていただきますのでご対応よろしくお願いいたします。
 
+――――――――――――――――――
 【ご注意】
 本メールに身に覚えのない場合は、本メールを破棄していただきますようお願いいたします。
 ※ご連絡が取れない場合、面談を組むことができないため取消させていただくことがございます。ご了承ください。
 ――――――――――――――――――
+
 ▽お役立ち情報
 ${helpfulInfoUrl}
+
 ▽お問い合わせ先
 ${contactUrl}
+
 ▽PRO WORKS
 ${homeUrl}
+
 PRO WORKS運営チーム/株式会社アルマ
 ――――――――――――――――――
   `;
