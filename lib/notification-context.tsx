@@ -58,9 +58,18 @@ type NotificationContextType = {
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined)
 
 // シードデータ用の初期通知
-// ※APIから取得される通知と重複するため、空配列に設定
-// ※通知はfetchRecommendedNotificationsで取得される
-const SEED_NOTIFICATIONS: Notification[] = []
+// ※status_change通知はAPIでは取得されないため、シードデータとして設定
+const SEED_NOTIFICATIONS: Notification[] = [
+  {
+    id: "seed-interview-confirmed-1",
+    type: "status_change",
+    jobId: "seed-job-1",
+    jobTitle: "スタートアップ向け新規サービス開発",
+    oldStatus: "面談調整中",
+    newStatus: "面談予定",
+    timestamp: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(), // 2日前
+  },
+]
 
 // 既読のおすすめ通知IDを保存するキー
 const READ_RECOMMENDED_NOTIFICATIONS_KEY = "read_recommended_notifications"
