@@ -182,7 +182,7 @@ export function JobCard({ job, onViewDetail, showApplicationStatus = false, isEn
       await onCancelApplication(applicationId)
     } catch (error) {
       console.error("応募取り消しに失敗:", error)
-      alert("応募の取り消しに失敗しました。もう一度お試しください。")
+      // エラーは呼び出し元でトースト表示
     } finally {
       setIsCancelling(false)
     }
@@ -562,8 +562,17 @@ export function JobCard({ job, onViewDetail, showApplicationStatus = false, isEn
                       fontWeight: 600,
                     }}
                   >
-                    応募を取消します。よろしいですか？
+                    この案件の応募を取り消しますか？
                   </AlertDialogTitle>
+                  <AlertDialogDescription
+                    style={{
+                      fontSize: "var(--pw-text-sm)",
+                      color: "var(--pw-text-gray)",
+                      marginTop: "8px",
+                    }}
+                  >
+                    取り消すとこの案件の選考はできなくなります。
+                  </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter
                   style={{
@@ -590,7 +599,7 @@ export function JobCard({ job, onViewDetail, showApplicationStatus = false, isEn
                     style={{
                       fontSize: "14px",
                       borderRadius: "4px",
-                      backgroundColor: "var(--pw-button-primary)",
+                      backgroundColor: "#dc2626",
                       color: "#ffffff",
                     }}
                   >

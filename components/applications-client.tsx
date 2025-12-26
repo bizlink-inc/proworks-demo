@@ -10,6 +10,7 @@ import { JobDetailModal } from "@/components/job-detail-modal"
 import { AiRecommendedJobsCarousel } from "@/components/ai-recommended-jobs-carousel"
 import { useApplicationStatusMonitor } from "@/hooks/use-application-status-monitor"
 import { useWithdrawalCheck } from "@/hooks/use-withdrawal-check"
+import { useToast } from "@/hooks/use-toast"
 import type { Job } from "@/lib/kintone/types"
 import { mapApplicationStatusToDisplay } from "@/lib/utils"
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
@@ -42,6 +43,7 @@ const filterBlue = "#3966a2"
 
 export const ApplicationsClient = ({ user, initialApplications = [] }: ApplicationsClientProps) => {
   const { handleWithdrawalError } = useWithdrawalCheck()
+  const { toast } = useToast()
   const searchParams = useSearchParams()
 
   // SSRで事前取得したデータがあれば即座に表示（loading=false）
@@ -232,8 +234,19 @@ export const ApplicationsClient = ({ user, initialApplications = [] }: Applicati
       }
 
       await fetchApplications()
+
+      // 成功トースト表示
+      toast({
+        title: "応募を取り消しました",
+        description: "この案件への応募を取り消しました。",
+      })
     } catch (error) {
       console.error("応募取り消しエラー:", error)
+      toast({
+        title: "エラー",
+        description: "応募の取り消しに失敗しました。もう一度お試しください。",
+        variant: "destructive",
+      })
       throw error
     }
   }
