@@ -950,13 +950,13 @@ PRO WORKS運営チーム/株式会社アルマ
 export const sendAIMatchNotificationEmail = async (
   to: string,
   userName: string,
-  jobTitle: string,
-  jobUrl: string,
+  _jobTitle: string,  // 互換性のため残す（未使用）
+  _jobUrl: string,    // 互換性のため残す（未使用）
   baseUrl: string
 ): Promise<SendEmailResult> => {
-  const subject = "【PRO WORKS】あなたのスキルにマッチする案件が見つかりました";
+  const subject = "【PROWORKS】AIがあなたにぴったりの案件を見つけました";
 
-  const myPageUrl = `${baseUrl}/me`;
+  const helpfulInfoUrl = `${baseUrl}/media`;
   const contactUrl = `${baseUrl}/me?tab=contact`;
   const homeUrl = baseUrl;
 
@@ -971,25 +971,18 @@ export const sendAIMatchNotificationEmail = async (
   <div style="background-color: #f3f9fd; padding: 30px; border-radius: 8px;">
     <h1 style="color: #1f3151; font-size: 24px; margin-bottom: 20px;">PRO WORKS</h1>
 
-    <p style="margin-bottom: 20px;">${userName} 様</p>
+    <p style="margin-bottom: 20px;">${userName}様</p>
+
+    <p style="margin-bottom: 20px;">いつもPRO WORKSをご利用いただき、誠にありがとうございます。</p>
 
     <p style="margin-bottom: 20px;">
-      AIがあなたのスキル・経験を分析し、マッチする案件を見つけました。
+      PROWORKSのAIマッチング機能により、あなたのスキルに合致する案件が見つかりました。
     </p>
 
-    <div style="background-color: #ffffff; padding: 20px; border-radius: 6px; margin: 20px 0; border-left: 4px solid #63b2cd;">
-      <p style="margin: 0; font-weight: bold; color: #1f3151;">AIマッチ案件</p>
-      <p style="margin: 10px 0 0 0; color: #30373f; font-size: 16px;">
-        ${jobTitle}
-      </p>
-    </div>
-
-    <p style="margin-bottom: 20px;">以下のリンクより、案件の詳細をご確認ください。</p>
-
     <div style="text-align: center; margin: 30px 0;">
-      <a href="${jobUrl}"
+      <a href="${homeUrl}"
          style="display: inline-block; background-color: #63b2cd; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: bold;">
-        案件詳細を見る
+        AIマッチ案件を確認する
       </a>
     </div>
 
@@ -997,19 +990,21 @@ export const sendAIMatchNotificationEmail = async (
 
     <p style="color: #686868; font-size: 12px;">
       【ご注意】<br>
-      本メールに身に覚えのない場合は、本メールを破棄していただきますようお願いいたします。
+      本メールに身に覚えのない場合は、本メールを破棄していただきますようお願いいたします。<br>
+      ※募集が終了しますと、案件情報が閲覧できなくなります。何卒ご容赦ください。<br>
+      ※複数の方からエントリーいただいた場合は当社にて選考させていただきます。ご了承ください。
     </p>
 
     <hr style="border: none; border-top: 1px solid #d5e5f0; margin: 20px 0;">
 
     <div style="font-size: 12px; color: #686868;">
-      <p style="margin: 5px 0;">▽マイページ: <a href="${myPageUrl}" style="color: #63b2cd;">${myPageUrl}</a></p>
+      <p style="margin: 5px 0;">▽お役立ち情報: <a href="${helpfulInfoUrl}" style="color: #63b2cd;">${helpfulInfoUrl}</a></p>
       <p style="margin: 5px 0;">▽お問い合わせ先: <a href="${contactUrl}" style="color: #63b2cd;">${contactUrl}</a></p>
       <p style="margin: 5px 0;">▽PRO WORKS: <a href="${homeUrl}" style="color: #63b2cd;">${homeUrl}</a></p>
     </div>
 
     <p style="color: #686868; font-size: 12px; text-align: center; margin-top: 20px;">
-      PRO WORKS 運営チーム/株式会社アルマ
+      PRO WORKS運営チーム/株式会社アルマ
     </p>
   </div>
 </body>
@@ -1017,25 +1012,24 @@ export const sendAIMatchNotificationEmail = async (
   `;
 
   const textContent = `
-${userName} 様
+${userName}様
 
-AIがあなたのスキル・経験を分析し、マッチする案件を見つけました。
+いつもPRO WORKSをご利用いただき、誠にありがとうございます。
 
-────────────────────────────────────
-■ AIマッチ案件
-────────────────────────────────────
-${jobTitle}
+PROWORKSのAIマッチング機能により、あなたのスキルに合致する案件が見つかりました。
 
-▼案件詳細はこちら
-${jobUrl}
+▼AIマッチ案件を確認する
+${homeUrl}
 
-————————————————————
+――――――――――――――――――
 【ご注意】
 本メールに身に覚えのない場合は、本メールを破棄していただきますようお願いいたします。
-————————————————————
+※募集が終了しますと、案件情報が閲覧できなくなります。何卒ご容赦ください。
+※複数の方からエントリーいただいた場合は当社にて選考させていただきます。ご了承ください。
+――――――――――――――――――
 
-▽マイページ
-${myPageUrl}
+▽お役立ち情報
+${helpfulInfoUrl}
 
 ▽お問い合わせ先
 ${contactUrl}
@@ -1043,7 +1037,8 @@ ${contactUrl}
 ▽PRO WORKS
 ${homeUrl}
 
-PRO WORKS 運営チーム/株式会社アルマ
+PRO WORKS運営チーム/株式会社アルマ
+――――――――――――――――――
   `;
 
   return sendEmail({ to, subject, html: htmlContent, text: textContent });
