@@ -245,11 +245,11 @@ export function JobCard({ job, onViewDetail, showApplicationStatus = false, isEn
           </div>
         )}
 
-        {/* 担当者おすすめバッジ（リボン風・左上）- 応募ステータス表示時は非表示、Newの右側に配置 */}
+        {/* 担当者おすすめバッジ（リボン風・左上）- Newバッジの右側に配置 */}
         {job.staffRecommend && !showApplicationStatus && (
-          <div 
+          <div
             className="absolute top-0"
-            style={{ left: job.isNew ? "74px" : "8px" }} // New(58) + 間隔(8) + 左マージン(8)
+            style={{ left: job.isNew ? "74px" : "8px" }}
           >
             <svg width="110" height="40" style={{ display: "block" }}>
               <path
