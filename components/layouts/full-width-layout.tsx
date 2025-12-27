@@ -16,7 +16,7 @@ export const FullWidthLayout = ({
   maxWidth = "1400px"
 }: FullWidthLayoutProps) => {
   return (
-    <div className="min-h-screen" style={{ backgroundColor: "#ffffff" }}>
+    <div className="min-h-screen" style={{ backgroundColor: "var(--pw-bg-body)" }}>
       <main
         className="mx-auto px-6 py-8"
         style={{ maxWidth, backgroundColor: "var(--pw-bg-body)" }}
