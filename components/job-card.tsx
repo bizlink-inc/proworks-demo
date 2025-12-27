@@ -304,23 +304,16 @@ export function JobCard({ job, onViewDetail, showApplicationStatus = false, isEn
           </div>
         )}
 
-        {/* 案件特徴バッジ（左側バッジの下に配置、横並び・左揃え） */}
-        <div 
-          className="flex flex-nowrap gap-2 justify-start mb-3"
-          style={{ 
+        {/* 案件特徴バッジ（左側バッジの下に配置、横並び・左揃え、1行でoverflow非表示） */}
+        <div
+          className="flex flex-nowrap gap-2 justify-start mb-3 overflow-hidden"
+          style={{
             paddingTop: (() => {
               // 左側のバッジ（応募ステータス、New、担当者おすすめ、AIマッチ）がない場合は上部の空白を削除
               if (statusStyle) return "28px"; // 応募ステータスがある場合（バッジの下に近づける）
               if (job.isNew || job.staffRecommend || job.aiMatched) return "28px"; // 左側バッジがある場合（バッジの下に近づける）
               return "0"; // バッジがない場合は空白なし
             })(),
-            paddingLeft: (() => {
-              // バッジがない場合は左パディングなし（左端に配置）
-              if (statusStyle) return "0"; // 応募ステータスがある場合も左端から
-              if (job.isNew || job.staffRecommend || job.aiMatched) return "0"; // バッジがある場合も左端から
-              return "0"; // バッジがない場合も左端から
-            })(),
-            minWidth: 0, // flexアイテムが縮小できるようにする
           }}
         >
           {features.map((feature) => (
