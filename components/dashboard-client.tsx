@@ -32,9 +32,10 @@ interface DashboardClientProps {
   // SSRで事前取得した案件データ（初期表示高速化用）
   initialJobs?: Job[]
   initialTotal?: number
+  initialTotalAll?: number
 }
 
-export const DashboardClient = ({ user, initialJobs = [], initialTotal = 0 }: DashboardClientProps) => {
+export const DashboardClient = ({ user, initialJobs = [], initialTotal = 0, initialTotalAll = 0 }: DashboardClientProps) => {
   const { toast } = useToast()
   const searchParams = useSearchParams()
   useApplicationStatusMonitor()
@@ -50,6 +51,7 @@ export const DashboardClient = ({ user, initialJobs = [], initialTotal = 0 }: Da
   // サーバーサイドページネーション：現在ページのデータのみ保持
   const [jobs, setJobs] = useState<Job[]>(initialJobs)
   const [total, setTotal] = useState(initialTotal)
+  const [totalAll, setTotalAll] = useState(initialTotalAll)
   const [page, setPage] = useState(1)
   const [isLoading, setIsLoading] = useState(false)
   // APIから取得するかどうかのフラグ（SSRデータありなら初回はスキップ）
@@ -190,6 +192,7 @@ export const DashboardClient = ({ user, initialJobs = [], initialTotal = 0 }: Da
       const data = await res.json()
       setJobs(data.items)
       setTotal(data.total)
+      setTotalAll(data.totalAll)
     } finally {
       setIsLoading(false)
     }
@@ -204,6 +207,7 @@ export const DashboardClient = ({ user, initialJobs = [], initialTotal = 0 }: Da
       const data = await res.json()
       setJobs(data.items)
       setTotal(data.total)
+      setTotalAll(data.totalAll)
     } finally {
       setIsLoading(false)
     }
@@ -282,7 +286,7 @@ export const DashboardClient = ({ user, initialJobs = [], initialTotal = 0 }: Da
                 fontWeight: 600
               }}
             >
-              検索結果 <span style={{ fontSize: "var(--pw-text-xl)" }}>{total}</span>件
+              <span style={{ fontSize: "var(--pw-text-xl)" }}>{total}</span>件/全{totalAll}件
             </span>
             
             {totalPages > 1 && (
@@ -371,11 +375,28 @@ export const DashboardClient = ({ user, initialJobs = [], initialTotal = 0 }: Da
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-          {jobs.map((job) => (
-            <JobCard key={job.id} job={job} onViewDetail={setSelectedJobId} />
-          ))}
-        </div>
+        {total === 0 ? (
+          <div
+            className="flex flex-col items-center justify-center py-16 mb-8"
+            style={{ color: "var(--pw-text-primary)" }}
+          >
+            <p
+              className="text-lg font-semibold mb-2"
+              style={{ color: "var(--pw-text-navy)" }}
+            >
+              検索結果は見つかりませんでした。
+            </p>
+            <p className="text-sm text-center">
+              別のキーワードで試してください。検索ワードを短くするか、絞り込み条件を外すとヒットしやすくなります。
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+            {jobs.map((job) => (
+              <JobCard key={job.id} job={job} onViewDetail={setSelectedJobId} />
+            ))}
+          </div>
+        )}
 
         {/* ページネーション - 下部 */}
         {totalPages > 1 && (
@@ -387,7 +408,7 @@ export const DashboardClient = ({ user, initialJobs = [], initialTotal = 0 }: Da
                 fontWeight: 600
               }}
             >
-              検索結果 <span style={{ fontSize: "var(--pw-text-xl)" }}>{total}</span>件
+              <span style={{ fontSize: "var(--pw-text-xl)" }}>{total}</span>件/全{totalAll}件
             </span>
             
             {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (

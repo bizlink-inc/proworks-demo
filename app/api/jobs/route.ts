@@ -101,6 +101,9 @@ export const GET = async (request: NextRequest) => {
     // 応募済み案件を完全に除外
     jobs = jobs.filter((job) => !applicationsMap[job.id]);
 
+    // 全案件数（フィルター適用前）を保持
+    const totalAll = jobs.length;
+
     // キーワード検索（案件名、作業内容、環境、必須スキル、尚可スキルを対象）
     // 複数単語のAND検索に対応（スペースで区切られた単語は全て含まれる必要がある）
     if (query) {
@@ -260,6 +263,7 @@ export const GET = async (request: NextRequest) => {
     return NextResponse.json({
       items: paginatedJobs,
       total,
+      totalAll,
     });
   } catch (error) {
     console.error("案件一覧の取得に失敗:", error);

@@ -31,7 +31,7 @@ export interface PaginationOptions {
 export async function getJobsWithRecommendations(
   authUserId?: string,
   options?: PaginationOptions
-): Promise<{ items: JobWithMetadata[]; total: number }> {
+): Promise<{ items: JobWithMetadata[]; total: number; totalAll: number }> {
   // 全案件を取得（キャッシュ活用）
   let jobs = await getAllJobs();
 
@@ -133,5 +133,6 @@ export async function getJobsWithRecommendations(
   return {
     items: paginatedJobs,
     total,
+    totalAll: total, // SSR時はフィルター未適用なので同じ値
   };
 }
