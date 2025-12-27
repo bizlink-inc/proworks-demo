@@ -143,7 +143,6 @@ export function ApplySuccessModal({ isOpen, missingFields, onClose }: ApplySucce
               className="w-full sm:w-auto"
               style={{ fontSize: "14px" }}
             >
-              <ArrowLeft className="w-4 h-4 mr-1" />
               案件一覧に戻る
             </Button>
           </div>
