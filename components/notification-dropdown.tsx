@@ -38,7 +38,7 @@ const getNotificationTitle = (notification: Notification): string => {
       return "あなたのスキルにマッチする案件をAIが見つけました！"
     }
   } else if (notification.type === "profile_incomplete") {
-    return "プロフィールに未入力の項目があります。"
+    return "マイページの必須項目が未記入です。"
   }
   return ""
 }
@@ -57,7 +57,7 @@ const getNotificationDescription = (notification: Notification): string | null =
     return "ご登録いただいているメールアドレス宛にメールを送信しましたのでご確認ください。"
   }
   if (notification.type === "profile_incomplete") {
-    return `未入力の項目: ${notification.missingFields.join("、")}`
+    return "案件への応募やマッチング精度向上のため、プロフィールを完成させましょう。"
   }
   return null
 }
@@ -249,7 +249,9 @@ export const NotificationDropdown = () => {
                             ? "【オファーを確認する】"
                             : notification.type === "recommended"
                               ? "マッチした案件を確認する"
-                              : "確認する"}
+                              : notification.type === "profile_incomplete"
+                                ? "✏️ プロフィールを記入する"
+                                : "確認する"}
                         </button>
                       </div>
                     </div>
