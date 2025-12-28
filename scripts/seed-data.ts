@@ -163,38 +163,31 @@ export const createSeedData = async () => {
     const appIds = await addApplicationRecords(applicationRecords);
     console.log(`   → ${appIds.length}件を作成完了`);
 
-    // 5. 推薦データ作成
-    console.log(`\n[5/6] 推薦データを作成中（マッチングスコア計算）...`);
-    const recommendationRecords = PRECOMPUTED_RECOMMENDATIONS.map((rec) =>
-      buildRecommendationRecord(rec.talentAuthUserId, jobIds[rec.jobIndex], rec.score)
-    ).filter((_, i) => jobIds[PRECOMPUTED_RECOMMENDATIONS[i].jobIndex]);
+    // 5. 推薦データ作成（全レコードを一括追加）
+    console.log(`\n[5/6] 推薦データを作成中...`);
+    const allRecommendationRecords = [
+      // 事前計算済み推薦
+      ...PRECOMPUTED_RECOMMENDATIONS.filter((rec) => jobIds[rec.jobIndex]).map((rec) =>
+        buildRecommendationRecord(rec.talentAuthUserId, jobIds[rec.jobIndex], rec.score)
+      ),
+      // yamada用
+      ...buildUserRecommendationRecords(
+        YAMADA_AUTH_USER_ID,
+        jobIds,
+        seedData1.recommendations,
+        seedData1.recommendationsForYamada
+      ),
+      // hanako用
+      ...buildUserRecommendationRecords(
+        HANAKO_AUTH_USER_ID,
+        jobIds,
+        [],
+        seedData1.recommendationsForHanako
+      ),
+    ];
 
-    await addRecommendationRecordsInBatches(recommendationRecords);
-    console.log(`   → ${recommendationRecords.length}件を作成完了`);
-
-    // yamada用推薦データ
-    const yamadaCount = await createUserRecommendations(
-      "yamada",
-      YAMADA_AUTH_USER_ID,
-      seedData,
-      authUserIds,
-      mapping,
-      jobIds,
-      seedData1.recommendations,
-      seedData1.recommendationsForYamada
-    );
-
-    // hanako用推薦データ
-    const hanakoCount = await createUserRecommendations(
-      "hanako",
-      HANAKO_AUTH_USER_ID,
-      seedData,
-      authUserIds,
-      mapping,
-      jobIds,
-      [],
-      seedData1.recommendationsForHanako
-    );
+    await addRecommendationRecordsInBatches(allRecommendationRecords);
+    console.log(`   → ${allRecommendationRecords.length}件を作成完了`);
 
     // 6. お知らせ作成
     console.log(`\n[6/6] システム通知を作成中...`);
@@ -204,9 +197,7 @@ export const createSeedData = async () => {
     }
 
     // 完了メッセージ
-    const totalRecommendations =
-      recommendationRecords.length + yamadaCount + hanakoCount;
-    printCompletionMessage(seedData, totalRecommendations);
+    printCompletionMessage(seedData, allRecommendationRecords.length);
   } catch (error) {
     handleError(error);
   }
@@ -366,32 +357,20 @@ const mergeData = (data1: any, data3: any) => {
   };
 };
 
-/** ユーザー推薦データ作成 */
-const createUserRecommendations = async (
-  userName: string,
+/** ユーザー推薦レコード構築（同期） */
+const buildUserRecommendationRecords = (
   authUserId: string,
-  seedData: any,
-  authUserIds: string[],
-  mapping: any,
   jobIds: string[],
   basicRecommendations: any[],
   extendedRecommendations?: any[]
-): Promise<number> => {
-  const userAuthUserId = resolveUserAuthId(
-    authUserId,
-    seedData,
-    authUserIds,
-    mapping
-  );
-  if (!userAuthUserId) return 0;
-
+): any[] => {
   const records: any[] = [];
 
   // 基本推薦
   for (const rec of basicRecommendations) {
-    if (rec.jobIndex < jobIds.length) {
+    if (rec.jobIndex < jobIds.length && jobIds[rec.jobIndex]) {
       records.push(
-        buildRecommendationRecord(userAuthUserId, jobIds[rec.jobIndex], rec.score)
+        buildRecommendationRecord(authUserId, jobIds[rec.jobIndex], rec.score)
       );
     }
   }
@@ -399,9 +378,9 @@ const createUserRecommendations = async (
   // 拡張推薦（担当者おすすめ/AIマッチ）
   if (extendedRecommendations) {
     for (const rec of extendedRecommendations) {
-      if (rec.jobIndex < jobIds.length) {
+      if (rec.jobIndex < jobIds.length && jobIds[rec.jobIndex]) {
         records.push(
-          buildRecommendationRecord(userAuthUserId, jobIds[rec.jobIndex], rec.score, {
+          buildRecommendationRecord(authUserId, jobIds[rec.jobIndex], rec.score, {
             staffRecommend: rec.staffRecommend,
             aiMatched: rec.aiMatched,
           })
@@ -410,12 +389,7 @@ const createUserRecommendations = async (
     }
   }
 
-  if (records.length > 0) {
-    const result = await upsertRecommendationRecords(userAuthUserId, records);
-    console.log(`   → ${userName}用: ${records.length}件を処理完了`);
-    return records.length;
-  }
-  return 0;
+  return records;
 };
 
 /** ユーザーのauth_user_idを解決 */
