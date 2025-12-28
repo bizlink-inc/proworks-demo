@@ -155,7 +155,7 @@ export function JobCard({ job, onViewDetail, showApplicationStatus = false, isEn
   
   const rateValue = formatRateValue(job.rate)
   const features = getDisplayableFeatures(job.features ?? [])
-  const positions = (job.position ?? []).slice(0, 3) // 最大3個まで
+  const positions = (job.position ?? []).slice(0, 2) // 最大2個まで
   const skills = getDisplayableSkills(job.skills ?? [])
   const locationValue = (job.location && job.location.trim().length > 0)
     ? job.location.trim()
