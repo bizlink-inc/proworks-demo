@@ -2,7 +2,7 @@
  * PostgreSQL 用のスキーマ定義
  * ローカル開発環境と AWS App Runner (RDS PostgreSQL) の両方で使用
  */
-import { pgTable, text, timestamp, boolean } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, boolean, integer } from "drizzle-orm/pg-core";
 
 export const user = pgTable("user", {
   id: text("id").primaryKey(),
@@ -56,4 +56,17 @@ export const verification = pgTable("verification", {
   expiresAt: timestamp("expiresAt").notNull(),
   createdAt: timestamp("createdAt"),
   updatedAt: timestamp("updatedAt"),
+});
+
+/**
+ * アプリケーション設定テーブル
+ * バッチ処理のスコア閾値などを保存
+ */
+export const appSettings = pgTable("app_settings", {
+  id: text("id").primaryKey().default("default"),
+  scoreThreshold: integer("score_threshold").notNull().default(3),
+  maxPerJob: integer("max_per_job").notNull().default(50),
+  lastBatchTime: timestamp("last_batch_time"),  // 前回バッチ実行日時（差分計算用）
+  lastThreshold: integer("last_threshold"),     // 前回バッチ実行時の閾値（閾値変更検知用）
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
