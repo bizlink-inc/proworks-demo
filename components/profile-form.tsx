@@ -5,6 +5,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
+import { usePostalCode } from "@/hooks/use-postal-code";
 import { FieldRow } from "@/components/ui/field-row";
 import type { Talent } from "@/lib/kintone/types";
 
@@ -29,6 +30,25 @@ export const ProfileForm = ({ user, onUpdate }: ProfileFormProps) => {
   });
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
+  const { fetchAddress, isLoading: isLoadingAddress } = usePostalCode();
+
+  const handlePostalCodeChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setFormData({ ...formData, postalCode: value });
+
+    // ハイフンを除去して7桁かチェック
+    const cleanCode = value.replace(/-/g, '');
+    if (cleanCode.length === 7 && /^\d+$/.test(cleanCode)) {
+      const address = await fetchAddress(value);
+      if (address) {
+        setFormData(prev => ({
+          ...prev,
+          postalCode: value,
+          address: address.fullAddress
+        }));
+      }
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -189,14 +209,19 @@ export const ProfileForm = ({ user, onUpdate }: ProfileFormProps) => {
             </FieldRow>
 
             <FieldRow label="郵便番号">
-              <Input
-                id="postalCode"
-                placeholder="123-4567"
-                value={formData.postalCode || ""}
-                onChange={(e) =>
-                  setFormData({ ...formData, postalCode: e.target.value })
-                }
-              />
+              <div className="flex gap-2 items-center">
+                <Input
+                  id="postalCode"
+                  placeholder="123-4567"
+                  value={formData.postalCode || ""}
+                  onChange={handlePostalCodeChange}
+                />
+                {isLoadingAddress && (
+                  <span style={{ fontSize: "var(--pw-text-sm)", color: "var(--pw-text-gray)" }}>
+                    検索中...
+                  </span>
+                )}
+              </div>
             </FieldRow>
 
             <FieldRow label="住所">
