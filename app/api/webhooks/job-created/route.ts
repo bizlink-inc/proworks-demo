@@ -12,12 +12,32 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { createTalentClient, createJobClient, createRecommendationClient, getAppIds } from "@/lib/kintone/client";
+import { createTalentClient, createRecommendationClient, getAppIds } from "@/lib/kintone/client";
 import { RECOMMENDATION_FIELDS } from "@/lib/kintone/fieldMapping";
-import { calculateTopMatches, TalentForMatching, JobForMatching } from "@/lib/matching/calculateScore";
+import { calculateMatchScore, TalentForMatching, JobForMatching } from "@/lib/matching/calculateScore";
+import { getDb, schema } from "@/lib/db/client";
+import { eq } from "drizzle-orm";
 
 // Webhookの認証用シークレット（環境変数で設定）
 const WEBHOOK_SECRET = process.env.KINTONE_WEBHOOK_SECRET;
+const DEFAULT_THRESHOLD = 3;
+
+/**
+ * DBから閾値を取得
+ */
+async function getThresholdFromDb(): Promise<number> {
+  try {
+    const db = getDb();
+    const settings = await db
+      .select()
+      .from(schema.appSettings)
+      .where(eq(schema.appSettings.id, "default"))
+      .limit(1);
+    return settings[0]?.scoreThreshold ?? DEFAULT_THRESHOLD;
+  } catch {
+    return DEFAULT_THRESHOLD;
+  }
+}
 
 // kintone Webhookのペイロード型
 type KintoneWebhookPayload = {
@@ -106,7 +126,7 @@ export const POST = async (request: NextRequest) => {
     // 2. 全人材を取得（退会者を除く）
     const talentsResponse = await talentClient.record.getAllRecords({
       app: appIds.talent,
-      condition: 'ST != "退会"',
+      condition: 'ST not in ("退会")',
       fields: ["$id", "auth_user_id", "氏名", "複数選択", "言語_ツール", "主な実績_PR_職務経歴", "希望単価_月額"],
     });
 
@@ -122,16 +142,23 @@ export const POST = async (request: NextRequest) => {
 
     console.log(`👥 人材数: ${talents.length}人`);
 
-    // 3. マッチングスコアを計算（上位10人）
-    const topMatches = calculateTopMatches(talents, job, 10);
-    console.log(`🎯 マッチ結果: ${topMatches.length}人`);
+    // 3. 閾値を取得してマッチングスコアを計算
+    const threshold = await getThresholdFromDb();
+    console.log(`📊 スコア閾値: ${threshold}`);
 
-    if (topMatches.length === 0) {
+    const matches = talents
+      .map((talent) => calculateMatchScore(talent, job))
+      .filter((result) => result.score >= threshold);
+
+    console.log(`🎯 マッチ結果: ${matches.length}人（スコア${threshold}以上）`);
+
+    if (matches.length === 0) {
       console.log("⚠️ マッチする人材がいませんでした");
       return NextResponse.json({
         success: true,
         message: "No matching talents",
         jobId,
+        threshold,
       });
     }
 
@@ -152,7 +179,7 @@ export const POST = async (request: NextRequest) => {
     const recordsToCreate: Record<string, { value: string | number }>[] = [];
     const recordsToUpdate: { id: string; record: Record<string, { value: string | number }> }[] = [];
 
-    for (const match of topMatches) {
+    for (const match of matches) {
       if (!match.talentAuthUserId) continue;
 
       const existingRecId = existingRecsMap.get(match.talentAuthUserId);
@@ -197,9 +224,10 @@ export const POST = async (request: NextRequest) => {
       success: true,
       jobId,
       jobTitle: job.title,
+      threshold,
       stats: {
         totalTalents: talents.length,
-        matchedTalents: topMatches.length,
+        matchedTalents: matches.length,
         created: recordsToCreate.length,
         updated: recordsToUpdate.length,
       },
