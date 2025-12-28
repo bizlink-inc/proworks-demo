@@ -230,6 +230,58 @@ const AdminDashboardPage = () => {
   // 担当者おすすめ関連（個別の人材IDごとに処理中状態を管理）
   const [settingRecommendIds, setSettingRecommendIds] = useState<Set<string>>(new Set());
 
+  // バッチ設定関連
+  const [scoreThreshold, setScoreThreshold] = useState<number>(3);
+  const [isSavingSettings, setIsSavingSettings] = useState(false);
+  const [showBatchSettings, setShowBatchSettings] = useState(false);
+
+  // バッチ設定を取得
+  useEffect(() => {
+    const fetchBatchSettings = async () => {
+      try {
+        const response = await fetch("/api/admin/batch-settings");
+        if (response.ok) {
+          const data = await response.json();
+          setScoreThreshold(data.scoreThreshold ?? 3);
+        }
+      } catch (error) {
+        console.error("バッチ設定取得エラー:", error);
+      }
+    };
+    fetchBatchSettings();
+  }, []);
+
+  // バッチ設定を保存
+  const handleSaveBatchSettings = async () => {
+    try {
+      setIsSavingSettings(true);
+      const response = await fetch("/api/admin/batch-settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ scoreThreshold }),
+      });
+
+      if (response.status === 401) {
+        router.push("/admin/login");
+        return;
+      }
+
+      if (!response.ok) {
+        const data = await response.json();
+        toast.error(data.error || "設定の保存に失敗しました");
+        return;
+      }
+
+      toast.success("設定を保存しました", { duration: 3000 });
+      setShowBatchSettings(false);
+    } catch (error) {
+      console.error("設定保存エラー:", error);
+      toast.error("設定の保存に失敗しました");
+    } finally {
+      setIsSavingSettings(false);
+    }
+  };
+
   // 認証チェック
   useEffect(() => {
     const checkAuth = async () => {
@@ -577,15 +629,28 @@ const AdminDashboardPage = () => {
                 <p className="text-sm opacity-80">案件と人材の最適なマッチングを支援</p>
               </div>
             </div>
-            <button
-              onClick={handleLogout}
-              className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-white/10 rounded-lg transition-all"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-              </svg>
-              ログアウト
-            </button>
+            <div className="flex items-center gap-2">
+              {/* バッチ設定ボタン */}
+              <button
+                onClick={() => setShowBatchSettings(true)}
+                className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-white/10 rounded-lg transition-all"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                バッチ設定
+              </button>
+              <button
+                onClick={handleLogout}
+                className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-white/10 rounded-lg transition-all"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                </svg>
+                ログアウト
+              </button>
+            </div>
           </div>
         </div>
       </header>
@@ -1286,10 +1351,107 @@ const AdminDashboardPage = () => {
         </div>
       )}
 
+      {/* バッチ設定モーダル */}
+      {showBatchSettings && (
+        <div className="fixed inset-0 bg-[var(--pw-overlay)] flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full shadow-2xl">
+            {/* モーダルヘッダー */}
+            <div className="bg-[var(--pw-bg-sidebar)] p-5 rounded-t-2xl text-white">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-[var(--pw-button-primary)] rounded-xl flex items-center justify-center">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold">推薦リスト設定</h3>
+                    <p className="text-sm opacity-80">候補者抽出の条件を設定</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowBatchSettings(false)}
+                  className="p-2 hover:bg-white/20 rounded-full transition-colors"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            {/* モーダルコンテンツ */}
+            <div className="p-6 space-y-6">
+              {/* スコア閾値設定 */}
+              <div>
+                <label className="block text-sm font-medium text-[var(--pw-text-primary)] mb-2">
+                  マッチングスコア閾値
+                </label>
+                <p className="text-xs text-[var(--pw-text-gray)] mb-3">
+                  この値以上のスコアを持つ候補者のみが推薦リストに表示されます
+                </p>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="number"
+                    min={0}
+                    max={20}
+                    value={scoreThreshold}
+                    onChange={(e) => setScoreThreshold(Math.max(0, Math.min(20, parseInt(e.target.value) || 0)))}
+                    className="w-24 px-3 py-2 border border-[var(--pw-border-gray)] rounded-lg text-center text-lg font-bold focus:outline-none focus:ring-2 focus:ring-[var(--pw-button-primary)] focus:border-transparent"
+                  />
+                  <span className="text-sm text-[var(--pw-text-gray)]">ポイント以上</span>
+                </div>
+              </div>
+
+              {/* 説明 */}
+              <div className="bg-[var(--pw-bg-body)] rounded-xl p-4">
+                <h4 className="text-sm font-medium text-[var(--pw-text-primary)] mb-2 flex items-center gap-2">
+                  <svg className="w-4 h-4 text-[var(--pw-button-primary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  ご注意
+                </h4>
+                <ul className="text-xs text-[var(--pw-text-gray)] space-y-1">
+                  <li>• AIマッチ済みの候補者は常に保持されます</li>
+                  <li>• 担当者おすすめの候補者は常に保持されます</li>
+                  <li>• それ以外の候補者は定期的に再計算されます</li>
+                </ul>
+              </div>
+            </div>
+
+            {/* モーダルフッター */}
+            <div className="border-t border-[var(--pw-border-lighter)] p-4 bg-[var(--pw-bg-body)] rounded-b-2xl flex justify-end gap-3">
+              <button
+                onClick={() => setShowBatchSettings(false)}
+                disabled={isSavingSettings}
+                className="px-4 py-2 text-sm text-[var(--pw-text-gray)] hover:text-[var(--pw-text-primary)] transition-colors disabled:opacity-50"
+              >
+                キャンセル
+              </button>
+              <button
+                onClick={handleSaveBatchSettings}
+                disabled={isSavingSettings}
+                className="px-4 py-2 bg-[var(--pw-button-primary)] text-white rounded-lg text-sm font-medium hover:opacity-90 transition-colors disabled:opacity-50 flex items-center gap-2"
+              >
+                {isSavingSettings ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    保存中...
+                  </>
+                ) : (
+                  "設定を保存"
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* トースト通知 */}
-      <Toaster 
-        position="top-right" 
-        richColors 
+      <Toaster
+        position="top-right"
+        richColors
         closeButton
         toastOptions={{
           style: {
