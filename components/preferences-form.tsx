@@ -119,7 +119,7 @@ export const PreferencesForm = ({ user, onUpdate }: PreferencesFormProps) => {
               />
             </FieldRow>
 
-            <FieldRow label="希望単価（月額・万円単位）">
+            <FieldRow label="希望単価（月額・万円単位）" required isEmpty={!formData.desiredRate}>
               <div>
                 <Input
                   id="desiredRate"
@@ -139,7 +139,7 @@ export const PreferencesForm = ({ user, onUpdate }: PreferencesFormProps) => {
             <FieldRow
               label="希望勤務日数・希望出社頻度"
               required
-              isEmpty={!formData.desiredWorkDays}
+              isEmpty={!formData.desiredWorkDays || !formData.desiredCommute}
             >
               <div className="grid grid-cols-2 gap-4">
                 <select
@@ -185,7 +185,7 @@ export const PreferencesForm = ({ user, onUpdate }: PreferencesFormProps) => {
               </div>
             </FieldRow>
 
-            <FieldRow label="希望勤務スタイル">
+            <FieldRow label="希望勤務スタイル" required isEmpty={formData.desiredWorkStyle.length === 0}>
               <div className="space-y-2">
                 {workStyleOptions.map((style) => (
                   <div key={style} className="flex items-center space-x-2">

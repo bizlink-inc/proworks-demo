@@ -148,7 +148,11 @@ export const ProfileForm = ({ user, onUpdate }: ProfileFormProps) => {
               </div>
             </FieldRow>
 
-            <FieldRow label="姓（フリガナ）・名（フリガナ）">
+            <FieldRow
+              label="姓（フリガナ）・名（フリガナ）"
+              required
+              isEmpty={!formData.lastNameKana || !formData.firstNameKana}
+            >
               <div className="grid grid-cols-2 gap-4">
                 <Input
                   id="lastNameKana"
@@ -169,23 +173,7 @@ export const ProfileForm = ({ user, onUpdate }: ProfileFormProps) => {
               </div>
             </FieldRow>
 
-            <FieldRow
-              label="メールアドレス"
-              required
-              isEmpty={!formData.email}
-            >
-              <Input
-                id="email"
-                type="email"
-                value={formData.email || ""}
-                onChange={(e) =>
-                  setFormData({ ...formData, email: e.target.value })
-                }
-                required
-              />
-            </FieldRow>
-
-            <FieldRow label="生年月日">
+            <FieldRow label="生年月日" required isEmpty={!formData.birthDate}>
               <Input
                 id="birthDate"
                 type="date"
@@ -196,7 +184,7 @@ export const ProfileForm = ({ user, onUpdate }: ProfileFormProps) => {
               />
             </FieldRow>
 
-            <FieldRow label="電話番号">
+            <FieldRow label="電話番号" required isEmpty={!formData.phone}>
               <Input
                 id="phone"
                 type="tel"
@@ -208,7 +196,7 @@ export const ProfileForm = ({ user, onUpdate }: ProfileFormProps) => {
               />
             </FieldRow>
 
-            <FieldRow label="郵便番号">
+            <FieldRow label="郵便番号" required isEmpty={!formData.postalCode}>
               <div className="flex gap-2 items-center">
                 <Input
                   id="postalCode"
@@ -224,7 +212,7 @@ export const ProfileForm = ({ user, onUpdate }: ProfileFormProps) => {
               </div>
             </FieldRow>
 
-            <FieldRow label="住所">
+            <FieldRow label="住所" required isEmpty={!formData.address}>
               <Input
                 id="address"
                 placeholder="東京都渋谷区..."
