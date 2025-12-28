@@ -19,7 +19,7 @@ try {
 import { createTalentClient, createJobClient, createApplicationClient, createRecommendationClient, createAnnouncementClient, createInquiryClient, getAppIds } from "../lib/kintone/client";
 import { uploadFileToKintone } from "../lib/kintone/services/file";
 import { TALENT_FIELDS, JOB_FIELDS, APPLICATION_FIELDS, RECOMMENDATION_FIELDS, INQUIRY_FIELDS } from "../lib/kintone/fieldMapping";
-import { calculateTopMatches, TalentForMatching, JobForMatching } from "../lib/matching/calculateScore";
+// calculateTopMatches は PRECOMPUTED_RECOMMENDATIONS 使用により不要になりました
 import { seedData3 } from "./seed-data-large";
 import { getDb, closePool, query, schema, switchDatabase } from "../lib/db/client";
 import { eq } from "drizzle-orm";
@@ -30,6 +30,561 @@ import { exec } from "child_process";
 import { hashPassword as hashPasswordBetterAuth } from "better-auth/crypto";
 import { auth } from "../lib/auth";
 import { sendInterviewConfirmedEmail } from "../lib/email";
+
+// 事前計算済みの推薦データ（フェーズ1: 全人材×全案件マッチング結果）
+// 生成スクリプト: scripts/generate-recommendations.ts
+// 総件数: 545件
+const PRECOMPUTED_RECOMMENDATIONS: Array<{
+  talentAuthUserId: string;
+  jobIndex: number;
+  score: number;
+}> = [
+  { talentAuthUserId: "seed_user_023", jobIndex: 0, score: 7 },
+  { talentAuthUserId: "seed_user_028", jobIndex: 0, score: 7 },
+  { talentAuthUserId: "seed_user_026", jobIndex: 0, score: 6 },
+  { talentAuthUserId: "seed_user_027", jobIndex: 0, score: 6 },
+  { talentAuthUserId: "seed_user_029", jobIndex: 0, score: 5 },
+  { talentAuthUserId: "seed_user_002", jobIndex: 0, score: 4 },
+  { talentAuthUserId: "seed_user_021", jobIndex: 0, score: 4 },
+  { talentAuthUserId: "seed_user_024", jobIndex: 0, score: 4 },
+  { talentAuthUserId: "seed_user_022", jobIndex: 0, score: 3 },
+  { talentAuthUserId: "seed_user_030", jobIndex: 0, score: 3 },
+  { talentAuthUserId: "seed_user_002", jobIndex: 1, score: 99 },
+  { talentAuthUserId: "seed_user_003", jobIndex: 1, score: 9 },
+  { talentAuthUserId: "seed_user_010", jobIndex: 1, score: 9 },
+  { talentAuthUserId: "seed_user_004", jobIndex: 1, score: 7 },
+  { talentAuthUserId: "seed_user_006", jobIndex: 1, score: 7 },
+  { talentAuthUserId: "seed_user_034", jobIndex: 1, score: 7 },
+  { talentAuthUserId: "seed_user_038", jobIndex: 1, score: 6 },
+  { talentAuthUserId: "seed_user_007", jobIndex: 1, score: 5 },
+  { talentAuthUserId: "seed_user_008", jobIndex: 1, score: 5 },
+  { talentAuthUserId: "seed_user_012", jobIndex: 2, score: 7 },
+  { talentAuthUserId: "seed_user_013", jobIndex: 2, score: 7 },
+  { talentAuthUserId: "seed_user_014", jobIndex: 2, score: 7 },
+  { talentAuthUserId: "seed_user_011", jobIndex: 2, score: 6 },
+  { talentAuthUserId: "seed_user_015", jobIndex: 2, score: 6 },
+  { talentAuthUserId: "seed_user_017", jobIndex: 2, score: 5 },
+  { talentAuthUserId: "seed_user_020", jobIndex: 2, score: 4 },
+  { talentAuthUserId: "seed_user_043", jobIndex: 2, score: 4 },
+  { talentAuthUserId: "seed_user_044", jobIndex: 2, score: 3 },
+  { talentAuthUserId: "seed_user_002", jobIndex: 3, score: 9 },
+  { talentAuthUserId: "seed_user_003", jobIndex: 3, score: 7 },
+  { talentAuthUserId: "seed_user_006", jobIndex: 3, score: 7 },
+  { talentAuthUserId: "seed_user_010", jobIndex: 3, score: 7 },
+  { talentAuthUserId: "seed_user_009", jobIndex: 3, score: 5 },
+  { talentAuthUserId: "seed_user_019", jobIndex: 3, score: 5 },
+  { talentAuthUserId: "seed_user_005", jobIndex: 3, score: 4 },
+  { talentAuthUserId: "seed_user_013", jobIndex: 3, score: 4 },
+  { talentAuthUserId: "seed_user_017", jobIndex: 3, score: 4 },
+  { talentAuthUserId: "seed_user_036", jobIndex: 4, score: 8 },
+  { talentAuthUserId: "seed_user_039", jobIndex: 4, score: 8 },
+  { talentAuthUserId: "seed_user_040", jobIndex: 4, score: 8 },
+  { talentAuthUserId: "seed_user_033", jobIndex: 4, score: 7 },
+  { talentAuthUserId: "seed_user_034", jobIndex: 4, score: 7 },
+  { talentAuthUserId: "seed_user_031", jobIndex: 4, score: 6 },
+  { talentAuthUserId: "seed_user_032", jobIndex: 4, score: 6 },
+  { talentAuthUserId: "seed_user_035", jobIndex: 4, score: 6 },
+  { talentAuthUserId: "seed_user_038", jobIndex: 4, score: 6 },
+  { talentAuthUserId: "seed_user_004", jobIndex: 4, score: 4 },
+  { talentAuthUserId: "seed_user_043", jobIndex: 5, score: 7 },
+  { talentAuthUserId: "seed_user_002", jobIndex: 5, score: 5 },
+  { talentAuthUserId: "seed_user_023", jobIndex: 5, score: 5 },
+  { talentAuthUserId: "seed_user_027", jobIndex: 5, score: 5 },
+  { talentAuthUserId: "seed_user_029", jobIndex: 5, score: 5 },
+  { talentAuthUserId: "seed_user_048", jobIndex: 5, score: 5 },
+  { talentAuthUserId: "seed_user_049", jobIndex: 5, score: 5 },
+  { talentAuthUserId: "seed_user_012", jobIndex: 5, score: 4 },
+  { talentAuthUserId: "seed_user_022", jobIndex: 5, score: 3 },
+  { talentAuthUserId: "seed_user_026", jobIndex: 5, score: 3 },
+  { talentAuthUserId: "seed_user_009", jobIndex: 6, score: 10 },
+  { talentAuthUserId: "seed_user_006", jobIndex: 6, score: 8 },
+  { talentAuthUserId: "seed_user_010", jobIndex: 6, score: 8 },
+  { talentAuthUserId: "seed_user_003", jobIndex: 6, score: 7 },
+  { talentAuthUserId: "seed_user_005", jobIndex: 6, score: 7 },
+  { talentAuthUserId: "seed_user_032", jobIndex: 6, score: 5 },
+  { talentAuthUserId: "seed_user_008", jobIndex: 6, score: 4 },
+  { talentAuthUserId: "seed_user_033", jobIndex: 6, score: 4 },
+  { talentAuthUserId: "seed_user_036", jobIndex: 6, score: 4 },
+  { talentAuthUserId: "seed_user_038", jobIndex: 6, score: 4 },
+  { talentAuthUserId: "seed_user_003", jobIndex: 7, score: 8 },
+  { talentAuthUserId: "seed_user_006", jobIndex: 7, score: 7 },
+  { talentAuthUserId: "seed_user_009", jobIndex: 7, score: 7 },
+  { talentAuthUserId: "seed_user_004", jobIndex: 7, score: 6 },
+  { talentAuthUserId: "seed_user_002", jobIndex: 7, score: 5 },
+  { talentAuthUserId: "seed_user_007", jobIndex: 7, score: 5 },
+  { talentAuthUserId: "seed_user_010", jobIndex: 7, score: 5 },
+  { talentAuthUserId: "seed_user_032", jobIndex: 7, score: 4 },
+  { talentAuthUserId: "seed_user_033", jobIndex: 7, score: 4 },
+  { talentAuthUserId: "seed_user_010", jobIndex: 8, score: 10 },
+  { talentAuthUserId: "seed_user_004", jobIndex: 8, score: 8 },
+  { talentAuthUserId: "seed_user_005", jobIndex: 8, score: 8 },
+  { talentAuthUserId: "seed_user_006", jobIndex: 8, score: 8 },
+  { talentAuthUserId: "seed_user_003", jobIndex: 8, score: 7 },
+  { talentAuthUserId: "seed_user_007", jobIndex: 8, score: 7 },
+  { talentAuthUserId: "seed_user_008", jobIndex: 8, score: 7 },
+  { talentAuthUserId: "seed_user_009", jobIndex: 8, score: 4 },
+  { talentAuthUserId: "seed_user_034", jobIndex: 8, score: 4 },
+  { talentAuthUserId: "seed_user_006", jobIndex: 9, score: 8 },
+  { talentAuthUserId: "seed_user_003", jobIndex: 9, score: 7 },
+  { talentAuthUserId: "seed_user_008", jobIndex: 9, score: 7 },
+  { talentAuthUserId: "seed_user_009", jobIndex: 9, score: 7 },
+  { talentAuthUserId: "seed_user_010", jobIndex: 9, score: 7 },
+  { talentAuthUserId: "seed_user_005", jobIndex: 9, score: 6 },
+  { talentAuthUserId: "seed_user_032", jobIndex: 9, score: 4 },
+  { talentAuthUserId: "seed_user_033", jobIndex: 9, score: 4 },
+  { talentAuthUserId: "seed_user_036", jobIndex: 9, score: 4 },
+  { talentAuthUserId: "seed_user_006", jobIndex: 10, score: 9 },
+  { talentAuthUserId: "seed_user_003", jobIndex: 10, score: 7 },
+  { talentAuthUserId: "seed_user_010", jobIndex: 10, score: 7 },
+  { talentAuthUserId: "seed_user_002", jobIndex: 10, score: 6 },
+  { talentAuthUserId: "seed_user_004", jobIndex: 10, score: 6 },
+  { talentAuthUserId: "seed_user_007", jobIndex: 10, score: 5 },
+  { talentAuthUserId: "seed_user_009", jobIndex: 10, score: 5 },
+  { talentAuthUserId: "seed_user_005", jobIndex: 10, score: 4 },
+  { talentAuthUserId: "seed_user_032", jobIndex: 10, score: 4 },
+  { talentAuthUserId: "seed_user_008", jobIndex: 11, score: 9 },
+  { talentAuthUserId: "seed_user_005", jobIndex: 11, score: 7 },
+  { talentAuthUserId: "seed_user_009", jobIndex: 11, score: 5 },
+  { talentAuthUserId: "seed_user_004", jobIndex: 11, score: 4 },
+  { talentAuthUserId: "seed_user_007", jobIndex: 11, score: 4 },
+  { talentAuthUserId: "seed_user_006", jobIndex: 11, score: 2 },
+  { talentAuthUserId: "seed_user_010", jobIndex: 11, score: 2 },
+  { talentAuthUserId: "seed_user_003", jobIndex: 11, score: 1 },
+  { talentAuthUserId: "seed_user_013", jobIndex: 11, score: 1 },
+  { talentAuthUserId: "seed_user_014", jobIndex: 11, score: 1 },
+  { talentAuthUserId: "seed_user_004", jobIndex: 12, score: 12 },
+  { talentAuthUserId: "seed_user_003", jobIndex: 12, score: 8 },
+  { talentAuthUserId: "seed_user_002", jobIndex: 12, score: 5 },
+  { talentAuthUserId: "seed_user_006", jobIndex: 12, score: 5 },
+  { talentAuthUserId: "seed_user_007", jobIndex: 12, score: 5 },
+  { talentAuthUserId: "seed_user_008", jobIndex: 12, score: 5 },
+  { talentAuthUserId: "seed_user_010", jobIndex: 12, score: 5 },
+  { talentAuthUserId: "seed_user_005", jobIndex: 12, score: 4 },
+  { talentAuthUserId: "seed_user_034", jobIndex: 12, score: 4 },
+  { talentAuthUserId: "seed_user_003", jobIndex: 13, score: 10 },
+  { talentAuthUserId: "seed_user_009", jobIndex: 13, score: 10 },
+  { talentAuthUserId: "seed_user_006", jobIndex: 13, score: 8 },
+  { talentAuthUserId: "seed_user_010", jobIndex: 13, score: 7 },
+  { talentAuthUserId: "seed_user_032", jobIndex: 13, score: 5 },
+  { talentAuthUserId: "seed_user_004", jobIndex: 13, score: 4 },
+  { talentAuthUserId: "seed_user_033", jobIndex: 13, score: 4 },
+  { talentAuthUserId: "seed_user_036", jobIndex: 13, score: 4 },
+  { talentAuthUserId: "seed_user_038", jobIndex: 13, score: 4 },
+  { talentAuthUserId: "seed_user_006", jobIndex: 14, score: 9 },
+  { talentAuthUserId: "seed_user_007", jobIndex: 14, score: 9 },
+  { talentAuthUserId: "seed_user_003", jobIndex: 14, score: 8 },
+  { talentAuthUserId: "seed_user_010", jobIndex: 14, score: 8 },
+  { talentAuthUserId: "seed_user_009", jobIndex: 14, score: 7 },
+  { talentAuthUserId: "seed_user_004", jobIndex: 14, score: 6 },
+  { talentAuthUserId: "seed_user_002", jobIndex: 14, score: 5 },
+  { talentAuthUserId: "seed_user_032", jobIndex: 14, score: 4 },
+  { talentAuthUserId: "seed_user_033", jobIndex: 14, score: 4 },
+  { talentAuthUserId: "seed_user_004", jobIndex: 15, score: 9 },
+  { talentAuthUserId: "seed_user_007", jobIndex: 15, score: 6 },
+  { talentAuthUserId: "seed_user_005", jobIndex: 15, score: 5 },
+  { talentAuthUserId: "seed_user_008", jobIndex: 15, score: 5 },
+  { talentAuthUserId: "seed_user_009", jobIndex: 15, score: 5 },
+  { talentAuthUserId: "seed_user_003", jobIndex: 15, score: 4 },
+  { talentAuthUserId: "seed_user_002", jobIndex: 15, score: 3 },
+  { talentAuthUserId: "seed_user_006", jobIndex: 15, score: 3 },
+  { talentAuthUserId: "seed_user_010", jobIndex: 15, score: 2 },
+  { talentAuthUserId: "seed_user_014", jobIndex: 16, score: 10 },
+  { talentAuthUserId: "seed_user_013", jobIndex: 16, score: 9 },
+  { talentAuthUserId: "seed_user_020", jobIndex: 16, score: 8 },
+  { talentAuthUserId: "seed_user_017", jobIndex: 16, score: 7 },
+  { talentAuthUserId: "seed_user_011", jobIndex: 16, score: 6 },
+  { talentAuthUserId: "seed_user_016", jobIndex: 16, score: 6 },
+  { talentAuthUserId: "seed_user_019", jobIndex: 16, score: 5 },
+  { talentAuthUserId: "seed_user_015", jobIndex: 16, score: 4 },
+  { talentAuthUserId: "seed_user_018", jobIndex: 16, score: 4 },
+  { talentAuthUserId: "seed_user_012", jobIndex: 16, score: 3 },
+  { talentAuthUserId: "seed_user_020", jobIndex: 17, score: 11 },
+  { talentAuthUserId: "seed_user_011", jobIndex: 17, score: 7 },
+  { talentAuthUserId: "seed_user_013", jobIndex: 17, score: 7 },
+  { talentAuthUserId: "seed_user_015", jobIndex: 17, score: 6 },
+  { talentAuthUserId: "seed_user_016", jobIndex: 17, score: 6 },
+  { talentAuthUserId: "seed_user_017", jobIndex: 17, score: 6 },
+  { talentAuthUserId: "seed_user_019", jobIndex: 17, score: 6 },
+  { talentAuthUserId: "seed_user_014", jobIndex: 17, score: 5 },
+  { talentAuthUserId: "seed_user_012", jobIndex: 17, score: 3 },
+  { talentAuthUserId: "seed_user_018", jobIndex: 17, score: 3 },
+  { talentAuthUserId: "seed_user_011", jobIndex: 18, score: 8 },
+  { talentAuthUserId: "seed_user_018", jobIndex: 18, score: 8 },
+  { talentAuthUserId: "seed_user_017", jobIndex: 18, score: 7 },
+  { talentAuthUserId: "seed_user_012", jobIndex: 18, score: 5 },
+  { talentAuthUserId: "seed_user_016", jobIndex: 18, score: 5 },
+  { talentAuthUserId: "seed_user_043", jobIndex: 18, score: 4 },
+  { talentAuthUserId: "seed_user_014", jobIndex: 18, score: 3 },
+  { talentAuthUserId: "seed_user_020", jobIndex: 18, score: 3 },
+  { talentAuthUserId: "seed_user_044", jobIndex: 18, score: 3 },
+  { talentAuthUserId: "seed_user_020", jobIndex: 19, score: 8 },
+  { talentAuthUserId: "seed_user_011", jobIndex: 19, score: 7 },
+  { talentAuthUserId: "seed_user_014", jobIndex: 19, score: 6 },
+  { talentAuthUserId: "seed_user_012", jobIndex: 19, score: 5 },
+  { talentAuthUserId: "seed_user_016", jobIndex: 19, score: 5 },
+  { talentAuthUserId: "seed_user_017", jobIndex: 19, score: 4 },
+  { talentAuthUserId: "seed_user_018", jobIndex: 19, score: 4 },
+  { talentAuthUserId: "seed_user_019", jobIndex: 19, score: 4 },
+  { talentAuthUserId: "seed_user_013", jobIndex: 19, score: 3 },
+  { talentAuthUserId: "seed_user_015", jobIndex: 19, score: 3 },
+  { talentAuthUserId: "seed_user_012", jobIndex: 20, score: 9 },
+  { talentAuthUserId: "seed_user_018", jobIndex: 20, score: 7 },
+  { talentAuthUserId: "seed_user_019", jobIndex: 20, score: 7 },
+  { talentAuthUserId: "seed_user_011", jobIndex: 20, score: 5 },
+  { talentAuthUserId: "seed_user_043", jobIndex: 20, score: 5 },
+  { talentAuthUserId: "seed_user_002", jobIndex: 20, score: 4 },
+  { talentAuthUserId: "seed_user_013", jobIndex: 20, score: 4 },
+  { talentAuthUserId: "seed_user_017", jobIndex: 20, score: 4 },
+  { talentAuthUserId: "seed_user_020", jobIndex: 20, score: 4 },
+  { talentAuthUserId: "seed_user_011", jobIndex: 21, score: 12 },
+  { talentAuthUserId: "seed_user_012", jobIndex: 21, score: 10 },
+  { talentAuthUserId: "seed_user_014", jobIndex: 21, score: 7 },
+  { talentAuthUserId: "seed_user_018", jobIndex: 21, score: 7 },
+  { talentAuthUserId: "seed_user_017", jobIndex: 21, score: 5 },
+  { talentAuthUserId: "seed_user_020", jobIndex: 21, score: 4 },
+  { talentAuthUserId: "seed_user_043", jobIndex: 21, score: 4 },
+  { talentAuthUserId: "seed_user_004", jobIndex: 21, score: 3 },
+  { talentAuthUserId: "seed_user_005", jobIndex: 21, score: 3 },
+  { talentAuthUserId: "seed_user_013", jobIndex: 21, score: 3 },
+  { talentAuthUserId: "seed_user_016", jobIndex: 22, score: 12 },
+  { talentAuthUserId: "seed_user_020", jobIndex: 22, score: 10 },
+  { talentAuthUserId: "seed_user_013", jobIndex: 22, score: 9 },
+  { talentAuthUserId: "seed_user_017", jobIndex: 22, score: 9 },
+  { talentAuthUserId: "seed_user_014", jobIndex: 22, score: 6 },
+  { talentAuthUserId: "seed_user_015", jobIndex: 22, score: 6 },
+  { talentAuthUserId: "seed_user_018", jobIndex: 22, score: 6 },
+  { talentAuthUserId: "seed_user_019", jobIndex: 22, score: 6 },
+  { talentAuthUserId: "seed_user_012", jobIndex: 22, score: 5 },
+  { talentAuthUserId: "seed_user_011", jobIndex: 22, score: 4 },
+  { talentAuthUserId: "seed_user_020", jobIndex: 23, score: 10 },
+  { talentAuthUserId: "seed_user_013", jobIndex: 23, score: 8 },
+  { talentAuthUserId: "seed_user_015", jobIndex: 23, score: 8 },
+  { talentAuthUserId: "seed_user_019", jobIndex: 23, score: 8 },
+  { talentAuthUserId: "seed_user_017", jobIndex: 23, score: 6 },
+  { talentAuthUserId: "seed_user_012", jobIndex: 23, score: 4 },
+  { talentAuthUserId: "seed_user_002", jobIndex: 23, score: 3 },
+  { talentAuthUserId: "seed_user_011", jobIndex: 23, score: 3 },
+  { talentAuthUserId: "seed_user_014", jobIndex: 23, score: 3 },
+  { talentAuthUserId: "seed_user_017", jobIndex: 24, score: 10 },
+  { talentAuthUserId: "seed_user_018", jobIndex: 24, score: 9 },
+  { talentAuthUserId: "seed_user_011", jobIndex: 24, score: 6 },
+  { talentAuthUserId: "seed_user_020", jobIndex: 24, score: 6 },
+  { talentAuthUserId: "seed_user_016", jobIndex: 24, score: 5 },
+  { talentAuthUserId: "seed_user_019", jobIndex: 24, score: 5 },
+  { talentAuthUserId: "seed_user_013", jobIndex: 24, score: 4 },
+  { talentAuthUserId: "seed_user_014", jobIndex: 24, score: 3 },
+  { talentAuthUserId: "seed_user_015", jobIndex: 24, score: 3 },
+  { talentAuthUserId: "seed_user_002", jobIndex: 24, score: 2 },
+  { talentAuthUserId: "seed_user_012", jobIndex: 25, score: 7 },
+  { talentAuthUserId: "seed_user_015", jobIndex: 25, score: 5 },
+  { talentAuthUserId: "seed_user_018", jobIndex: 25, score: 5 },
+  { talentAuthUserId: "seed_user_014", jobIndex: 25, score: 4 },
+  { talentAuthUserId: "seed_user_043", jobIndex: 25, score: 4 },
+  { talentAuthUserId: "seed_user_011", jobIndex: 25, score: 3 },
+  { talentAuthUserId: "seed_user_013", jobIndex: 25, score: 3 },
+  { talentAuthUserId: "seed_user_016", jobIndex: 25, score: 3 },
+  { talentAuthUserId: "seed_user_044", jobIndex: 25, score: 3 },
+  { talentAuthUserId: "seed_user_017", jobIndex: 25, score: 2 },
+  { talentAuthUserId: "seed_user_023", jobIndex: 26, score: 7 },
+  { talentAuthUserId: "seed_user_027", jobIndex: 26, score: 7 },
+  { talentAuthUserId: "seed_user_028", jobIndex: 26, score: 6 },
+  { talentAuthUserId: "seed_user_029", jobIndex: 26, score: 6 },
+  { talentAuthUserId: "seed_user_022", jobIndex: 26, score: 5 },
+  { talentAuthUserId: "seed_user_026", jobIndex: 26, score: 5 },
+  { talentAuthUserId: "seed_user_030", jobIndex: 26, score: 5 },
+  { talentAuthUserId: "seed_user_002", jobIndex: 26, score: 4 },
+  { talentAuthUserId: "seed_user_021", jobIndex: 26, score: 3 },
+  { talentAuthUserId: "seed_user_024", jobIndex: 26, score: 3 },
+  { talentAuthUserId: "seed_user_022", jobIndex: 27, score: 10 },
+  { talentAuthUserId: "seed_user_021", jobIndex: 27, score: 9 },
+  { talentAuthUserId: "seed_user_024", jobIndex: 27, score: 9 },
+  { talentAuthUserId: "seed_user_025", jobIndex: 27, score: 8 },
+  { talentAuthUserId: "seed_user_027", jobIndex: 27, score: 8 },
+  { talentAuthUserId: "seed_user_029", jobIndex: 27, score: 8 },
+  { talentAuthUserId: "seed_user_030", jobIndex: 27, score: 8 },
+  { talentAuthUserId: "seed_user_026", jobIndex: 27, score: 7 },
+  { talentAuthUserId: "seed_user_028", jobIndex: 27, score: 6 },
+  { talentAuthUserId: "seed_user_023", jobIndex: 27, score: 5 },
+  { talentAuthUserId: "seed_user_021", jobIndex: 28, score: 8 },
+  { talentAuthUserId: "seed_user_026", jobIndex: 28, score: 8 },
+  { talentAuthUserId: "seed_user_030", jobIndex: 28, score: 8 },
+  { talentAuthUserId: "seed_user_027", jobIndex: 28, score: 7 },
+  { talentAuthUserId: "seed_user_022", jobIndex: 28, score: 6 },
+  { talentAuthUserId: "seed_user_023", jobIndex: 28, score: 6 },
+  { talentAuthUserId: "seed_user_024", jobIndex: 28, score: 6 },
+  { talentAuthUserId: "seed_user_028", jobIndex: 28, score: 6 },
+  { talentAuthUserId: "seed_user_025", jobIndex: 28, score: 4 },
+  { talentAuthUserId: "seed_user_029", jobIndex: 28, score: 3 },
+  { talentAuthUserId: "seed_user_023", jobIndex: 29, score: 10 },
+  { talentAuthUserId: "seed_user_029", jobIndex: 29, score: 10 },
+  { talentAuthUserId: "seed_user_027", jobIndex: 29, score: 9 },
+  { talentAuthUserId: "seed_user_028", jobIndex: 29, score: 8 },
+  { talentAuthUserId: "seed_user_030", jobIndex: 29, score: 7 },
+  { talentAuthUserId: "seed_user_021", jobIndex: 29, score: 5 },
+  { talentAuthUserId: "seed_user_022", jobIndex: 29, score: 5 },
+  { talentAuthUserId: "seed_user_025", jobIndex: 29, score: 5 },
+  { talentAuthUserId: "seed_user_002", jobIndex: 29, score: 4 },
+  { talentAuthUserId: "seed_user_026", jobIndex: 29, score: 3 },
+  { talentAuthUserId: "seed_user_022", jobIndex: 30, score: 7 },
+  { talentAuthUserId: "seed_user_025", jobIndex: 30, score: 7 },
+  { talentAuthUserId: "seed_user_030", jobIndex: 30, score: 7 },
+  { talentAuthUserId: "seed_user_029", jobIndex: 30, score: 6 },
+  { talentAuthUserId: "seed_user_021", jobIndex: 30, score: 5 },
+  { talentAuthUserId: "seed_user_024", jobIndex: 30, score: 5 },
+  { talentAuthUserId: "seed_user_028", jobIndex: 30, score: 5 },
+  { talentAuthUserId: "seed_user_023", jobIndex: 30, score: 4 },
+  { talentAuthUserId: "seed_user_027", jobIndex: 30, score: 3 },
+  { talentAuthUserId: "seed_user_006", jobIndex: 30, score: 1 },
+  { talentAuthUserId: "seed_user_027", jobIndex: 31, score: 8 },
+  { talentAuthUserId: "seed_user_022", jobIndex: 31, score: 7 },
+  { talentAuthUserId: "seed_user_024", jobIndex: 31, score: 7 },
+  { talentAuthUserId: "seed_user_026", jobIndex: 31, score: 7 },
+  { talentAuthUserId: "seed_user_029", jobIndex: 31, score: 6 },
+  { talentAuthUserId: "seed_user_021", jobIndex: 31, score: 5 },
+  { talentAuthUserId: "seed_user_023", jobIndex: 31, score: 5 },
+  { talentAuthUserId: "seed_user_025", jobIndex: 31, score: 5 },
+  { talentAuthUserId: "seed_user_028", jobIndex: 31, score: 5 },
+  { talentAuthUserId: "seed_user_030", jobIndex: 31, score: 5 },
+  { talentAuthUserId: "seed_user_021", jobIndex: 32, score: 5 },
+  { talentAuthUserId: "seed_user_023", jobIndex: 32, score: 5 },
+  { talentAuthUserId: "seed_user_027", jobIndex: 32, score: 5 },
+  { talentAuthUserId: "seed_user_028", jobIndex: 32, score: 5 },
+  { talentAuthUserId: "seed_user_030", jobIndex: 32, score: 5 },
+  { talentAuthUserId: "seed_user_025", jobIndex: 32, score: 4 },
+  { talentAuthUserId: "seed_user_029", jobIndex: 32, score: 4 },
+  { talentAuthUserId: "seed_user_022", jobIndex: 32, score: 3 },
+  { talentAuthUserId: "seed_user_026", jobIndex: 32, score: 3 },
+  { talentAuthUserId: "seed_user_024", jobIndex: 32, score: 2 },
+  { talentAuthUserId: "seed_user_023", jobIndex: 33, score: 8 },
+  { talentAuthUserId: "seed_user_029", jobIndex: 33, score: 8 },
+  { talentAuthUserId: "seed_user_027", jobIndex: 33, score: 7 },
+  { talentAuthUserId: "seed_user_028", jobIndex: 33, score: 7 },
+  { talentAuthUserId: "seed_user_030", jobIndex: 33, score: 7 },
+  { talentAuthUserId: "seed_user_022", jobIndex: 33, score: 5 },
+  { talentAuthUserId: "seed_user_002", jobIndex: 33, score: 4 },
+  { talentAuthUserId: "seed_user_025", jobIndex: 33, score: 4 },
+  { talentAuthUserId: "seed_user_021", jobIndex: 33, score: 3 },
+  { talentAuthUserId: "seed_user_026", jobIndex: 33, score: 3 },
+  { talentAuthUserId: "seed_user_028", jobIndex: 34, score: 11 },
+  { talentAuthUserId: "seed_user_021", jobIndex: 34, score: 9 },
+  { talentAuthUserId: "seed_user_030", jobIndex: 34, score: 9 },
+  { talentAuthUserId: "seed_user_025", jobIndex: 34, score: 8 },
+  { talentAuthUserId: "seed_user_029", jobIndex: 34, score: 7 },
+  { talentAuthUserId: "seed_user_026", jobIndex: 34, score: 6 },
+  { talentAuthUserId: "seed_user_023", jobIndex: 34, score: 5 },
+  { talentAuthUserId: "seed_user_024", jobIndex: 34, score: 5 },
+  { talentAuthUserId: "seed_user_027", jobIndex: 34, score: 4 },
+  { talentAuthUserId: "seed_user_011", jobIndex: 34, score: 1 },
+  { talentAuthUserId: "seed_user_023", jobIndex: 35, score: 10 },
+  { talentAuthUserId: "seed_user_027", jobIndex: 35, score: 8 },
+  { talentAuthUserId: "seed_user_028", jobIndex: 35, score: 7 },
+  { talentAuthUserId: "seed_user_021", jobIndex: 35, score: 6 },
+  { talentAuthUserId: "seed_user_026", jobIndex: 35, score: 6 },
+  { talentAuthUserId: "seed_user_022", jobIndex: 35, score: 5 },
+  { talentAuthUserId: "seed_user_029", jobIndex: 35, score: 5 },
+  { talentAuthUserId: "seed_user_030", jobIndex: 35, score: 5 },
+  { talentAuthUserId: "seed_user_024", jobIndex: 35, score: 4 },
+  { talentAuthUserId: "seed_user_025", jobIndex: 35, score: 3 },
+  { talentAuthUserId: "seed_user_036", jobIndex: 36, score: 9 },
+  { talentAuthUserId: "seed_user_035", jobIndex: 36, score: 8 },
+  { talentAuthUserId: "seed_user_039", jobIndex: 36, score: 8 },
+  { talentAuthUserId: "seed_user_032", jobIndex: 36, score: 7 },
+  { talentAuthUserId: "seed_user_033", jobIndex: 36, score: 7 },
+  { talentAuthUserId: "seed_user_040", jobIndex: 36, score: 7 },
+  { talentAuthUserId: "seed_user_031", jobIndex: 36, score: 5 },
+  { talentAuthUserId: "seed_user_034", jobIndex: 36, score: 4 },
+  { talentAuthUserId: "seed_user_038", jobIndex: 36, score: 4 },
+  { talentAuthUserId: "seed_user_037", jobIndex: 36, score: 2 },
+  { talentAuthUserId: "seed_user_032", jobIndex: 37, score: 8 },
+  { talentAuthUserId: "seed_user_036", jobIndex: 37, score: 8 },
+  { talentAuthUserId: "seed_user_037", jobIndex: 37, score: 6 },
+  { talentAuthUserId: "seed_user_034", jobIndex: 37, score: 5 },
+  { talentAuthUserId: "seed_user_033", jobIndex: 37, score: 4 },
+  { talentAuthUserId: "seed_user_035", jobIndex: 37, score: 4 },
+  { talentAuthUserId: "seed_user_038", jobIndex: 37, score: 4 },
+  { talentAuthUserId: "seed_user_039", jobIndex: 37, score: 4 },
+  { talentAuthUserId: "seed_user_031", jobIndex: 37, score: 2 },
+  { talentAuthUserId: "seed_user_040", jobIndex: 37, score: 2 },
+  { talentAuthUserId: "seed_user_032", jobIndex: 38, score: 8 },
+  { talentAuthUserId: "seed_user_036", jobIndex: 38, score: 8 },
+  { talentAuthUserId: "seed_user_037", jobIndex: 38, score: 6 },
+  { talentAuthUserId: "seed_user_034", jobIndex: 38, score: 5 },
+  { talentAuthUserId: "seed_user_033", jobIndex: 38, score: 4 },
+  { talentAuthUserId: "seed_user_035", jobIndex: 38, score: 4 },
+  { talentAuthUserId: "seed_user_038", jobIndex: 38, score: 4 },
+  { talentAuthUserId: "seed_user_039", jobIndex: 38, score: 4 },
+  { talentAuthUserId: "seed_user_031", jobIndex: 38, score: 2 },
+  { talentAuthUserId: "seed_user_040", jobIndex: 38, score: 2 },
+  { talentAuthUserId: "seed_user_036", jobIndex: 39, score: 11 },
+  { talentAuthUserId: "seed_user_032", jobIndex: 39, score: 9 },
+  { talentAuthUserId: "seed_user_035", jobIndex: 39, score: 8 },
+  { talentAuthUserId: "seed_user_039", jobIndex: 39, score: 8 },
+  { talentAuthUserId: "seed_user_031", jobIndex: 39, score: 7 },
+  { talentAuthUserId: "seed_user_033", jobIndex: 39, score: 7 },
+  { talentAuthUserId: "seed_user_040", jobIndex: 39, score: 7 },
+  { talentAuthUserId: "seed_user_034", jobIndex: 39, score: 6 },
+  { talentAuthUserId: "seed_user_037", jobIndex: 39, score: 6 },
+  { talentAuthUserId: "seed_user_038", jobIndex: 39, score: 4 },
+  { talentAuthUserId: "seed_user_031", jobIndex: 40, score: 10 },
+  { talentAuthUserId: "seed_user_035", jobIndex: 40, score: 9 },
+  { talentAuthUserId: "seed_user_040", jobIndex: 40, score: 9 },
+  { talentAuthUserId: "seed_user_033", jobIndex: 40, score: 7 },
+  { talentAuthUserId: "seed_user_036", jobIndex: 40, score: 7 },
+  { talentAuthUserId: "seed_user_037", jobIndex: 40, score: 7 },
+  { talentAuthUserId: "seed_user_039", jobIndex: 40, score: 7 },
+  { talentAuthUserId: "seed_user_032", jobIndex: 40, score: 6 },
+  { talentAuthUserId: "seed_user_034", jobIndex: 40, score: 6 },
+  { talentAuthUserId: "seed_user_038", jobIndex: 40, score: 4 },
+  { talentAuthUserId: "seed_user_034", jobIndex: 41, score: 7 },
+  { talentAuthUserId: "seed_user_038", jobIndex: 41, score: 7 },
+  { talentAuthUserId: "seed_user_039", jobIndex: 41, score: 6 },
+  { talentAuthUserId: "seed_user_033", jobIndex: 41, score: 5 },
+  { talentAuthUserId: "seed_user_040", jobIndex: 41, score: 5 },
+  { talentAuthUserId: "seed_user_004", jobIndex: 41, score: 4 },
+  { talentAuthUserId: "seed_user_032", jobIndex: 41, score: 4 },
+  { talentAuthUserId: "seed_user_037", jobIndex: 41, score: 4 },
+  { talentAuthUserId: "seed_user_010", jobIndex: 41, score: 3 },
+  { talentAuthUserId: "seed_user_031", jobIndex: 41, score: 3 },
+  { talentAuthUserId: "seed_user_031", jobIndex: 42, score: 11 },
+  { talentAuthUserId: "seed_user_033", jobIndex: 42, score: 8 },
+  { talentAuthUserId: "seed_user_036", jobIndex: 42, score: 8 },
+  { talentAuthUserId: "seed_user_032", jobIndex: 42, score: 7 },
+  { talentAuthUserId: "seed_user_037", jobIndex: 42, score: 7 },
+  { talentAuthUserId: "seed_user_040", jobIndex: 42, score: 7 },
+  { talentAuthUserId: "seed_user_035", jobIndex: 42, score: 6 },
+  { talentAuthUserId: "seed_user_039", jobIndex: 42, score: 5 },
+  { talentAuthUserId: "seed_user_034", jobIndex: 42, score: 3 },
+  { talentAuthUserId: "seed_user_038", jobIndex: 42, score: 3 },
+  { talentAuthUserId: "seed_user_032", jobIndex: 43, score: 7 },
+  { talentAuthUserId: "seed_user_033", jobIndex: 43, score: 7 },
+  { talentAuthUserId: "seed_user_038", jobIndex: 43, score: 7 },
+  { talentAuthUserId: "seed_user_035", jobIndex: 43, score: 6 },
+  { talentAuthUserId: "seed_user_036", jobIndex: 43, score: 6 },
+  { talentAuthUserId: "seed_user_039", jobIndex: 43, score: 5 },
+  { talentAuthUserId: "seed_user_034", jobIndex: 43, score: 3 },
+  { talentAuthUserId: "seed_user_037", jobIndex: 43, score: 3 },
+  { talentAuthUserId: "seed_user_031", jobIndex: 43, score: 2 },
+  { talentAuthUserId: "seed_user_040", jobIndex: 43, score: 2 },
+  { talentAuthUserId: "seed_user_033", jobIndex: 44, score: 12 },
+  { talentAuthUserId: "seed_user_039", jobIndex: 44, score: 10 },
+  { talentAuthUserId: "seed_user_035", jobIndex: 44, score: 9 },
+  { talentAuthUserId: "seed_user_038", jobIndex: 44, score: 9 },
+  { talentAuthUserId: "seed_user_032", jobIndex: 44, score: 8 },
+  { talentAuthUserId: "seed_user_036", jobIndex: 44, score: 8 },
+  { talentAuthUserId: "seed_user_031", jobIndex: 44, score: 7 },
+  { talentAuthUserId: "seed_user_040", jobIndex: 44, score: 7 },
+  { talentAuthUserId: "seed_user_034", jobIndex: 44, score: 6 },
+  { talentAuthUserId: "seed_user_037", jobIndex: 44, score: 4 },
+  { talentAuthUserId: "seed_user_037", jobIndex: 45, score: 8 },
+  { talentAuthUserId: "seed_user_031", jobIndex: 45, score: 7 },
+  { talentAuthUserId: "seed_user_033", jobIndex: 45, score: 7 },
+  { talentAuthUserId: "seed_user_035", jobIndex: 45, score: 7 },
+  { talentAuthUserId: "seed_user_038", jobIndex: 45, score: 7 },
+  { talentAuthUserId: "seed_user_032", jobIndex: 45, score: 6 },
+  { talentAuthUserId: "seed_user_034", jobIndex: 45, score: 5 },
+  { talentAuthUserId: "seed_user_036", jobIndex: 45, score: 4 },
+  { talentAuthUserId: "seed_user_039", jobIndex: 45, score: 4 },
+  { talentAuthUserId: "seed_user_040", jobIndex: 45, score: 4 },
+  { talentAuthUserId: "seed_user_042", jobIndex: 46, score: 9 },
+  { talentAuthUserId: "seed_user_048", jobIndex: 46, score: 8 },
+  { talentAuthUserId: "seed_user_045", jobIndex: 46, score: 7 },
+  { talentAuthUserId: "seed_user_046", jobIndex: 46, score: 6 },
+  { talentAuthUserId: "seed_user_049", jobIndex: 46, score: 5 },
+  { talentAuthUserId: "seed_user_050", jobIndex: 46, score: 5 },
+  { talentAuthUserId: "seed_user_041", jobIndex: 46, score: 4 },
+  { talentAuthUserId: "seed_user_044", jobIndex: 46, score: 4 },
+  { talentAuthUserId: "seed_user_043", jobIndex: 46, score: 2 },
+  { talentAuthUserId: "seed_user_047", jobIndex: 46, score: 2 },
+  { talentAuthUserId: "seed_user_041", jobIndex: 47, score: 9 },
+  { talentAuthUserId: "seed_user_050", jobIndex: 47, score: 8 },
+  { talentAuthUserId: "seed_user_044", jobIndex: 47, score: 7 },
+  { talentAuthUserId: "seed_user_045", jobIndex: 47, score: 7 },
+  { talentAuthUserId: "seed_user_047", jobIndex: 47, score: 7 },
+  { talentAuthUserId: "seed_user_046", jobIndex: 47, score: 6 },
+  { talentAuthUserId: "seed_user_042", jobIndex: 47, score: 5 },
+  { talentAuthUserId: "seed_user_049", jobIndex: 47, score: 3 },
+  { talentAuthUserId: "seed_user_043", jobIndex: 47, score: 2 },
+  { talentAuthUserId: "seed_user_048", jobIndex: 47, score: 1 },
+  { talentAuthUserId: "seed_user_048", jobIndex: 48, score: 8 },
+  { talentAuthUserId: "seed_user_042", jobIndex: 48, score: 7 },
+  { talentAuthUserId: "seed_user_045", jobIndex: 48, score: 5 },
+  { talentAuthUserId: "seed_user_046", jobIndex: 48, score: 5 },
+  { talentAuthUserId: "seed_user_043", jobIndex: 48, score: 4 },
+  { talentAuthUserId: "seed_user_049", jobIndex: 48, score: 4 },
+  { talentAuthUserId: "seed_user_050", jobIndex: 48, score: 4 },
+  { talentAuthUserId: "seed_user_041", jobIndex: 48, score: 2 },
+  { talentAuthUserId: "seed_user_044", jobIndex: 48, score: 2 },
+  { talentAuthUserId: "seed_user_047", jobIndex: 48, score: 2 },
+  { talentAuthUserId: "seed_user_043", jobIndex: 49, score: 9 },
+  { talentAuthUserId: "seed_user_048", jobIndex: 49, score: 8 },
+  { talentAuthUserId: "seed_user_049", jobIndex: 49, score: 7 },
+  { talentAuthUserId: "seed_user_042", jobIndex: 49, score: 5 },
+  { talentAuthUserId: "seed_user_044", jobIndex: 49, score: 5 },
+  { talentAuthUserId: "seed_user_047", jobIndex: 49, score: 5 },
+  { talentAuthUserId: "seed_user_012", jobIndex: 49, score: 4 },
+  { talentAuthUserId: "seed_user_041", jobIndex: 49, score: 4 },
+  { talentAuthUserId: "seed_user_046", jobIndex: 49, score: 4 },
+  { talentAuthUserId: "seed_user_050", jobIndex: 49, score: 4 },
+  { talentAuthUserId: "seed_user_042", jobIndex: 50, score: 11 },
+  { talentAuthUserId: "seed_user_045", jobIndex: 50, score: 10 },
+  { talentAuthUserId: "seed_user_050", jobIndex: 50, score: 9 },
+  { talentAuthUserId: "seed_user_044", jobIndex: 50, score: 7 },
+  { talentAuthUserId: "seed_user_046", jobIndex: 50, score: 7 },
+  { talentAuthUserId: "seed_user_048", jobIndex: 50, score: 7 },
+  { talentAuthUserId: "seed_user_041", jobIndex: 50, score: 5 },
+  { talentAuthUserId: "seed_user_047", jobIndex: 50, score: 5 },
+  { talentAuthUserId: "seed_user_043", jobIndex: 50, score: 4 },
+  { talentAuthUserId: "seed_user_049", jobIndex: 50, score: 3 },
+  { talentAuthUserId: "seed_user_047", jobIndex: 51, score: 9 },
+  { talentAuthUserId: "seed_user_049", jobIndex: 51, score: 8 },
+  { talentAuthUserId: "seed_user_044", jobIndex: 51, score: 6 },
+  { talentAuthUserId: "seed_user_045", jobIndex: 51, score: 6 },
+  { talentAuthUserId: "seed_user_048", jobIndex: 51, score: 6 },
+  { talentAuthUserId: "seed_user_042", jobIndex: 51, score: 5 },
+  { talentAuthUserId: "seed_user_050", jobIndex: 51, score: 4 },
+  { talentAuthUserId: "seed_user_041", jobIndex: 51, score: 3 },
+  { talentAuthUserId: "seed_user_043", jobIndex: 51, score: 3 },
+  { talentAuthUserId: "seed_user_046", jobIndex: 51, score: 3 },
+  { talentAuthUserId: "seed_user_041", jobIndex: 52, score: 6 },
+  { talentAuthUserId: "seed_user_046", jobIndex: 52, score: 6 },
+  { talentAuthUserId: "seed_user_042", jobIndex: 52, score: 4 },
+  { talentAuthUserId: "seed_user_044", jobIndex: 52, score: 4 },
+  { talentAuthUserId: "seed_user_047", jobIndex: 52, score: 4 },
+  { talentAuthUserId: "seed_user_048", jobIndex: 52, score: 4 },
+  { talentAuthUserId: "seed_user_049", jobIndex: 52, score: 4 },
+  { talentAuthUserId: "seed_user_050", jobIndex: 52, score: 4 },
+  { talentAuthUserId: "seed_user_043", jobIndex: 52, score: 2 },
+  { talentAuthUserId: "seed_user_045", jobIndex: 52, score: 2 },
+  { talentAuthUserId: "seed_user_049", jobIndex: 53, score: 7 },
+  { talentAuthUserId: "seed_user_041", jobIndex: 53, score: 5 },
+  { talentAuthUserId: "seed_user_047", jobIndex: 53, score: 5 },
+  { talentAuthUserId: "seed_user_048", jobIndex: 53, score: 5 },
+  { talentAuthUserId: "seed_user_042", jobIndex: 53, score: 4 },
+  { talentAuthUserId: "seed_user_045", jobIndex: 53, score: 4 },
+  { talentAuthUserId: "seed_user_050", jobIndex: 53, score: 4 },
+  { talentAuthUserId: "seed_user_043", jobIndex: 53, score: 3 },
+  { talentAuthUserId: "seed_user_046", jobIndex: 53, score: 3 },
+  { talentAuthUserId: "seed_user_044", jobIndex: 53, score: 2 },
+  { talentAuthUserId: "seed_user_043", jobIndex: 54, score: 7 },
+  { talentAuthUserId: "seed_user_049", jobIndex: 54, score: 7 },
+  { talentAuthUserId: "seed_user_041", jobIndex: 54, score: 6 },
+  { talentAuthUserId: "seed_user_044", jobIndex: 54, score: 5 },
+  { talentAuthUserId: "seed_user_047", jobIndex: 54, score: 5 },
+  { talentAuthUserId: "seed_user_012", jobIndex: 54, score: 4 },
+  { talentAuthUserId: "seed_user_048", jobIndex: 54, score: 4 },
+  { talentAuthUserId: "seed_user_011", jobIndex: 54, score: 2 },
+  { talentAuthUserId: "seed_user_046", jobIndex: 54, score: 2 },
+  { talentAuthUserId: "seed_user_044", jobIndex: 55, score: 9 },
+  { talentAuthUserId: "seed_user_047", jobIndex: 55, score: 8 },
+  { talentAuthUserId: "seed_user_043", jobIndex: 55, score: 6 },
+  { talentAuthUserId: "seed_user_049", jobIndex: 55, score: 6 },
+  { talentAuthUserId: "seed_user_041", jobIndex: 55, score: 5 },
+  { talentAuthUserId: "seed_user_012", jobIndex: 55, score: 4 },
+  { talentAuthUserId: "seed_user_045", jobIndex: 55, score: 4 },
+  { talentAuthUserId: "seed_user_046", jobIndex: 55, score: 4 },
+  { talentAuthUserId: "seed_user_048", jobIndex: 55, score: 4 },
+  { talentAuthUserId: "seed_user_050", jobIndex: 55, score: 3 },
+];
 
 // ランダムID生成（Better Auth互換）
 const generateId = (length: number = 32): string => {
@@ -1611,136 +2166,18 @@ export const createSeedData = async () => {
       }
     }
 
-    const talentsForMatching: TalentForMatching[] = seedData.talents.map((talent, i) => {
-      const matchingUser = seedData.authUsers.find(u => 
-        u.id === talent.auth_user_id || u.email === talent.メールアドレス
-      );
-      
-      let userId: string | undefined;
-      if (matchingUser) {
-        if (matchingUser.id && existingIdsForMapping.has(matchingUser.id)) {
-          userId = existingIdsForMapping.get(matchingUser.id);
-        } else if (existingEmailsForMapping.has(matchingUser.email)) {
-          userId = existingEmailsForMapping.get(matchingUser.email);
-        } else {
-          const userIndex = seedData.authUsers.indexOf(matchingUser);
-          userId = authUserIds[userIndex];
-        }
-      } else {
-        userId = talent.auth_user_id;
-      }
-
-      return {
-        id: talentRecordIds[i],
-        authUserId: userId || talent.auth_user_id,
-        name: talent.氏名,
-        positions: [], // シードデータには職種の選択肢がない場合がある
-        skills: talent.言語_ツール,
-        experience: talent.主な実績_PR_職務経歴,
-        desiredRate: String(talent.希望単価_月額),
-      };
-    });
-
-    // 全案件に対してマッチングスコアを計算し、推薦レコードを作成
+    // 事前計算済みデータから推薦レコードを作成（calculateTopMatches呼び出し不要）
     const allRecommendationRecords: any[] = [];
 
-    for (let jobIndex = 0; jobIndex < seedData.jobs.length; jobIndex++) {
-      const job = seedData.jobs[jobIndex];
-      const jobId = jobIds[jobIndex];
+    for (const rec of PRECOMPUTED_RECOMMENDATIONS) {
+      const jobId = jobIds[rec.jobIndex];
+      if (!jobId) continue;
 
-      // マッチング計算用の案件データを準備
-      const jobForMatching: JobForMatching = {
-        id: jobId,
-        jobId: jobId,
-        title: job.案件名,
-        positions: job.職種_ポジション || [],
-        skills: job.スキル || [],
-      };
-
-      // 特定案件（大手ECサイトのフロントエンド刷新案件）は
-      // 山田太郎 → 田中花子 の順になるようにスコアを再調整する
-      const isTargetFrontendJob =
-        job.案件名 === "大手ECサイトのフロントエンド刷新案件";
-
-      if (isTargetFrontendJob) {
-        // すべての人材を対象にスコアを計算（件数分取得）
-        const allMatches = calculateTopMatches(
-          talentsForMatching,
-          jobForMatching,
-          talentsForMatching.length
-        );
-
-        const yamadaAuthUserId = "seed_user_001";
-        const hanakoAuthUserIdForRec = "seed_user_002";
-
-        const yamadaMatch = allMatches.find(
-          (m) => m.talentAuthUserId === yamadaAuthUserId
-        );
-        const hanakoMatch = allMatches.find(
-          (m) => m.talentAuthUserId === hanakoAuthUserIdForRec
-        );
-
-        const otherMatches = allMatches.filter(
-          (m) =>
-            m.talentAuthUserId !== yamadaAuthUserId &&
-            m.talentAuthUserId !== hanakoAuthUserIdForRec
-        );
-
-        const reorderedMatches: typeof allMatches = [];
-
-        if (yamadaMatch) {
-          reorderedMatches.push({
-            ...yamadaMatch,
-            // 山田太郎を1位に固定（十分高いスコアにする）
-            score: Math.max(yamadaMatch.score, 100),
-          });
-        }
-
-        if (hanakoMatch) {
-          const yamadaScore = reorderedMatches[0]?.score ?? 100;
-          reorderedMatches.push({
-            ...hanakoMatch,
-            // 田中花子は2位に来るように、山田より少し低いスコアを付与
-            score: Math.max(
-              hanakoMatch.score,
-              yamadaScore > 0 ? yamadaScore - 1 : 95
-            ),
-          });
-        }
-
-        // 残りは元のスコア順のまま後ろに付ける
-        reorderedMatches.push(...otherMatches);
-
-        const finalMatches = reorderedMatches.slice(0, 10);
-
-        for (const match of finalMatches) {
-          if (!match.talentAuthUserId) continue;
-          // 山田太郎は recommendationsForYamada で別途管理するため除外
-          if (match.talentAuthUserId === "seed_user_001") continue;
-
-          allRecommendationRecords.push({
-            [RECOMMENDATION_FIELDS.TALENT_ID]: { value: match.talentAuthUserId },
-            [RECOMMENDATION_FIELDS.JOB_ID]: { value: jobId },
-            [RECOMMENDATION_FIELDS.SCORE]: { value: match.score },
-          });
-        }
-      } else {
-        // その他の案件は通常通り上位10件を計算
-        const topMatches = calculateTopMatches(talentsForMatching, jobForMatching, 10);
-
-        for (const match of topMatches) {
-          if (!match.talentAuthUserId) continue;
-          // 山田太郎は recommendationsForYamada で別途管理するため除外
-          if (match.talentAuthUserId === "seed_user_001") continue;
-
-          allRecommendationRecords.push({
-            [RECOMMENDATION_FIELDS.TALENT_ID]: { value: match.talentAuthUserId },
-            [RECOMMENDATION_FIELDS.JOB_ID]: { value: jobId },
-            [RECOMMENDATION_FIELDS.SCORE]: { value: match.score },
-          });
-        }
-      }
-
+      allRecommendationRecords.push({
+        [RECOMMENDATION_FIELDS.TALENT_ID]: { value: rec.talentAuthUserId },
+        [RECOMMENDATION_FIELDS.JOB_ID]: { value: jobId },
+        [RECOMMENDATION_FIELDS.SCORE]: { value: rec.score },
+      });
     }
 
     // 推薦レコードを一括作成（100件ずつバッチ処理）
