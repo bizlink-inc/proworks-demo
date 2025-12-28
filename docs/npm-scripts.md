@@ -9,6 +9,7 @@
 - [シードデータ](#シードデータ)
 - [RDS アクセス管理](#rds-アクセス管理)
 - [Kintone 連携](#kintone-連携)
+- [バッチ処理](#バッチ処理)
 - [テスト](#テスト)
 - [キャッシュ管理](#キャッシュ管理)
 - [App Runner 制御](#app-runner-制御)
@@ -82,6 +83,45 @@ Kintone アプリのフィールド管理を行います。
 | `npm run kintone:fields:add` | Kintone フィールドを追加 | `scripts/kintone-fields/manage-fields.sh add` |
 | `npm run kintone:fields:deploy` | Kintone フィールドをデプロイ | `scripts/kintone-fields/manage-fields.sh deploy` |
 | `npm run kintone:fields:status` | Kintone フィールドの状態確認 | `scripts/kintone-fields/manage-fields.sh status` |
+
+---
+
+## バッチ処理
+
+推薦データの更新バッチ処理を実行します。
+
+| コマンド | 説明 |
+|---------|------|
+| `npm run recommend:batch` | 推薦データを更新（DB設定の閾値を使用） |
+| `npm run recommend:batch:dry` | ドライラン（確認のみ） |
+| `npm run recommend:reset` | 推薦データを全削除してシードデータから再作成 |
+
+### 使用例
+
+```bash
+# DB設定の閾値で実行
+npm run recommend:batch
+
+# ドライラン
+npm run recommend:batch:dry
+
+# 閾値を指定して実行
+npm run recommend:batch -- -t 5
+
+# 閾値を指定してドライラン
+npm run recommend:batch:dry -- -t 3
+```
+
+### オプション
+
+| オプション | 説明 |
+|-----------|------|
+| `-t, --threshold` | スコア閾値（未指定時はDBから取得） |
+| `-v, --verbose` | 詳細ログ |
+
+### 閾値の設定
+
+管理者ダッシュボード（`/admin/dashboard`）の「バッチ設定」から変更可能。
 
 ---
 

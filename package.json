@@ -44,7 +44,11 @@
     "apprunner:stop:dev": "npx tsx scripts/apprunner-control.ts stop dev",
     "apprunner:stop:prod": "npx tsx scripts/apprunner-control.ts stop prod",
     "apprunner:status:dev": "npx tsx scripts/apprunner-control.ts status dev",
-    "apprunner:status:prod": "npx tsx scripts/apprunner-control.ts status prod"
+    "apprunner:status:prod": "npx tsx scripts/apprunner-control.ts status prod",
+    "recommend:batch": "npx tsx scripts/refresh-recommendations.ts",
+    "recommend:batch:dry": "npx tsx scripts/refresh-recommendations.ts --dry-run",
+    "recommend:reset": "npx tsx scripts/reset-recommendations.ts",
+    "test:webhook": "npx tsx scripts/test-job-webhook.ts"
   },
   "dependencies": {
     "@aws-sdk/client-ses": "^3.700.0",
