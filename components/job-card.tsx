@@ -190,7 +190,7 @@ export function JobCard({ job, onViewDetail, showApplicationStatus = false, isEn
 
   return (
     <div
-      className="bg-white rounded-[4px] transition-shadow hover:shadow-md relative flex flex-col h-full"
+      className="bg-white rounded-[4px] transition-shadow hover:shadow-md relative flex flex-col h-full @container"
       style={{
         border: statusStyle?.borderColor ? `2px solid ${statusStyle.borderColor}` : "1px solid #d5e5f0",
         boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
@@ -316,10 +316,12 @@ export function JobCard({ job, onViewDetail, showApplicationStatus = false, isEn
             })(),
           }}
         >
-          {features.map((feature) => (
+          {features.map((feature, index) => (
             <span
               key={feature}
-              className="px-3 py-1 text-xs font-semibold rounded flex-shrink-0 whitespace-nowrap"
+              className={`px-3 py-1 text-xs font-semibold rounded flex-shrink-0 whitespace-nowrap ${
+                index === 2 ? "hidden @[340px]:inline-flex" : ""
+              }`}
               style={{
                 border: "1px solid #686868",
                 backgroundColor: "#ffffff",
