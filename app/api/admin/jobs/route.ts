@@ -18,6 +18,7 @@ type JobRecord = {
   勤務地エリア: { value: string };
   掲載単価: { value: string };
   概要: { value: string };
+  掲載用ステータス: { value: string };  // ラジオボタン: "有" or "無"
 };
 
 export const GET = async () => {
@@ -47,6 +48,7 @@ export const GET = async () => {
         JOB_FIELDS.LOCATION,
         JOB_FIELDS.RATE,
         JOB_FIELDS.DESCRIPTION,
+        JOB_FIELDS.LISTING_STATUS,
       ],
     });
 
@@ -61,6 +63,7 @@ export const GET = async () => {
       location: record.勤務地エリア?.value || "",
       rate: record.掲載単価?.value || "",
       description: record.概要?.value || "",
+      listingStatus: record.掲載用ステータス?.value || "有",  // デフォルト"有"（AIマッチング対象）
     }));
 
     return NextResponse.json({ jobs, total: jobs.length });

@@ -31,6 +31,7 @@ type Job = {
   location: string;
   rate: string;
   description: string;
+  listingStatus: string;  // "有" or "無"（AIマッチング対象可否）
 };
 
 type Talent = {
@@ -638,18 +639,21 @@ const AdminDashboardPage = () => {
               ) : (
                 filteredJobs.map((job) => {
                   const isSelected = selectedJob?.id === job.id;
+                  const isDisabled = job.listingStatus === "無";
                   return (
                     <div
                       key={job.id}
-                      onClick={() => handleSelectJob(job)}
-                      className={`p-4 rounded-xl cursor-pointer transition-all duration-200 ${
-                        isSelected
-                          ? "bg-[var(--pw-bg-light-blue)] border-2 border-[var(--pw-button-primary)] shadow-md"
-                          : "bg-white border border-[var(--pw-border-lighter)] hover:border-[var(--pw-button-primary)] hover:shadow-sm"
+                      onClick={() => !isDisabled && handleSelectJob(job)}
+                      className={`p-4 rounded-xl transition-all duration-200 ${
+                        isDisabled
+                          ? "opacity-50 cursor-not-allowed bg-gray-100 border border-gray-200"
+                          : isSelected
+                          ? "bg-[var(--pw-bg-light-blue)] border-2 border-[var(--pw-button-primary)] shadow-md cursor-pointer"
+                          : "bg-white border border-[var(--pw-border-lighter)] hover:border-[var(--pw-button-primary)] hover:shadow-sm cursor-pointer"
                       }`}
                     >
                       <div className="flex items-start gap-3">
-                        {isSelected && (
+                        {isSelected && !isDisabled && (
                           <div className="w-5 h-5 bg-[var(--pw-button-primary)] rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
                             <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
                               <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
@@ -657,12 +661,19 @@ const AdminDashboardPage = () => {
                           </div>
                         )}
                         <div className="flex-1 min-w-0">
-                          <h3 className={`font-semibold text-sm mb-1.5 line-clamp-2 ${isSelected ? "text-[var(--pw-button-dark)]" : "text-[var(--pw-text-primary)]"}`}>
-                            {job.title}
-                          </h3>
+                          <div className="flex items-center gap-2 mb-1.5">
+                            <h3 className={`font-semibold text-sm line-clamp-2 ${isDisabled ? "text-gray-500" : isSelected ? "text-[var(--pw-button-dark)]" : "text-[var(--pw-text-primary)]"}`}>
+                              {job.title}
+                            </h3>
+                            {isDisabled && (
+                              <span className="text-[10px] px-2 py-0.5 bg-gray-400 text-white rounded-full flex-shrink-0">
+                                対象外
+                              </span>
+                            )}
+                          </div>
                           <div className="flex flex-wrap gap-1 mb-2">
                             {job.positions.slice(0, 2).map((pos, i) => (
-                              <span key={i} className="text-[10px] px-2 py-0.5 bg-[var(--pw-bg-sidebar)] text-white rounded-full">
+                              <span key={i} className={`text-[10px] px-2 py-0.5 rounded-full ${isDisabled ? "bg-gray-300 text-gray-600" : "bg-[var(--pw-bg-sidebar)] text-white"}`}>
                                 {pos}
                               </span>
                             ))}
@@ -680,7 +691,7 @@ const AdminDashboardPage = () => {
                               {job.location || "未設定"}
                             </span>
                             {job.rate && (
-                              <span className="font-medium text-[var(--pw-button-primary)]">
+                              <span className={`font-medium ${isDisabled ? "text-gray-500" : "text-[var(--pw-button-primary)]"}`}>
                                 {job.rate}
                               </span>
                             )}

@@ -61,6 +61,7 @@ export const JOB_FIELDS = {
   CONTRACT_TYPE: '契約形態', // ドロップダウン: 契約形態
   REMOTE: 'リモート可否', // ドロップダウン: リモート可否
   FOREIGN_NATIONALITY: '外国籍', // ドロップダウン: 外国籍
+  LISTING_STATUS: '掲載用ステータス', // ラジオボタン: 有 / 無（AIマッチング対象可否）
 } as const;
 
 // 応募履歴DB（Application）のフィールドコード
