@@ -851,7 +851,7 @@ const AdminDashboardPage = () => {
 
                     return (
                       <div
-                        key={talent.id}
+                        key={talent.authUserId}
                         className={`rounded-xl border-2 transition-all duration-300 relative self-start ${
                           isStaffRecommend
                             ? "border-[#f59e0b] bg-[#fffbeb] shadow-md"

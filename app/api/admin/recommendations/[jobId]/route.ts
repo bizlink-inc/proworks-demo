@@ -160,9 +160,14 @@ export const GET = async (
       })
       .filter((t): t is NonNullable<typeof t> => t !== null);
 
+    // 6. authUserIdで重複排除（同じ人材が複数回表示されないようにする）
+    const uniqueTalents = Array.from(
+      new Map(matchedTalents.map((t) => [t.authUserId, t])).values()
+    );
+
     return NextResponse.json({
-      talents: matchedTalents,
-      total: matchedTalents.length,
+      talents: uniqueTalents,
+      total: uniqueTalents.length,
     });
 
   } catch (error) {
