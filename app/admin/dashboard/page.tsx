@@ -224,6 +224,8 @@ const AdminDashboardPage = () => {
   const [sortBy, setSortBy] = useState<SortOption>("score");
   const [expandedTalentId, setExpandedTalentId] = useState<string | null>(null);
   const [jobSearchQuery, setJobSearchQuery] = useState("");
+  const [showActiveJobs, setShowActiveJobs] = useState(true);    // 実案件（掲載用ステータス「有」）を表示
+  const [showInactiveJobs, setShowInactiveJobs] = useState(true); // 非実案件（掲載用ステータス「無」）を表示
   
   // 担当者おすすめ関連（個別の人材IDごとに処理中状態を管理）
   const [settingRecommendIds, setSettingRecommendIds] = useState<Set<string>>(new Set());
@@ -276,14 +278,25 @@ const AdminDashboardPage = () => {
 
   // フィルタリングされた案件
   const filteredJobs = useMemo(() => {
-    if (!jobSearchQuery) return jobs;
-    const query = jobSearchQuery.toLowerCase();
-    return jobs.filter(job => 
-      job.title.toLowerCase().includes(query) ||
-      job.positions.some(p => p.toLowerCase().includes(query)) ||
-      job.skills.some(s => s.toLowerCase().includes(query))
-    );
-  }, [jobs, jobSearchQuery]);
+    return jobs.filter(job => {
+      // 実案件/非実案件フィルター
+      const isActive = job.listingStatus !== "無";
+      if (isActive && !showActiveJobs) return false;
+      if (!isActive && !showInactiveJobs) return false;
+
+      // フリーワード検索
+      if (jobSearchQuery) {
+        const query = jobSearchQuery.toLowerCase();
+        const matchesSearch =
+          job.title.toLowerCase().includes(query) ||
+          job.positions.some(p => p.toLowerCase().includes(query)) ||
+          job.skills.some(s => s.toLowerCase().includes(query));
+        if (!matchesSearch) return false;
+      }
+
+      return true;
+    });
+  }, [jobs, jobSearchQuery, showActiveJobs, showInactiveJobs]);
 
   // ソートされた人材リスト
   const sortedTalents = useMemo(() => {
@@ -621,6 +634,27 @@ const AdminDashboardPage = () => {
                 <svg className="w-4 h-4 text-[var(--pw-text-light-gray)] absolute left-3 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
+              </div>
+              {/* 実案件/非実案件フィルター */}
+              <div className="flex items-center gap-4 mt-3">
+                <label className="flex items-center gap-1.5 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={showActiveJobs}
+                    onChange={(e) => setShowActiveJobs(e.target.checked)}
+                    className="w-4 h-4 rounded border-2 border-[var(--pw-border-gray)] bg-white accent-[var(--pw-button-primary)] cursor-pointer"
+                  />
+                  <span className="text-sm font-medium text-[var(--pw-text-primary)]">実案件</span>
+                </label>
+                <label className="flex items-center gap-1.5 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={showInactiveJobs}
+                    onChange={(e) => setShowInactiveJobs(e.target.checked)}
+                    className="w-4 h-4 rounded border-2 border-[var(--pw-border-gray)] bg-white accent-[var(--pw-button-primary)] cursor-pointer"
+                  />
+                  <span className="text-sm font-medium text-[var(--pw-text-primary)]">非実案件</span>
+                </label>
               </div>
             </div>
 
