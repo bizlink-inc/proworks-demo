@@ -44,17 +44,19 @@ export const createSeedData1 = (generateDevCreatedAt: (daysAgo: number) => strin
     言語_ツール: "JavaScript, TypeScript, React, Next.js, Node.js, Python, Django",
     主な実績_PR_職務経歴: `【経歴概要】
 Web系エンジニアとして5年の実務経験があります。
-フロントエンド・バックエンドの両方を経験し、特にReact/Next.jsを使ったモダンな開発が得意です。
+JavaScript/TypeScript/Reactを中心としたフロントエンド開発が得意です。
+Python/Djangoを使ったバックエンドAPI開発経験もあります。
 
 【主なプロジェクト】
-・ECサイトのリニューアル（Next.js + TypeScript）
-・社内管理システムの新規開発（React + Django REST Framework）
-・レガシーシステムのモダナイゼーション
+・ECサイトリニューアル: JavaScript/Reactでモダン化
+・管理システム開発: TypeScript/Reactでフルリニューアル
+・APIシステム: JavaScript/TypeScriptでバックエンド構築
+・金融系API開発: Python/Djangoで堅牢なAPI設計・実装
 
 【アピールポイント】
-・要件定義から運用まで一貫して対応可能
-・チーム開発の経験豊富
-・新しい技術のキャッチアップが早い`,
+・JavaScript/TypeScript/React開発5年
+・Python/Django開発2年
+・チーム開発の経験豊富`,
     ポートフォリオリンク: "https://github.com/yamada-taro",
     稼働可能時期: "2025-12-01",
     希望単価_月額: 70,
@@ -80,21 +82,24 @@ Web系エンジニアとして5年の実務経験があります。
     生年月日: "1992-05-20",
     郵便番号: "160-0001",
     住所: "東京都新宿区西新宿1-1-1",
-    言語_ツール: "JavaScript, TypeScript, React, Next.js, Node.js, Python, Django, AWS",
+    言語_ツール: "JavaScript, TypeScript, React, Next.js, Node.js, AWS, Python, Django, PostgreSQL, React Native, Firebase",
     主な実績_PR_職務経歴: `【経歴概要】
 フルスタックエンジニアとして6年の実務経験があります。
-フロントエンドからバックエンド、インフラまで幅広く対応可能です。
-特にReact/Next.jsとAWSを使った開発が得意です。
+JavaScript/React/Node.js/AWSを中心とした開発が得意です。
+Python/Django/PostgreSQLでのバックエンドAPI開発、React Native/Firebaseでのモバイル開発経験もあります。
 
 【主なプロジェクト】
-・スタートアップでの新規サービス立ち上げ（Next.js + Node.js + AWS）
-・ECプラットフォームのフルスタック開発
-・サーバーレスアーキテクチャへの移行プロジェクト
+・新規サービス: JavaScript/React/Node.jsで構築
+・ECプラットフォーム: React/Node.js/AWSでフルスタック開発
+・サーバーレス移行: JavaScript/Node.js/AWSアーキテクチャ
+・金融系API開発: Python/Django/PostgreSQLでセキュアなAPI構築
+・ヘルスケアアプリ: React Native/Firebaseでクロスプラットフォーム開発
 
 【アピールポイント】
-・0→1のサービス立ち上げ経験豊富
-・AWSを使ったインフラ構築・運用経験
-・技術選定からデプロイまで一貫して対応可能`,
+・JavaScript/React/Node.js/AWS開発6年
+・Python/Django/PostgreSQL開発3年
+・React Native/Firebase開発2年
+・技術選定からデプロイまで一貫対応`,
     ポートフォリオリンク: "https://github.com/hanako-tanaka",
     稼働可能時期: "2025-12-01",
     希望単価_月額: 75,
@@ -487,57 +492,10 @@ SOC（セキュリティオペレーションセンター）での監視・分�
     { auth_user_id: "seed_user_001", jobIndex: 7, 対応状況: "案件参画", 作成日時_開発環境: generateDevCreatedAt(120) }, // 約4ヶ月前
   ],
 
-  // 推薦データ（表示順確認用）
-  // ※ jobIndex 0-4はすべて応募済みなので案件一覧には表示されない
-  // ※ 応募済み案件の推薦データも作成（表示順の確認用）
-  recommendations: [
-    // 応募済み案件（案件一覧には表示されない）
-    { talentIndex: 0, jobIndex: 0, score: 85 },  // 応募済み
-    { talentIndex: 0, jobIndex: 1, score: 70 },  // 面談調整中
-    { talentIndex: 0, jobIndex: 2, score: 90 },  // 面談予定
-    { talentIndex: 0, jobIndex: 3, score: 60 },  // 案件参画（案件決定）
-    { talentIndex: 0, jobIndex: 4, score: 65 },  // 見送り（募集終了）
-  ],
-
-  // 山田太郎（seed_user_001）用の推薦データ
-  // 案件一覧に表示される案件（応募していない案件）
-  // 担当者おすすめやAIマッチのバッジ表示確認用
-  // ※通知数を抑えるため3件に限定
-  recommendationsForYamada: [
-    // seedData3の案件に対して推薦データを作成（jobIndexは統合後のインデックス）
-    // AIマッチのみ
-    { talentIndex: 0, jobIndex: 8, score: 95, staffRecommend: false, aiMatched: true },
-    { talentIndex: 0, jobIndex: 9, score: 88, staffRecommend: false, aiMatched: true },
-    // 担当者おすすめ + AIマッチ（1件のみ）
-    { talentIndex: 0, jobIndex: 10, score: 85, staffRecommend: true, aiMatched: true },
-  ],
-
-  // 田中花子（seed_user_002）用の推薦データ
-  // 案件一覧に表示される案件（応募していない案件）
-  // 3つのバッジが同時に表示される案件を含む
-  recommendationsForHanako: [
-    // jobIndex 0: 大手ECサイトのフロントエンド刷新案件
-    // 担当者おすすめ + AIマッチ + New（3つ全部）
-    { talentIndex: 1, jobIndex: 0, score: 95, staffRecommend: true, aiMatched: true },
-
-    // jobIndex 1: 金融系WebアプリケーションAPI開発
-    // 担当者おすすめ + AIマッチ
-    { talentIndex: 1, jobIndex: 1, score: 80, staffRecommend: true, aiMatched: true },
-
-    // jobIndex 2: スタートアップ向け新規サービス開発
-    // AIマッチ + New
-    { talentIndex: 1, jobIndex: 2, score: 90, staffRecommend: false, aiMatched: true },
-
-    // jobIndex 3: ヘルスケアアプリ開発案件
-    // AIマッチ
-    { talentIndex: 1, jobIndex: 3, score: 70, staffRecommend: false, aiMatched: true },
-
-    // jobIndex 4: データ基盤構築・運用案件
-    // AIマッチ
-    { talentIndex: 1, jobIndex: 4, score: 60, staffRecommend: false, aiMatched: true },
-
-    // jobIndex 5: 大規模データから追加（seedData3の最初の案件を参照）
-    // AIマッチ
-    { talentIndex: 1, jobIndex: 5, score: 75, staffRecommend: false, aiMatched: true },
-  ],
+  // 全ての推薦は動的計算に任せる（ハードコードなし）
+  // スコアは人材データ（言語_ツール + 経歴）と案件スキルから自動計算
+  // これによりシード作成とバッチ処理で同じ結果になる
+  recommendations: [],
+  recommendationsForYamada: [],
+  recommendationsForHanako: [],
 });

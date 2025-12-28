@@ -7,6 +7,7 @@
 // 人材DB（Talent）のフィールドコード
 export const TALENT_FIELDS = {
   ID: '$id',
+  UPDATED_AT: '更新日時',  // システムフィールド（差分計算用）
   AUTH_USER_ID: 'auth_user_id',
   LAST_NAME: '姓',
   FIRST_NAME: '名',
@@ -39,6 +40,7 @@ export const TALENT_FIELDS = {
 // 案件DB（Job）のフィールドコード
 export const JOB_FIELDS = {
   ID: '$id',
+  UPDATED_AT: '更新日時',  // システムフィールド（差分計算用）
   JOB_ID: '案件ID', // ルックアップ参照用のキーフィールド
   TITLE: '案件名',
   FEATURES: '案件特徴',

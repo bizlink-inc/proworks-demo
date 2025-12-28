@@ -51,6 +51,42 @@ const KATAKANA_MAP: Record<string, string> = {
   "進": "ススム", "守": "マモル", "武": "タケシ", "清": "キヨシ", "昭": "アキラ"
 };
 
+/**
+ * Top3案件（デモ表示用）のスキル要件
+ * これらの案件に対して十分な推薦候補を確保するため、専用の人材を生成する
+ */
+const TOP3_JOB_SKILLS = {
+  // Job 1: 大手ECサイトのフロントエンド刷新案件
+  ecFrontend: {
+    required: ["JavaScript", "React", "TypeScript"],
+    position: "フロントエンドエンジニア",
+    category: "frontend" as const
+  },
+  // Job 2: 金融系WebアプリケーションAPI開発
+  financeApi: {
+    required: ["Python", "Django", "PostgreSQL"],
+    position: "バックエンドエンジニア",
+    category: "backend" as const
+  },
+  // Job 3: スタートアップ向け新規サービス開発
+  startupFullstack: {
+    required: ["JavaScript", "Node.js", "React", "AWS"],
+    position: "フロントエンドエンジニア",
+    category: "frontend" as const
+  }
+};
+
+/**
+ * Top3案件専用人材のスコアレベル設定（1案件あたり5人）
+ */
+const TOP3_SCORE_CONFIGS = [
+  { skillCount: 3, experienceKeywordCount: 2 }, // 8-10点
+  { skillCount: 2, experienceKeywordCount: 1 }, // 6-7点
+  { skillCount: 2, experienceKeywordCount: 0 }, // 5点
+  { skillCount: 1, experienceKeywordCount: 1 }, // 4点
+  { skillCount: 1, experienceKeywordCount: 0 }, // 3点
+];
+
 // カテゴリ別スキルセット
 const SKILL_SETS = {
   frontend: {
@@ -107,36 +143,86 @@ const generateDevCreatedAt = (daysAgo: number): string => {
   return targetDate.toISOString().replace(/\.\d{3}Z$/, 'Z');
 };
 
+/**
+ * スコアレベル別の人材タイプ定義
+ *
+ * スコア計算: 案件スキル(1-4個) × 出現回数(スキル1回 + 経歴N回) = 最終スコア
+ *
+ * 例: 案件がReact, TypeScript, JavaScriptを要求（3スキル）
+ *   - 人材の言語_ツールに3つ全部あれば +3点
+ *   - 経歴に各スキル1回ずつあれば +3点
+ *   - 合計6点
+ *
+ * 逓減型分布を実現するため、スキル数と経歴言及を調整:
+ * - level-8: スキル4個 + 経歴2回 → 6-10点
+ * - level-6: スキル3個 + 経歴1回 → 4-6点
+ * - level-5: スキル3個 + 経歴0回 → 3-5点
+ * - level-4: スキル2個 + 経歴0回 → 2-4点
+ * - level-3: スキル2個 + 汎用1個 → 2-3点
+ */
+type ScoreLevel = "level-8" | "level-6" | "level-5" | "level-4" | "level-3";
+
+const SCORE_LEVEL_CONFIG: Record<ScoreLevel, { skillCount: number; experienceKeywordCount: number; crossCategorySkills: number }> = {
+  "level-8": { skillCount: 4, experienceKeywordCount: 2, crossCategorySkills: 0 },  // 6-10点
+  "level-6": { skillCount: 3, experienceKeywordCount: 1, crossCategorySkills: 0 },  // 4-6点
+  "level-5": { skillCount: 3, experienceKeywordCount: 0, crossCategorySkills: 0 },  // 3-5点
+  "level-4": { skillCount: 2, experienceKeywordCount: 0, crossCategorySkills: 0 },  // 2-4点
+  "level-3": { skillCount: 2, experienceKeywordCount: 0, crossCategorySkills: 1 },  // 2-3点
+};
+
+// 各カテゴリ内での人材のスコアレベル分布（10人ずつ）
+// 逓減型分布: 3-4点が最多、スコアが上がるほど人数減
+const TALENT_SCORE_LEVELS: ScoreLevel[] = [
+  "level-8",                        // 1人: 6-10点 (10%)
+  "level-6",                        // 1人: 4-6点 (10%)
+  "level-5", "level-5",             // 2人: 3-5点 (20%)
+  "level-4", "level-4", "level-4",  // 3人: 2-4点 (30%)
+  "level-3", "level-3", "level-3",  // 3人: 2-3点 (30%)
+];
+
 // 人材データ生成
 const generateTalents = () => {
   const talents: any[] = [];
   const categories = ["frontend", "backend", "infrastructure", "mobile", "data"] as const;
-  
-  let index = 1;
-  
+
+  // 1. Top3案件専用の人材を先に生成（15人: seed_user_003〜017）
+  // ※ seed_user_001, 002 は yamada用に予約済み
+  const top3Talents = generateTop3JobTalents(3);
+  talents.push(...top3Talents);
+
+  // 2. 残りの35人をカテゴリ別に生成（各カテゴリ7人）
+  let index = 3 + top3Talents.length; // 18から開始
+
   for (const category of categories) {
     const skillSet = SKILL_SETS[category];
-    
-    for (let i = 0; i < 10; i++) {
+
+    // 各カテゴリ7人に減らす（合計35人）
+    for (let i = 0; i < 7; i++) {
+      const scoreLevel = TALENT_SCORE_LEVELS[i % TALENT_SCORE_LEVELS.length];
+      const config = SCORE_LEVEL_CONFIG[scoreLevel];
+
       const lastName = LAST_NAMES[(index - 1) % LAST_NAMES.length];
       const firstName = FIRST_NAMES[(index - 1) % FIRST_NAMES.length];
       const fullName = `${lastName} ${firstName}`;
       const email = `seed_talent_${String(index).padStart(3, "0")}@example.com`;
-      
-      // スキルセットをランダムに選択（メインスキル多め）
-      const mainSkills = randomPicks(skillSet.skills, 5 + Math.floor(Math.random() * 3));
-      const subSkills = randomPicks(skillSet.tools, 2 + Math.floor(Math.random() * 2));
+
+      // スコアレベルに応じてスキル数を調整
+      const mainSkills = skillSet.skills.slice(0, config.skillCount);
+      const subSkills = skillSet.tools.slice(0, Math.min(2, config.skillCount));
       const allSkills = [...mainSkills, ...subSkills];
-      
-      // 他カテゴリのスキルを少し混ぜる（バラツキ用）
-      const otherCategories = categories.filter(c => c !== category);
-      const otherCategory = randomPick(otherCategories);
-      const otherSkills = randomPicks(SKILL_SETS[otherCategory].skills, Math.floor(Math.random() * 2));
-      allSkills.push(...otherSkills);
-      
-      const experience = generateExperience(category, fullName, mainSkills);
+
+      // 他カテゴリのスキルを混ぜる（低スコア人材ほど多く）
+      if (config.crossCategorySkills > 0) {
+        const otherCategories = categories.filter(c => c !== category);
+        for (let j = 0; j < config.crossCategorySkills && j < otherCategories.length; j++) {
+          const otherSkills = SKILL_SETS[otherCategories[j]].skills.slice(0, 1);
+          allSkills.push(...otherSkills);
+        }
+      }
+
+      const experience = generateExperienceWithLevel(category, fullName, mainSkills, config.experienceKeywordCount);
       const desiredWork = generateDesiredWork(category, mainSkills);
-      
+
       talents.push({
         auth_user_id: `seed_user_${String(index).padStart(3, "0")}`,
         姓: lastName,
@@ -161,40 +247,76 @@ const generateTalents = () => {
         NG企業: "特になし",
         その他要望: randomPick(["リモート中心希望", "フレックス希望", "長期案件希望", "スキルアップできる環境希望"]),
       });
-      
+
       index++;
     }
   }
-  
+
   return talents;
 };
 
-// 経歴生成
-const generateExperience = (category: string, name: string, skills: string[]): string => {
+// 経歴生成（スコアレベル対応版）
+// キーワード出現回数を厳密に制御してスコアを予測可能にする
+const generateExperienceWithLevel = (category: string, name: string, skills: string[], keywordCount: number): string => {
   const categoryTitles: Record<string, string> = {
-    frontend: "フロントエンドエンジニア",
-    backend: "バックエンドエンジニア",
-    infrastructure: "インフラエンジニア",
-    mobile: "モバイルエンジニア",
-    data: "データエンジニア"
+    frontend: "Web開発者",
+    backend: "サーバーサイド開発者",
+    infrastructure: "インフラ担当",
+    mobile: "アプリ開発者",
+    data: "データ担当"
   };
-  
+
   const years = 3 + Math.floor(Math.random() * 8);
-  const skillList = skills.slice(0, 5).join(", ");
-  
-  return `【経歴概要】
+
+  // keywordCount=0: 汎用的な経歴（スキル名を一切含まない）
+  if (keywordCount === 0 || skills.length === 0) {
+    return `【経歴概要】
 ${categoryTitles[category]}として${years}年の実務経験があります。
-${skillList}を中心とした開発が得意です。
+幅広い開発経験があります。
 
 【主なプロジェクト】
-・大手企業向けシステム開発プロジェクト（${skills[0]} + ${skills[1] || skills[0]}）
-・新規サービスの立ち上げプロジェクト
-・既存システムのリプレイス・モダナイゼーション
+・システム開発プロジェクトに参画
+・新規サービスの立ち上げに貢献
 
 【アピールポイント】
-・${skills[0]}を使った開発経験豊富
-・チーム開発・レビュー経験あり
-・要件定義から運用まで一貫して対応可能`;
+・チーム開発経験あり
+・コミュニケーション能力に自信あり`;
+  }
+
+  // keywordCount=1: スキルを1回だけ言及（経歴で+1点）
+  if (keywordCount === 1 && skills.length >= 1) {
+    return `【経歴概要】
+${categoryTitles[category]}として${years}年の実務経験があります。
+幅広い技術スタックでの開発が得意です。
+
+【主なプロジェクト】
+・${skills[0]}を使ったシステム開発
+
+【アピールポイント】
+・チーム開発経験あり
+・継続的な技術学習`;
+  }
+
+  // keywordCount>=2: スキルを2回言及（経歴で+2点程度）
+  // 2つの異なるスキルを各1回ずつ
+  const skill1 = skills[0];
+  const skill2 = skills[1] || skills[0];
+  return `【経歴概要】
+${categoryTitles[category]}として${years}年の実務経験があります。
+多様なプロジェクト経験があります。
+
+【主なプロジェクト】
+・${skill1}を活用したプロジェクト
+・${skill2}での開発経験
+
+【アピールポイント】
+・チーム開発経験豊富
+・技術選定への参画経験あり`;
+};
+
+// 経歴生成（後方互換用）
+const generateExperience = (category: string, name: string, skills: string[]): string => {
+  return generateExperienceWithLevel(category, name, skills, 2);
 };
 
 // 希望案件生成
@@ -204,6 +326,134 @@ const generateDesiredWork = (category: string, skills: string[]): string => {
 ・${skillList[1] || skillList[0]}での開発
 ・新規サービスの立ち上げ
 ・技術選定やアーキテクチャ設計`;
+};
+
+/**
+ * Top3案件専用の人材を生成（15人）
+ * 各案件に対して5段階のスコアレベルの人材を配置
+ */
+const generateTop3JobTalents = (startIndex: number): any[] => {
+  const talents: any[] = [];
+  const jobs = Object.values(TOP3_JOB_SKILLS);
+
+  for (let jobIdx = 0; jobIdx < jobs.length; jobIdx++) {
+    const job = jobs[jobIdx];
+
+    for (let levelIdx = 0; levelIdx < TOP3_SCORE_CONFIGS.length; levelIdx++) {
+      const config = TOP3_SCORE_CONFIGS[levelIdx];
+      const index = startIndex + jobIdx * TOP3_SCORE_CONFIGS.length + levelIdx;
+
+      const lastName = LAST_NAMES[(index - 1) % LAST_NAMES.length];
+      const firstName = FIRST_NAMES[(index - 1) % FIRST_NAMES.length];
+      const fullName = `${lastName} ${firstName}`;
+      const email = `seed_talent_${String(index).padStart(3, "0")}@example.com`;
+
+      // 案件の要求スキルからN個を選択
+      const selectedSkills = job.required.slice(0, config.skillCount);
+
+      // サブスキルは汎用的なもの（スコアに影響しない）
+      const subSkills = ["Git", "GitHub"];
+      const allSkills = [...selectedSkills, ...subSkills];
+
+      // 経歴テキスト生成（キーワード出現回数を厳密に制御）
+      const experience = generateTop3Experience(
+        job.category,
+        fullName,
+        selectedSkills,
+        config.experienceKeywordCount
+      );
+
+      const desiredWork = generateDesiredWork(job.category, selectedSkills);
+
+      talents.push({
+        auth_user_id: `seed_user_${String(index).padStart(3, "0")}`,
+        姓: lastName,
+        名: firstName,
+        氏名: fullName,
+        セイ: KATAKANA_MAP[lastName] || "カナ",
+        メイ: KATAKANA_MAP[firstName] || "カナ",
+        メールアドレス: email,
+        電話番号: `090-${String(1000 + index).slice(-4)}-${String(1000 + index * 2).slice(-4)}`,
+        生年月日: `${1985 + Math.floor(Math.random() * 10)}-${String(1 + Math.floor(Math.random() * 12)).padStart(2, "0")}-${String(1 + Math.floor(Math.random() * 28)).padStart(2, "0")}`,
+        郵便番号: `${100 + Math.floor(Math.random() * 100)}-${String(1000 + Math.floor(Math.random() * 9000)).slice(0, 4)}`,
+        住所: `${randomPick(LOCATIONS)}${1 + Math.floor(Math.random() * 10)}-${1 + Math.floor(Math.random() * 10)}-${1 + Math.floor(Math.random() * 10)}`,
+        言語_ツール: allSkills.join(", "),
+        主な実績_PR_職務経歴: experience,
+        ポートフォリオリンク: "",
+        稼働可能時期: `2025-12-${String(1 + Math.floor(Math.random() * 28)).padStart(2, "0")}`,
+        希望単価_月額: 60 + Math.floor(Math.random() * 30),
+        希望勤務日数: randomPick(["週4", "週5"]),
+        希望出社頻度: randomPick(["週1", "週2", "週3", "なし"]),
+        希望勤務スタイル: randomPicks(["リモート", "ハイブリッド", "常駐"], 1 + Math.floor(Math.random() * 2)),
+        希望案件_作業内容: desiredWork,
+        NG企業: "特になし",
+        その他要望: randomPick(["リモート中心希望", "フレックス希望", "長期案件希望", "スキルアップできる環境希望"]),
+      });
+    }
+  }
+
+  return talents;
+};
+
+/**
+ * Top3案件専用の経歴テキスト生成
+ * キーワード出現回数を厳密に制御してスコアを予測可能にする
+ */
+const generateTop3Experience = (category: string, name: string, skills: string[], keywordCount: number): string => {
+  const categoryTitles: Record<string, string> = {
+    frontend: "フロントエンドエンジニア",
+    backend: "バックエンドエンジニア",
+    infrastructure: "インフラエンジニア",
+    mobile: "アプリエンジニア",
+    data: "データエンジニア"
+  };
+
+  const years = 3 + Math.floor(Math.random() * 8);
+  const title = categoryTitles[category] || "エンジニア";
+
+  // keywordCount=0: スキル名を一切含まない汎用経歴
+  if (keywordCount === 0 || skills.length === 0) {
+    return `【経歴概要】
+${title}として${years}年の実務経験があります。
+Webシステム開発に従事してきました。
+
+【主なプロジェクト】
+・業務システムの開発保守
+・新規サービスの立ち上げ支援
+
+【アピールポイント】
+・チーム開発経験あり
+・コミュニケーション能力に自信あり`;
+  }
+
+  // keywordCount=1: 1つのスキルを1回だけ言及
+  if (keywordCount === 1 && skills.length >= 1) {
+    return `【経歴概要】
+${title}として${years}年の実務経験があります。
+幅広い技術での開発が得意です。
+
+【主なプロジェクト】
+・${skills[0]}を使用したシステム開発
+
+【アピールポイント】
+・チーム開発経験あり
+・継続的な技術学習`;
+  }
+
+  // keywordCount>=2: 2つの異なるスキルを各1回ずつ言及
+  const skill1 = skills[0];
+  const skill2 = skills[1] || skills[0];
+  return `【経歴概要】
+${title}として${years}年の実務経験があります。
+様々なプロジェクトで開発を担当。
+
+【主なプロジェクト】
+・${skill1}を活用したプロジェクト
+・${skill2}での開発経験
+
+【アピールポイント】
+・チーム開発経験豊富
+・技術選定への参画経験あり`;
 };
 
 // 案件データ生成
@@ -298,10 +548,16 @@ const generateJobs = () => {
     for (let i = 0; i < 10; i++) {
       const title = templates.titles[i];
       const locationIndex = (index - 1) % LOCATIONS.length;
-      
-      // メインスキルを選択
-      const mainSkills = randomPicks(skillSet.skills, 3 + Math.floor(Math.random() * 2));
-      
+
+      // 案件ごとにスキル数を変える（1-4個）
+      // これにより同じカテゴリ内でもスコアにバラつきが出る
+      const skillCounts = [1, 2, 2, 2, 3, 3, 3, 3, 4, 4];
+      const skillCount = skillCounts[i];
+
+      // メインスキルを選択（インデックスをずらして異なるスキルセットにする）
+      const startIndex = i % 3; // 0, 1, 2のいずれかから開始
+      const mainSkills = skillSet.skills.slice(startIndex, startIndex + skillCount);
+
       // 案件特徴をランダムに選択
       const features = randomPicks([
         "長期案件", "リモート併用可", "上流工程参画", "最新技術導入",
@@ -382,10 +638,10 @@ const generatePreferredSkills = (skillSet: typeof SKILL_SETS.frontend): string =
 };
 
 // Better Authユーザー生成
-// seed_user_001 は yamada 用に予約されているため、002 から開始
+// 人材のauth_user_idをそのまま使用
 const generateAuthUsers = (talents: any[]) => {
-  return talents.map((talent, index) => ({
-    id: `seed_user_${String(index + 2).padStart(3, "0")}`,
+  return talents.map((talent) => ({
+    id: talent.auth_user_id,
     name: talent.氏名,
     email: talent.メールアドレス,
     password: "password123",
@@ -431,11 +687,14 @@ export const showSeedData3Stats = () => {
   console.log(`  👨‍💼 人材: ${seedData3.talents.length}件`);
   console.log(`  💼 案件: ${seedData3.jobs.length}件`);
   console.log(`  📝 応募履歴: ${seedData3.applications.length}件`);
-  console.log("\n📂 カテゴリ内訳:");
-  console.log("  フロントエンド: 10人 × 10案件");
-  console.log("  バックエンド: 10人 × 10案件");
-  console.log("  インフラ/クラウド: 10人 × 10案件");
-  console.log("  モバイル: 10人 × 10案件");
-  console.log("  データ/AI: 10人 × 10案件");
+  console.log("\n📂 人材の内訳:");
+  console.log("  Top3案件専用人材: 15人（各案件5人 × 3案件）");
+  console.log("  カテゴリ別人材: 35人（各7人 × 5カテゴリ）");
+  console.log("\n📂 案件カテゴリ:");
+  console.log("  フロントエンド: 10案件");
+  console.log("  バックエンド: 10案件");
+  console.log("  インフラ/クラウド: 10案件");
+  console.log("  モバイル: 10案件");
+  console.log("  データ/AI: 10案件");
 };
 

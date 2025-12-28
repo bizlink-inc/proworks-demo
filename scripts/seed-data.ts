@@ -16,18 +16,23 @@ try {
   // ファイルが存在しない場合は無視
 }
 
-import { closePool } from "../lib/db/client";
+import { getDb, schema, closePool } from "../lib/db/client";
+import { eq } from "drizzle-orm";
 import { sendInterviewConfirmedEmail } from "../lib/email";
 import { RECOMMENDATION_FIELDS } from "../lib/kintone/fieldMapping";
+import {
+  calculateTopMatches,
+  TalentForMatching,
+  JobForMatching,
+} from "../lib/matching/calculateScore";
 
 // シードデータ
 import { seedData3 } from "./seed-data-large";
 import { seedData2 } from "./seed-data-matching";
-import { PRECOMPUTED_RECOMMENDATIONS } from "./seed-data-recommendations";
 import { createSeedData1 } from "./seed-data-yamada";
 
 // ユーティリティ
-import { generateDevCreatedAt, uploadResumeFile } from "./seed-utils";
+import { filterJobOptions, generateDevCreatedAt, uploadResumeFile } from "./seed-utils";
 
 // 認証
 import {
@@ -72,8 +77,35 @@ import {
 const YAMADA_AUTH_USER_ID = "seed_user_001";
 const HANAKO_AUTH_USER_ID = "seed_user_002";
 
+// デフォルト閾値
+const DEFAULT_THRESHOLD = 3;
+
 // seedData1を生成
 const seedData1 = createSeedData1(generateDevCreatedAt);
+
+/**
+ * DBから閾値設定を取得
+ */
+async function getThresholdFromDb(): Promise<number> {
+  try {
+    const db = getDb();
+    const settings = await db
+      .select()
+      .from(schema.appSettings)
+      .where(eq(schema.appSettings.id, "default"))
+      .limit(1);
+
+    if (settings.length === 0) {
+      return DEFAULT_THRESHOLD;
+    }
+
+    return settings[0].scoreThreshold;
+  } catch (error) {
+    console.warn("DB設定の取得に失敗。デフォルト閾値を使用:", DEFAULT_THRESHOLD);
+    return DEFAULT_THRESHOLD;
+  }
+}
+
 
 // ========================================
 // シードデータ作成
@@ -116,7 +148,15 @@ export const createSeedData = async () => {
 
     // 案件レコードを先に構築（依存なし）
     console.log(`[3/6] 案件DBにレコードを作成中...`);
-    const jobRecords = seedData.jobs.map((job) => buildJobRecord(job as JobData));
+    // 推薦計算でもbuildJobRecordと同じフィルタ済みデータを使用するため
+    // 各案件のフィルタ済み職種・スキルを保存
+    const jobsWithFilteredOptions = seedData.jobs.map((job: any) => ({
+      raw: job,
+      filtered: filterJobOptions(job as JobData),
+    }));
+    const jobRecords = jobsWithFilteredOptions.map(({ raw }) =>
+      buildJobRecord(raw as JobData)
+    );
 
     // PDF アップロード完了を待って人材レコードを構築
     const hanakoResumeFiles = await resumePromise;
@@ -135,7 +175,7 @@ export const createSeedData = async () => {
       const isHanako = talent.auth_user_id === HANAKO_AUTH_USER_ID;
       return buildTalentRecord(talent as TalentData, userId, {
         resumeFiles: isHanako ? hanakoResumeFiles : [],
-        clearExperience: isHanako,
+        // 注: clearExperienceを削除 - シードとバッチで同じデータを使用するため
       });
     });
 
@@ -170,28 +210,72 @@ export const createSeedData = async () => {
     const appIds = await addApplicationRecords(applicationRecords);
     console.log(`   → ${appIds.length}件を作成完了`);
 
-    // 5. 推薦データ作成（全レコードを一括追加）
+    // 5. 推薦データ作成（動的スコア計算）
     console.log(`\n[5/6] 推薦データを作成中...`);
-    const allRecommendationRecords = [
-      // 事前計算済み推薦
-      ...PRECOMPUTED_RECOMMENDATIONS.filter((rec) => jobIds[rec.jobIndex]).map((rec) =>
-        buildRecommendationRecord(rec.talentAuthUserId, jobIds[rec.jobIndex], rec.score)
-      ),
-      // yamada用
-      ...buildUserRecommendationRecords(
-        YAMADA_AUTH_USER_ID,
-        jobIds,
-        seedData1.recommendations,
-        seedData1.recommendationsForYamada
-      ),
-      // hanako用
-      ...buildUserRecommendationRecords(
-        HANAKO_AUTH_USER_ID,
-        jobIds,
-        [],
-        seedData1.recommendationsForHanako
-      ),
-    ];
+    const threshold = await getThresholdFromDb();
+    console.log(`   閾値: ${threshold}ポイント以上`);
+
+    // アクティブな案件のインデックスセットを作成
+    const activeJobIndices = new Set<number>();
+    jobsWithFilteredOptions.forEach(({ raw: job }, index: number) => {
+      if (isJobActive(job)) {
+        activeJobIndices.add(index);
+      }
+    });
+    console.log(`   アクティブ案件: ${activeJobIndices.size}/${jobsWithFilteredOptions.length}件`);
+
+    // シードデータの人材をTalentForMatching形式に変換
+    const talentsForMatching: TalentForMatching[] = seedData.talents.map(
+      (talent: any, i: number) => ({
+        id: `talent_${i}`,
+        authUserId: talent.auth_user_id,
+        name: talent.氏名,
+        positions: [],
+        skills: talent.言語_ツール || "",
+        experience: talent.主な実績_PR_職務経歴 || "",
+        desiredRate: String(talent.希望単価_月額 || ""),
+      })
+    );
+
+    // 各アクティブ案件について動的にスコア計算
+    const allRecommendationRecords: any[] = [];
+
+    for (let jobIndex = 0; jobIndex < jobsWithFilteredOptions.length; jobIndex++) {
+      // 非アクティブ案件はスキップ
+      if (!activeJobIndices.has(jobIndex)) continue;
+
+      const { raw: job, filtered } = jobsWithFilteredOptions[jobIndex];
+      const jobId = jobIds[jobIndex];
+
+      // フィルタ済みデータを使用（Kintoneに保存されるのと同じデータ）
+      // これによりbatch処理との一貫性を保つ
+      const { positions, skills } = filtered;
+
+      // JobForMatching形式に変換
+      const jobForMatching: JobForMatching = {
+        id: `job_${jobIndex}`,
+        jobId: jobId,
+        title: job.案件名 || "",
+        positions: positions,
+        skills: skills,
+      };
+
+      // 全人材でスコア計算（人数制限なし）
+      // 山田・花子も含めて全て動的計算
+      const topMatches = calculateTopMatches(
+        talentsForMatching,
+        jobForMatching,
+        talentsForMatching.length
+      );
+
+      // 閾値以上のマッチをレコード化
+      for (const match of topMatches) {
+        if (!match.talentAuthUserId || match.score < threshold) continue;
+        allRecommendationRecords.push(
+          buildRecommendationRecord(match.talentAuthUserId, jobId, match.score)
+        );
+      }
+    }
 
     await addRecommendationRecordsInBatches(allRecommendationRecords);
     console.log(`   → ${allRecommendationRecords.length}件を作成完了`);
@@ -341,6 +425,17 @@ const createSeedDataDual = async () => {
 // ヘルパー関数
 // ========================================
 
+/**
+ * 案件がアクティブかどうかを判定
+ * - 掲載用ステータス（ラジオボタン_0）が「有」
+ * - 募集ステータス（ラジオボタン）が「募集中」
+ */
+const isJobActive = (job: any): boolean => {
+  const listingStatus = job.ラジオボタン_0 || job["ラジオボタン_0"];
+  const recruitmentStatus = job.ラジオボタン || job["ラジオボタン"];
+  return listingStatus === "有" && recruitmentStatus === "募集中";
+};
+
 /** データ統合 */
 const mergeData = (data1: any, data3: any) => {
   const data1UserIds = new Set(data1.authUsers.map((u: any) => u.id));
@@ -369,13 +464,17 @@ const buildUserRecommendationRecords = (
   authUserId: string,
   jobIds: string[],
   basicRecommendations: any[],
-  extendedRecommendations?: any[]
+  extendedRecommendations?: any[],
+  activeJobIndices?: Set<number>
 ): any[] => {
   const records: any[] = [];
 
+  // アクティブ判定（指定がなければ全て対象）
+  const isActive = (index: number) => !activeJobIndices || activeJobIndices.has(index);
+
   // 基本推薦
   for (const rec of basicRecommendations) {
-    if (rec.jobIndex < jobIds.length && jobIds[rec.jobIndex]) {
+    if (rec.jobIndex < jobIds.length && jobIds[rec.jobIndex] && isActive(rec.jobIndex)) {
       records.push(
         buildRecommendationRecord(authUserId, jobIds[rec.jobIndex], rec.score)
       );
@@ -385,7 +484,7 @@ const buildUserRecommendationRecords = (
   // 拡張推薦（担当者おすすめ/AIマッチ）
   if (extendedRecommendations) {
     for (const rec of extendedRecommendations) {
-      if (rec.jobIndex < jobIds.length && jobIds[rec.jobIndex]) {
+      if (rec.jobIndex < jobIds.length && jobIds[rec.jobIndex] && isActive(rec.jobIndex)) {
         records.push(
           buildRecommendationRecord(authUserId, jobIds[rec.jobIndex], rec.score, {
             staffRecommend: rec.staffRecommend,
