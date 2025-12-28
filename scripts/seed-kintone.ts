@@ -53,7 +53,7 @@ export const addApplicationRecords = async (records: any[]): Promise<string[]> =
   return result.ids;
 };
 
-/** 推薦レコードを一括追加（バッチ処理） */
+/** 推薦レコードを一括追加（並列バッチ処理） */
 export const addRecommendationRecordsInBatches = async (
   records: any[],
   batchSize: number = 100
@@ -62,13 +62,21 @@ export const addRecommendationRecordsInBatches = async (
   const appIds = getAppIds();
   const client = createRecommendationClient();
 
+  // バッチに分割
+  const batches: any[][] = [];
   for (let i = 0; i < records.length; i += batchSize) {
-    const batch = records.slice(i, i + batchSize);
-    await client.record.addRecords({
-      app: appIds.recommendation,
-      records: batch,
-    });
+    batches.push(records.slice(i, i + batchSize));
   }
+
+  // 全バッチを並列で追加
+  await Promise.all(
+    batches.map((batch) =>
+      client.record.addRecords({
+        app: appIds.recommendation,
+        records: batch,
+      })
+    )
+  );
 };
 
 /** お知らせレコードを作成 */
@@ -181,7 +189,31 @@ export const upsertRecommendationRecords = async (
   return { updated: toUpdate.length, added: toAdd.length };
 };
 
-/** 全レコードを削除 */
+/** 単一テーブルの全レコードを取得して削除 */
+const fetchAndDeleteAll = async (
+  client: any,
+  appId: string | number | undefined,
+  optional: boolean = false
+): Promise<number> => {
+  if (!appId) return 0;
+  try {
+    const records = await client.record.getAllRecords({
+      app: appId,
+      fields: ["$id"],
+    });
+    if (records.length > 0) {
+      const ids = records.map((r: any) => r.$id.value);
+      await deleteInBatches(client, appId, ids);
+      return ids.length;
+    }
+    return 0;
+  } catch {
+    if (optional) return 0;
+    throw new Error(`Failed to delete records from app ${appId}`);
+  }
+};
+
+/** 全レコードを削除（並列処理） */
 export const deleteAllRecords = async (): Promise<{
   recommendation: number;
   application: number;
@@ -190,81 +222,17 @@ export const deleteAllRecords = async (): Promise<{
   announcement: number;
 }> => {
   const appIds = getAppIds();
-  const counts = { recommendation: 0, application: 0, job: 0, talent: 0, announcement: 0 };
 
-  // 推薦DB
-  if (appIds.recommendation) {
-    try {
-      const client = createRecommendationClient();
-      const records = await client.record.getAllRecords({
-        app: appIds.recommendation,
-        fields: ["$id"],
-      });
-      if (records.length > 0) {
-        const ids = records.map((r: any) => r.$id.value);
-        await deleteInBatches(client, appIds.recommendation, ids);
-        counts.recommendation = ids.length;
-      }
-    } catch {
-      // スキップ
-    }
-  }
+  // 全テーブルを並列で取得・削除
+  const [recommendation, application, job, talent, announcement] = await Promise.all([
+    fetchAndDeleteAll(createRecommendationClient(), appIds.recommendation, true),
+    fetchAndDeleteAll(createApplicationClient(), appIds.application, false),
+    fetchAndDeleteAll(createJobClient(), appIds.job, false),
+    fetchAndDeleteAll(createTalentClient(), appIds.talent, false),
+    fetchAndDeleteAll(createAnnouncementClient(), appIds.announcement, true),
+  ]);
 
-  // 応募履歴DB
-  const applicationClient = createApplicationClient();
-  const applications = await applicationClient.record.getAllRecords({
-    app: appIds.application,
-    fields: ["$id"],
-  });
-  if (applications.length > 0) {
-    const ids = applications.map((r: any) => r.$id.value);
-    await deleteInBatches(applicationClient, appIds.application, ids);
-    counts.application = ids.length;
-  }
-
-  // 案件DB
-  const jobClient = createJobClient();
-  const jobs = await jobClient.record.getAllRecords({
-    app: appIds.job,
-    fields: ["$id"],
-  });
-  if (jobs.length > 0) {
-    const ids = jobs.map((r: any) => r.$id.value);
-    await deleteInBatches(jobClient, appIds.job, ids);
-    counts.job = ids.length;
-  }
-
-  // 人材DB
-  const talentClient = createTalentClient();
-  const talents = await talentClient.record.getAllRecords({
-    app: appIds.talent,
-    fields: ["$id"],
-  });
-  if (talents.length > 0) {
-    const ids = talents.map((r: any) => r.$id.value);
-    await deleteInBatches(talentClient, appIds.talent, ids);
-    counts.talent = ids.length;
-  }
-
-  // お知らせDB
-  if (appIds.announcement) {
-    try {
-      const client = createAnnouncementClient();
-      const records = await client.record.getAllRecords({
-        app: appIds.announcement,
-        fields: ["$id"],
-      });
-      if (records.length > 0) {
-        const ids = records.map((r: any) => r.$id.value);
-        await deleteInBatches(client, appIds.announcement, ids);
-        counts.announcement = ids.length;
-      }
-    } catch {
-      // スキップ
-    }
-  }
-
-  return counts;
+  return { recommendation, application, job, talent, announcement };
 };
 
 /** バッチ削除 */

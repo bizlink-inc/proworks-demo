@@ -105,12 +105,21 @@ export const createSeedData = async () => {
       authUserIds = await createAuthUsers(seedData.authUsers, mapping);
     }
 
-    // 2. 人材DB作成
+    // お知らせ作成を先行開始（他に依存しない）
+    const announcementPromise = createAnnouncementRecords();
+
+    // PDF アップロードを先行開始
     console.log(`\n[2/6] 人材DBにレコードを作成中...`);
-    const hanakoResumeFiles = await uploadResumeFile(
+    const resumePromise = uploadResumeFile(
       "test-file/Backend_Engineer_Resume_sample.pdf"
     );
 
+    // 案件レコードを先に構築（依存なし）
+    console.log(`[3/6] 案件DBにレコードを作成中...`);
+    const jobRecords = seedData.jobs.map((job) => buildJobRecord(job as JobData));
+
+    // PDF アップロード完了を待って人材レコードを構築
+    const hanakoResumeFiles = await resumePromise;
     const talentRecords = seedData.talents.map((talent) => {
       const userId = resolveUserId(
         talent.auth_user_id,
@@ -130,14 +139,12 @@ export const createSeedData = async () => {
       });
     });
 
-    const talentRecordIds = await addTalentRecords(talentRecords);
-    console.log(`   → ${talentRecordIds.length}人を作成完了`);
-
-    // 3. 案件DB作成
-    console.log(`\n[3/6] 案件DBにレコードを作成中...`);
-    const jobRecords = seedData.jobs.map((job) => buildJobRecord(job as JobData));
-    const jobIds = await addJobRecords(jobRecords);
-    console.log(`   → ${jobIds.length}件を作成完了`);
+    // 人材DBと案件DBを並列で作成
+    const [talentRecordIds, jobIds] = await Promise.all([
+      addTalentRecords(talentRecords),
+      addJobRecords(jobRecords),
+    ]);
+    console.log(`   → 人材: ${talentRecordIds.length}人, 案件: ${jobIds.length}件を作成完了`);
 
     // 4. 応募履歴DB作成
     console.log(`\n[4/6] 応募履歴DBにレコードを作成中...`);
@@ -189,9 +196,9 @@ export const createSeedData = async () => {
     await addRecommendationRecordsInBatches(allRecommendationRecords);
     console.log(`   → ${allRecommendationRecords.length}件を作成完了`);
 
-    // 6. お知らせ作成
+    // 6. お知らせ作成（先行開始済み）
     console.log(`\n[6/6] システム通知を作成中...`);
-    const announcementCount = await createAnnouncementRecords();
+    const announcementCount = await announcementPromise;
     if (announcementCount > 0) {
       console.log(`   → ${announcementCount}件を作成完了`);
     }
