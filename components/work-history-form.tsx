@@ -119,7 +119,7 @@ export const WorkHistoryForm = ({ user, onUpdate }: WorkHistoryFormProps) => {
             />
           </FieldRow>
 
-          <FieldRow label="経歴書アップロード" required isEmpty={formData.resumeFiles.length === 0}>
+          <FieldRow label="経歴書アップロード" required isEmpty={formData.resumeFiles.length === 0} emptyMessage="※ファイルが未アップロードです">
             <div className="space-y-4">
               <FileList
                 files={formData.resumeFiles}

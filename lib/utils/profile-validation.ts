@@ -1,11 +1,43 @@
 import type { Talent } from "@/lib/kintone/types"
 
 // マイページのタブ
-type MyPageTab = "work-history" | "preferences"
+type MyPageTab = "profile" | "work-history" | "preferences"
 
-// 必須項目の定義（名前・メールアドレスを除く）
+// 必須項目の定義（名前を除く）
 // 優先度順に並べる（上から順に遷移先を決定）
 const REQUIRED_FIELDS = [
+  // プロフィール
+  {
+    key: "lastNameKana" as keyof Talent,
+    label: "姓（フリガナ）",
+    tab: "profile" as MyPageTab,
+  },
+  {
+    key: "firstNameKana" as keyof Talent,
+    label: "名（フリガナ）",
+    tab: "profile" as MyPageTab,
+  },
+  {
+    key: "birthDate" as keyof Talent,
+    label: "生年月日",
+    tab: "profile" as MyPageTab,
+  },
+  {
+    key: "phone" as keyof Talent,
+    label: "電話番号",
+    tab: "profile" as MyPageTab,
+  },
+  {
+    key: "postalCode" as keyof Talent,
+    label: "郵便番号",
+    tab: "profile" as MyPageTab,
+  },
+  {
+    key: "address" as keyof Talent,
+    label: "住所",
+    tab: "profile" as MyPageTab,
+  },
+  // 職歴・資格
   {
     key: "skills" as keyof Talent,
     label: "言語・ツールの経験",
@@ -17,13 +49,34 @@ const REQUIRED_FIELDS = [
     tab: "work-history" as MyPageTab,
   },
   {
+    key: "resumeFiles" as keyof Talent,
+    label: "経歴書",
+    tab: "work-history" as MyPageTab,
+  },
+  // 希望条件
+  {
     key: "availableFrom" as keyof Talent,
     label: "稼働可能時期",
     tab: "preferences" as MyPageTab,
   },
   {
+    key: "desiredRate" as keyof Talent,
+    label: "希望単価",
+    tab: "preferences" as MyPageTab,
+  },
+  {
     key: "desiredWorkDays" as keyof Talent,
     label: "希望勤務日数",
+    tab: "preferences" as MyPageTab,
+  },
+  {
+    key: "desiredCommute" as keyof Talent,
+    label: "出社頻度",
+    tab: "preferences" as MyPageTab,
+  },
+  {
+    key: "desiredWorkStyle" as keyof Talent,
+    label: "希望勤務スタイル",
     tab: "preferences" as MyPageTab,
   },
   {

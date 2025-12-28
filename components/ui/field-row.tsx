@@ -11,6 +11,7 @@ interface FieldRowProps {
   label: string
   required?: boolean
   isEmpty?: boolean
+  emptyMessage?: string
   children: React.ReactNode
   className?: string
 }
@@ -19,6 +20,7 @@ export const FieldRow = ({
   label,
   required = false,
   isEmpty = false,
+  emptyMessage = "※未入力です",
   children,
   className,
 }: FieldRowProps) => {
@@ -56,7 +58,7 @@ export const FieldRow = ({
                 color: "var(--pw-alert-error)",
               }}
             >
-              ※未入力です
+              {emptyMessage}
             </p>
           )}
         </div>
