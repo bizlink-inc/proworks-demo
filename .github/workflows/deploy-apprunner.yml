@@ -197,10 +197,16 @@ jobs:
 
           echo "   既存Secrets: $CURRENT_CONFIG"
 
+          # Secretsと重複するキーを環境変数から除外
+          FILTERED_ENV_VARS=$(echo "$ENV_VARS_JSON" | jq --argjson secrets "$CURRENT_CONFIG" \
+            'with_entries(select(.key as $k | $secrets | has($k) | not))')
+
+          echo "   フィルタ後環境変数: $(echo "$FILTERED_ENV_VARS" | jq 'keys | length')件"
+
           # ソース設定を構築
           jq -n \
             --arg imageId "$ECR_REGISTRY/$ECR_REPOSITORY:${{ github.sha }}" \
-            --argjson envVars "$ENV_VARS_JSON" \
+            --argjson envVars "$FILTERED_ENV_VARS" \
             --argjson secrets "$CURRENT_CONFIG" \
             '{
               ImageRepository: {
