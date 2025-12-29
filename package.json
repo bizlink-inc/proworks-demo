@@ -72,7 +72,8 @@
     "test:applications": "vitest run tests/api/applications",
     "test:admin": "vitest run tests/api/admin && playwright test tests/e2e/admin.spec.ts",
     "test:lambda": "vitest run tests/unit/lambda",
-    "test:notifications": "playwright test tests/e2e/notifications.spec.ts"
+    "test:notifications": "playwright test tests/e2e/notifications.spec.ts",
+    "test:components": "vitest run --config vitest.component.config.mjs"
   },
   "dependencies": {
     "@aws-sdk/client-ses": "^3.700.0",
@@ -146,6 +147,9 @@
   "devDependencies": {
     "@playwright/test": "^1.57.0",
     "@tailwindcss/postcss": "^4.1.9",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.1",
+    "@testing-library/user-event": "^14.6.1",
     "@types/node": "^22",
     "@types/pg": "^8.16.0",
     "@types/react": "^19",
@@ -154,6 +158,7 @@
     "drizzle-kit": "^0.31.6",
     "eslint": "^8.57.1",
     "eslint-config-next": "^14.2.35",
+    "jsdom": "^24.0.0",
     "msw": "^2.12.7",
     "postcss": "^8.5",
     "tailwindcss": "^4.1.9",

@@ -204,6 +204,19 @@ export const ApplicationsClient = ({ user, initialApplications = [] }: Applicati
     // 何もしない（既に応募済みのため）
   }
 
+  // 応募一覧を再取得するヘルパー関数
+  const refreshApplications = async () => {
+    try {
+      const res = await fetch("/api/applications/me")
+      if (res.ok) {
+        const data = await res.json()
+        setApplications(data)
+      }
+    } catch (error) {
+      console.error("Failed to fetch applications:", error)
+    }
+  }
+
   // 応募を取り消す
   const handleCancelApplication = async (applicationId: string) => {
     try {
@@ -216,24 +229,25 @@ export const ApplicationsClient = ({ user, initialApplications = [] }: Applicati
       })
 
       if (!res.ok) {
-        const error = await res.json()
-        throw new Error(error.error || "応募の取り消しに失敗しました")
-      }
+        const errorData = await res.json()
 
-      // 応募一覧を再取得
-      const fetchApplications = async () => {
-        try {
-          const res = await fetch("/api/applications/me")
-          if (res.ok) {
-            const data = await res.json()
-            setApplications(data)
-          }
-        } catch (error) {
-          console.error("Failed to fetch applications:", error)
+        // ステータスが「応募済み」以外の場合（400エラー）
+        // 最新データに更新して、ユーザーに状況を伝える
+        if (res.status === 400) {
+          await refreshApplications()
+          toast({
+            title: "取り消しできません",
+            description: errorData.error || "この応募はすでにステータスが変更されています。最新の状態に更新しました。",
+            variant: "destructive",
+          })
+          return // throwせずに終了（リストは更新済み）
         }
+
+        throw new Error(errorData.error || "応募の取り消しに失敗しました")
       }
 
-      await fetchApplications()
+      // 成功時：応募一覧を再取得
+      await refreshApplications()
 
       // 成功トースト表示
       toast({
