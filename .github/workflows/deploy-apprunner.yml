@@ -95,10 +95,10 @@ jobs:
             --secret-id "${{ env.APPRUNNER_SECRET_NAME }}" \
             --query SecretString --output text)
 
-          # JSONを環境変数形式に変換してファイルに保存
-          echo "$SECRETS" | jq -r 'to_entries | .[] | "\(.key)=\(.value)"' > /tmp/env_vars.txt
+          # 直接App Runner用JSON配列形式に変換（awkを使わず安全に変換）
+          echo "$SECRETS" | jq 'to_entries | map({Name: .key, Value: .value})' > /tmp/env_vars.json
 
-          echo "✅ Secrets Managerから環境変数を取得しました"
+          echo "✅ 環境変数: $(jq 'length' /tmp/env_vars.json)件"
 
       # Dockerイメージビルド
       - name: Build Docker image
@@ -182,15 +182,8 @@ jobs:
         run: |
           echo "🚀 App Runnerサービスを更新中..."
 
-          # 環境変数ファイルを直接JSONに変換（awkで処理）
-          ENV_VARS_JSON=$(awk -F'=' '{
-            if (NF >= 2) {
-              key = $1
-              value = substr($0, index($0, "=") + 1)
-              gsub(/"/, "\\\"", value)
-              printf "{\"Name\":\"%s\",\"Value\":\"%s\"}\n", key, value
-            }
-          }' /tmp/env_vars.txt | jq -s '.')
+          # JSONファイルから直接読み込み（awkは不要）
+          ENV_VARS_JSON=$(cat /tmp/env_vars.json)
 
           echo "   環境変数: $(echo "$ENV_VARS_JSON" | jq 'length')件"
 
