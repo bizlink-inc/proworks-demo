@@ -78,11 +78,27 @@ jobs:
             echo "ENV_NAME=prod" >> $GITHUB_ENV
             echo "SERVICE_NAME=proworks-prod" >> $GITHUB_ENV
             echo "ECR_REPOSITORY=proworks-prod" >> $GITHUB_ENV
+            echo "APPRUNNER_SECRET_NAME=proworks/apprunner-prod" >> $GITHUB_ENV
           else
             echo "ENV_NAME=dev" >> $GITHUB_ENV
             echo "SERVICE_NAME=proworks-dev" >> $GITHUB_ENV
             echo "ECR_REPOSITORY=proworks-dev" >> $GITHUB_ENV
+            echo "APPRUNNER_SECRET_NAME=proworks/apprunner-dev" >> $GITHUB_ENV
           fi
+
+      # Secrets Managerから環境変数を取得
+      - name: Get secrets from Secrets Manager
+        id: get-secrets
+        run: |
+          # App Runner用の環境変数を取得
+          SECRETS=$(aws secretsmanager get-secret-value \
+            --secret-id "${{ env.APPRUNNER_SECRET_NAME }}" \
+            --query SecretString --output text)
+
+          # JSONを環境変数形式に変換してファイルに保存
+          echo "$SECRETS" | jq -r 'to_entries | .[] | "\(.key)=\(.value)"' > /tmp/env_vars.txt
+
+          echo "✅ Secrets Managerから環境変数を取得しました"
 
       # Dockerイメージビルド
       - name: Build Docker image
@@ -157,7 +173,7 @@ jobs:
             exit 1
           fi
 
-      # App Runnerにデプロイ（ソース設定を更新）
+      # App Runnerにデプロイ（ソース設定と環境変数を更新）
       - name: Deploy to App Runner
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
@@ -165,13 +181,47 @@ jobs:
           SERVICE_ARN: ${{ steps.get-service-arn.outputs.SERVICE_ARN }}
         run: |
           echo "🚀 App Runnerサービスを更新中..."
+
+          # Secrets Managerから取得した環境変数をJSON形式に変換
+          ENV_VARS_JSON=$(cat /tmp/env_vars.txt | while IFS='=' read -r key value; do
+            echo "{\"Name\":\"$key\",\"Value\":\"$value\"}"
+          done | jq -s '.')
+
+          # Secrets Manager ARN参照の環境変数（DATABASE_URL, GEMINI_API_KEY）
+          # これらは既存の設定から取得して維持
+          CURRENT_CONFIG=$(aws apprunner describe-service \
+            --service-arn "$SERVICE_ARN" \
+            --query 'Service.SourceConfiguration.ImageRepository.ImageConfiguration.RuntimeEnvironmentSecrets' \
+            --output json 2>/dev/null || echo '{}')
+
+          # ソース設定を構築
+          SOURCE_CONFIG=$(cat <<EOF
+          {
+            "ImageRepository": {
+              "ImageIdentifier": "$ECR_REGISTRY/$ECR_REPOSITORY:${{ github.sha }}",
+              "ImageRepositoryType": "ECR",
+              "ImageConfiguration": {
+                "Port": "8080",
+                "RuntimeEnvironmentVariables": $ENV_VARS_JSON,
+                "RuntimeEnvironmentSecrets": $CURRENT_CONFIG
+              }
+            }
+          }
+          EOF
+          )
+
+          # 一時ファイルに保存
+          echo "$SOURCE_CONFIG" > /tmp/source-config.json
+
+          # App Runnerを更新
           aws apprunner update-service \
             --service-arn "$SERVICE_ARN" \
-            --source-configuration "{\"ImageRepository\":{\"ImageIdentifier\":\"$ECR_REGISTRY/$ECR_REPOSITORY:${{ github.sha }}\",\"ImageRepositoryType\":\"ECR\",\"ImageConfiguration\":{\"Port\":\"8080\"}}}"
-          
+            --source-configuration file:///tmp/source-config.json
+
           echo "✅ デプロイリクエストを送信しました"
           echo "   サービス: ${{ env.SERVICE_NAME }}"
           echo "   イメージ: $ECR_REGISTRY/$ECR_REPOSITORY:${{ github.sha }}"
+          echo "   環境変数: $(echo "$ENV_VARS_JSON" | jq 'length')件"
 
       # デプロイ結果を出力
       - name: Show deployment result
