@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAllJobs } from "@/lib/kintone/services/job";
 import { getSession } from "@/lib/auth-server";
-import { getApplicationsByAuthUserId } from "@/lib/kintone/services/application";
+import { getAppliedJobIdsByAuthUserId } from "@/lib/kintone/services/application";
 import { getRecommendationScoreMap } from "@/lib/kintone/services/recommendation";
 import { POSITION_MAPPING } from "@/components/dashboard-filters";
 import { createRecommendationClient, getAppIds } from "@/lib/kintone/client";
@@ -33,7 +33,7 @@ export const GET = async (request: NextRequest) => {
     jobs = jobs.filter((job) => job.recruitmentStatus !== 'クローズ');
 
     // ログインしている場合、応募ステータスと推薦情報を取得
-    let applicationsMap: Record<string, string> = {};
+    let appliedJobIdsSet: Set<string> = new Set();
     let recommendationMap: Record<string, {
       score: number;
       staffRecommend: boolean;
@@ -43,15 +43,15 @@ export const GET = async (request: NextRequest) => {
 
     try {
       const session = await getSession();
+      console.log(`[Jobs API] セッション: ${session ? `user.id=${session.user?.id}` : 'なし'}`);
       if (session?.user?.id) {
         currentUserId = session.user.id;
-        
-        // 応募済み案件を取得
-        const applications = await getApplicationsByAuthUserId(session.user.id);
-        applicationsMap = applications.reduce((acc, app) => {
-          acc[app.jobId] = app.status;
-          return acc;
-        }, {} as Record<string, string>);
+
+        // 応募済み案件IDを取得（3ヶ月制限なし、checkDuplicateApplicationと同じ条件）
+        console.log(`[Jobs API] getAppliedJobIdsByAuthUserId 呼び出し開始`);
+        const appliedJobIds = await getAppliedJobIdsByAuthUserId(session.user.id);
+        console.log(`[Jobs API] 応募済みID取得完了: ${appliedJobIds.length}件, IDs=${JSON.stringify(appliedJobIds)}`);
+        appliedJobIdsSet = new Set(appliedJobIds);
 
         // 推薦情報を取得（スコア、担当者おすすめ、AIマッチ）
         const recommendationClient = createRecommendationClient();
@@ -98,8 +98,8 @@ export const GET = async (request: NextRequest) => {
       console.log("User not logged in or error fetching applications");
     }
 
-    // 応募済み案件を完全に除外
-    jobs = jobs.filter((job) => !applicationsMap[job.id]);
+    // 応募済み案件を完全に除外（3ヶ月制限なし）
+    jobs = jobs.filter((job) => !appliedJobIdsSet.has(job.id));
 
     // 全案件数（フィルター適用前）を保持
     const totalAll = jobs.length;
@@ -191,12 +191,12 @@ export const GET = async (request: NextRequest) => {
     if (missingJobIds.length > 0) {
       console.log(`[Jobs API] 推薦DBにあるが案件一覧に表示されない案件: ${missingJobIds.length}件`);
       for (const jobId of missingJobIds) {
-        const isApplied = applicationsMap[jobId];
-        console.log(`  - jobId=${jobId}, 応募済み=${isApplied ? `はい(${isApplied})` : 'いいえ'}`);
+        const isApplied = appliedJobIdsSet.has(jobId);
+        console.log(`  - jobId=${jobId}, 応募済み=${isApplied ? 'はい' : 'いいえ'}`);
       }
     }
 
-    // 案件に推薦情報と応募ステータスを追加
+    // 案件に推薦情報を追加（応募済み案件は除外済みのためapplicationStatusは常にnull）
     const jobsWithMetadata = jobs.map(job => {
       const recommendation = recommendationMap[job.id];
       return {
@@ -204,7 +204,7 @@ export const GET = async (request: NextRequest) => {
         recommendationScore: recommendation?.score || 0,
         staffRecommend: recommendation?.staffRecommend || false,
         aiMatched: recommendation?.aiMatched || false,
-        applicationStatus: applicationsMap[job.id] || null
+        applicationStatus: null
       };
     });
 

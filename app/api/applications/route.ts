@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth-server";
 import { getJobById } from "@/lib/kintone/services/job";
-import { createApplication, checkDuplicateApplication } from "@/lib/kintone/services/application";
+import { createApplication, checkDuplicateApplication, clearApplicationsCache } from "@/lib/kintone/services/application";
 import { sendApplicationCompleteEmail } from "@/lib/email";
 import { sendApplicationNotification } from "@/lib/slack";
 import { getTalentByAuthUserId } from "@/lib/kintone/services/talent";
@@ -37,6 +37,9 @@ export const POST = async (request: NextRequest) => {
       authUserId: session.user.id,
       jobId,
     });
+
+    // 応募キャッシュをクリア（案件一覧・応募済み一覧に即時反映するため）
+    clearApplicationsCache();
 
     // 3. ユーザー情報を取得（missingFields計算 + メール送信用）
     const talent = await getTalentByAuthUserId(session.user.id);

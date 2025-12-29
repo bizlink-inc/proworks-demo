@@ -66,7 +66,6 @@ export const getApplicationsByAuthUserId = async (authUserId: string): Promise<A
 
   const client = createApplicationClient();
   const appId = getAppIds().application;
-  const applicationAppId = process.env.KINTONE_APPLICATION_APP_ID;
 
   try {
     // 3ヶ月前の日付を計算
@@ -74,8 +73,9 @@ export const getApplicationsByAuthUserId = async (authUserId: string): Promise<A
     threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
     const dateStr = threeMonthsAgo.toISOString().split('T')[0]; // YYYY-MM-DD形式
 
-    // 環境に応じた作成日時フィールドを使用
-    const createdAtField = applicationAppId === '84' ? '作成日時_開発環境' : APPLICATION_FIELDS.CREATED_AT;
+    // 作成日時フィールドは常にシステムフィールド（作成日時）を使用
+    // 注：作成日時_開発環境は新規レコードで自動設定されないため、3ヶ月フィルターには使用しない
+    const createdAtField = APPLICATION_FIELDS.CREATED_AT;
 
     // Kintone側で3ヶ月フィルタリング + 有効なステータスのみ取得（応募取消し除外）
     const validStatuses = ["応募済み", "面談調整中", "面談予定", "案件参画", "見送り"];
@@ -130,6 +130,7 @@ export const createApplication = async (data: {
 };
 
 // 重複チェック（パフォーマンス最適化: 1件のみ取得）
+// 有効なステータス（応募取消し以外）のレコードのみを重複とみなす
 export const checkDuplicateApplication = async (
   authUserId: string,
   jobId: string
@@ -138,15 +139,55 @@ export const checkDuplicateApplication = async (
   const appId = getAppIds().application;
 
   try {
+    // getApplicationsByAuthUserIdと同じステータスフィルタリングを適用
+    // 応募取消しは重複とみなさない（再応募可能）
+    const validStatuses = ["応募済み", "面談調整中", "面談予定", "案件参画", "見送り"];
+    const statusCondition = `${APPLICATION_FIELDS.STATUS} in (${validStatuses.map(s => `"${s}"`).join(", ")})`;
+
     const response = await client.record.getRecords({
       app: appId,
-      query: `${APPLICATION_FIELDS.AUTH_USER_ID} = "${authUserId}" and ${APPLICATION_FIELDS.JOB_ID} = "${jobId}" limit 1`,
+      query: `${APPLICATION_FIELDS.AUTH_USER_ID} = "${authUserId}" and ${APPLICATION_FIELDS.JOB_ID} = "${jobId}" and ${statusCondition} limit 1`,
       fields: ["$id"],
     });
 
     return response.records.length > 0;
   } catch (error) {
     console.error("重複チェックに失敗:", error);
+    throw error;
+  }
+};
+
+// 応募済み案件IDを取得（案件一覧からの除外用、3ヶ月制限なし）
+// checkDuplicateApplicationと同じ条件で応募済み案件を判定
+export const getAppliedJobIdsByAuthUserId = async (authUserId: string): Promise<string[]> => {
+  console.log(`[getAppliedJobIdsByAuthUserId] 開始: authUserId=${authUserId}`);
+
+  const client = createApplicationClient();
+  const appId = getAppIds().application;
+  console.log(`[getAppliedJobIdsByAuthUserId] appId=${appId}`);
+
+  try {
+    const validStatuses = ["応募済み", "面談調整中", "面談予定", "案件参画", "見送り"];
+    const statusCondition = `${APPLICATION_FIELDS.STATUS} in (${validStatuses.map(s => `"${s}"`).join(", ")})`;
+    const condition = `${APPLICATION_FIELDS.AUTH_USER_ID} = "${authUserId}" and ${statusCondition}`;
+    const query = `${condition} limit 500`;
+
+    console.log(`[getAppliedJobIdsByAuthUserId] クエリ: ${query}`);
+
+    const response = await client.record.getRecords({
+      app: appId,
+      query,
+      fields: [APPLICATION_FIELDS.JOB_ID],
+    });
+
+    const jobIds = response.records.map((record) =>
+      (record as unknown as { [key: string]: { value: string } })[APPLICATION_FIELDS.JOB_ID].value
+    );
+
+    console.log(`[getAppliedJobIdsByAuthUserId] 取得件数: ${jobIds.length}, jobIds: ${JSON.stringify(jobIds)}`);
+    return jobIds;
+  } catch (error) {
+    console.error("[getAppliedJobIdsByAuthUserId] エラー:", error);
     throw error;
   }
 };

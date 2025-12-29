@@ -5,7 +5,7 @@
  */
 
 import { getAllJobs } from "@/lib/kintone/services/job";
-import { getApplicationsByAuthUserId } from "@/lib/kintone/services/application";
+import { getAppliedJobIdsByAuthUserId } from "@/lib/kintone/services/application";
 import { createRecommendationClient, getAppIds } from "@/lib/kintone/client";
 import { RECOMMENDATION_FIELDS } from "@/lib/kintone/fieldMapping";
 import type { Job, RecommendationRecord } from "@/lib/kintone/types";
@@ -38,7 +38,7 @@ export async function getJobsWithRecommendations(
   // 募集ステータスが「クローズ」の案件を除外
   jobs = jobs.filter((job) => job.recruitmentStatus !== "クローズ");
 
-  let applicationsMap: Record<string, string> = {};
+  let appliedJobIdsSet: Set<string> = new Set();
   let recommendationMap: Record<
     string,
     { score: number; staffRecommend: boolean; aiMatched: boolean }
@@ -46,16 +46,9 @@ export async function getJobsWithRecommendations(
 
   // ログインしている場合、応募ステータスと推薦情報を取得
   if (authUserId) {
-    // 応募済み案件を取得
-    const applications = await getApplicationsByAuthUserId(authUserId);
-
-    applicationsMap = applications.reduce(
-      (acc, app) => {
-        acc[app.jobId] = app.status;
-        return acc;
-      },
-      {} as Record<string, string>
-    );
+    // 応募済み案件IDを取得（3ヶ月制限なし、checkDuplicateApplicationと同じ条件）
+    const appliedJobIds = await getAppliedJobIdsByAuthUserId(authUserId);
+    appliedJobIdsSet = new Set(appliedJobIds);
 
     // 推薦情報を取得
     const recommendationClient = createRecommendationClient();
@@ -88,10 +81,10 @@ export async function getJobsWithRecommendations(
     }
   }
 
-  // 応募済み案件を除外
-  jobs = jobs.filter((job) => !applicationsMap[job.id]);
+  // 応募済み案件を除外（3ヶ月制限なし）
+  jobs = jobs.filter((job) => !appliedJobIdsSet.has(job.id));
 
-  // 案件に推薦情報を追加
+  // 案件に推薦情報を追加（応募済み案件は除外済みのためapplicationStatusは常にnull）
   const jobsWithMetadata: JobWithMetadata[] = jobs.map((job) => {
     const recommendation = recommendationMap[job.id];
     return {
@@ -99,7 +92,7 @@ export async function getJobsWithRecommendations(
       recommendationScore: recommendation?.score || 0,
       staffRecommend: recommendation?.staffRecommend || false,
       aiMatched: recommendation?.aiMatched || false,
-      applicationStatus: applicationsMap[job.id] || null,
+      applicationStatus: null,
     };
   });
 
