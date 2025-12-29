@@ -1,0 +1,26 @@
+{
+  "job": {
+    "jobId": "1",
+    "title": "テスト案件",
+    "positions": ["バックエンドエンジニア"],
+    "skills": ["TypeScript", "Node.js"],
+    "updatedAt": "2025-01-01T00:00:00.000Z"
+  },
+  "talents": [
+    {
+      "authUserId": "test-user-1",
+      "name": "テスト人材1",
+      "positions": ["バックエンドエンジニア"],
+      "skills": "TypeScript, Node.js, Python",
+      "experience": "Node.jsを使用したAPIサーバー開発経験5年",
+      "updatedAt": "2025-01-01T00:00:00.000Z"
+    }
+  ],
+  "settings": {
+    "threshold": 3,
+    "lastBatchTime": null,
+    "lastThreshold": null
+  },
+  "forceFullMode": true,
+  "activeTalentIds": ["test-user-1"]
+}

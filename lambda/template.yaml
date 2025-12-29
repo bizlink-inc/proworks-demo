@@ -1,0 +1,129 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: ProWorks 推薦バッチ処理 Lambda + Step Functions
+
+Parameters:
+  Environment:
+    Type: String
+    Default: dev
+    AllowedValues:
+      - dev
+      - prod
+  KintoneBaseUrl:
+    Type: String
+    Description: Kintone Base URL
+  KintoneTalentApiToken:
+    Type: String
+    NoEcho: true
+  KintoneJobApiToken:
+    Type: String
+    NoEcho: true
+  KintoneRecommendationApiToken:
+    Type: String
+    NoEcho: true
+  KintoneTalentAppId:
+    Type: String
+  KintoneJobAppId:
+    Type: String
+  KintoneRecommendationAppId:
+    Type: String
+  DatabaseUrl:
+    Type: String
+    NoEcho: true
+
+Globals:
+  Function:
+    Runtime: nodejs20.x
+    Architectures:
+      - arm64
+    Environment:
+      Variables:
+        KINTONE_BASE_URL: !Ref KintoneBaseUrl
+        KINTONE_TALENT_API_TOKEN: !Ref KintoneTalentApiToken
+        KINTONE_JOB_API_TOKEN: !Ref KintoneJobApiToken
+        KINTONE_RECOMMENDATION_API_TOKEN: !Ref KintoneRecommendationApiToken
+        KINTONE_TALENT_APP_ID: !Ref KintoneTalentAppId
+        KINTONE_JOB_APP_ID: !Ref KintoneJobAppId
+        KINTONE_RECOMMENDATION_APP_ID: !Ref KintoneRecommendationAppId
+        DATABASE_URL: !Ref DatabaseUrl
+
+Resources:
+  # ========================================
+  # Lambda Functions
+  # ========================================
+
+  GetJobsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub proworks-recommend-get-jobs-${Environment}
+      Description: 案件一覧とDB設定を取得
+      CodeUri: ./build
+      Handler: functions/get-jobs/index.handler
+      Timeout: 120
+      MemorySize: 512
+
+  ProcessJobFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub proworks-recommend-process-job-${Environment}
+      Description: 1案件の推薦レコード処理
+      CodeUri: ./build
+      Handler: functions/process-job/index.handler
+      Timeout: 300
+      MemorySize: 512
+
+  UpdateStateFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub proworks-recommend-update-state-${Environment}
+      Description: バッチ状態を更新
+      CodeUri: ./build
+      Handler: functions/update-state/index.handler
+      Timeout: 60
+      MemorySize: 256
+
+  # ========================================
+  # Step Functions
+  # ========================================
+
+  RecommendBatchStateMachine:
+    Type: AWS::Serverless::StateMachine
+    Properties:
+      Name: !Sub proworks-recommend-batch-${Environment}
+      DefinitionUri: statemachine.asl.json
+      DefinitionSubstitutions:
+        GetJobsFunctionArn: !GetAtt GetJobsFunction.Arn
+        ProcessJobFunctionArn: !GetAtt ProcessJobFunction.Arn
+        UpdateStateFunctionArn: !GetAtt UpdateStateFunction.Arn
+      Policies:
+        - LambdaInvokePolicy:
+            FunctionName: !Ref GetJobsFunction
+        - LambdaInvokePolicy:
+            FunctionName: !Ref ProcessJobFunction
+        - LambdaInvokePolicy:
+            FunctionName: !Ref UpdateStateFunction
+      Events:
+        DailySchedule:
+          Type: Schedule
+          Properties:
+            Description: 毎日JST 02:00に実行
+            Schedule: cron(0 17 * * ? *)
+            Enabled: true
+            Input: "{}"
+
+Outputs:
+  GetJobsFunctionArn:
+    Description: GetJobs Lambda関数のARN
+    Value: !GetAtt GetJobsFunction.Arn
+
+  ProcessJobFunctionArn:
+    Description: ProcessJob Lambda関数のARN
+    Value: !GetAtt ProcessJobFunction.Arn
+
+  UpdateStateFunctionArn:
+    Description: UpdateState Lambda関数のARN
+    Value: !GetAtt UpdateStateFunction.Arn
+
+  StateMachineArn:
+    Description: Step Functions State MachineのARN
+    Value: !Ref RecommendBatchStateMachine

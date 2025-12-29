@@ -1,0 +1,74 @@
+{
+  "Comment": "ProWorks 推薦バッチ処理 - 案件ごとに並列処理",
+  "StartAt": "GetJobs",
+  "States": {
+    "GetJobs": {
+      "Type": "Task",
+      "Resource": "${GetJobsFunctionArn}",
+      "ResultPath": "$.getJobsResult",
+      "Next": "CheckJobsExist"
+    },
+    "CheckJobsExist": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.getJobsResult.jobs[0]",
+          "IsPresent": true,
+          "Next": "ProcessJobsMap"
+        }
+      ],
+      "Default": "NoJobsToProcess"
+    },
+    "NoJobsToProcess": {
+      "Type": "Pass",
+      "Result": {
+        "message": "処理対象の案件がありません"
+      },
+      "End": true
+    },
+    "ProcessJobsMap": {
+      "Type": "Map",
+      "ItemsPath": "$.getJobsResult.jobs",
+      "MaxConcurrency": 5,
+      "Parameters": {
+        "job.$": "$$.Map.Item.Value",
+        "talents.$": "$.getJobsResult.talents",
+        "settings.$": "$.getJobsResult.settings",
+        "forceFullMode.$": "$.getJobsResult.forceFullMode",
+        "activeTalentIds.$": "$.getJobsResult.talents[*].authUserId"
+      },
+      "ItemProcessor": {
+        "ProcessorConfig": {
+          "Mode": "INLINE"
+        },
+        "StartAt": "ProcessJob",
+        "States": {
+          "ProcessJob": {
+            "Type": "Task",
+            "Resource": "${ProcessJobFunctionArn}",
+            "End": true,
+            "Retry": [
+              {
+                "ErrorEquals": ["States.TaskFailed"],
+                "IntervalSeconds": 5,
+                "MaxAttempts": 2,
+                "BackoffRate": 2
+              }
+            ]
+          }
+        }
+      },
+      "ResultPath": "$.processResults",
+      "Next": "UpdateState"
+    },
+    "UpdateState": {
+      "Type": "Task",
+      "Resource": "${UpdateStateFunctionArn}",
+      "Parameters": {
+        "results.$": "$.processResults",
+        "settings.$": "$.getJobsResult.settings"
+      },
+      "End": true
+    }
+  }
+}

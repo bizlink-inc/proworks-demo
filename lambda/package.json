@@ -1,0 +1,27 @@
+{
+  "name": "proworks-recommend-batch",
+  "version": "1.0.0",
+  "description": "ProWorks 推薦バッチ処理 Lambda関数",
+  "private": true,
+  "scripts": {
+    "compile": "tsc",
+    "prepare-build": "rm -rf build && mkdir -p build && cp -r dist/* build/ && cp package.json build/ && cp package-lock.json build/ 2>/dev/null || true && cd build && npm install --omit=dev",
+    "build": "npm run compile && npm run prepare-build && sam build",
+    "deploy:dev": "npm run build && ./scripts/deploy.sh dev",
+    "deploy:prod": "npm run build && ./scripts/deploy.sh prod",
+    "local:get-jobs": "npm run build && sam local invoke GetJobsFunction --env-vars env.json",
+    "local:process-job": "npm run build && sam local invoke ProcessJobFunction --env-vars env.json -e events/process-job.json"
+  },
+  "dependencies": {
+    "@kintone/rest-api-client": "^6.0.0",
+    "drizzle-orm": "^0.44.7",
+    "pg": "^8.16.3"
+  },
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.145",
+    "@types/node": "^22",
+    "@types/pg": "^8.16.0",
+    "esbuild": "^0.24.2",
+    "typescript": "^5"
+  }
+}

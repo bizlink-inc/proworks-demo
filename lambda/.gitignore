@@ -1,0 +1,19 @@
+# SAM build artifacts
+.aws-sam/
+
+# Node modules
+node_modules/
+
+# TypeScript build output
+dist/
+
+# Prepared build directory
+build/
+
+# Environment files (contain secrets)
+env.json
+
+# IDE
+.idea/
+*.swp
+*.swo
