@@ -1,6 +1,8 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth-server";
 import { getTalentByAuthUserId, updateTalent } from "@/lib/kintone/services/talent";
+import { checkRequiredFields } from "@/lib/utils/profile-validation";
+import { sendProfileCompleteNotification } from "@/lib/slack";
 
 export const GET = async () => {
   try {
@@ -64,12 +66,34 @@ export const PATCH = async (request: NextRequest) => {
 
     const body = await request.json();
 
+    // 更新前のプロフィール完了状態をチェック
+    const missingFieldsBefore = checkRequiredFields(talent);
+    const wasIncomplete = missingFieldsBefore.length > 0;
+    console.log("[Profile Check] 更新前の未入力項目:", missingFieldsBefore);
+
     // kintoneの人材情報を更新
     await updateTalent(talent.id, body);
 
     // 更新後は入力データをマージして返す（再取得不要）
     // クライアントが送信したデータは正常に保存されたと信頼する
     const updatedTalent = { ...talent, ...body };
+
+    // 更新後のプロフィール完了状態をチェック
+    const missingFieldsAfter = checkRequiredFields(updatedTalent);
+    const isNowComplete = missingFieldsAfter.length === 0;
+    console.log("[Profile Check] 更新後の未入力項目:", missingFieldsAfter);
+    console.log("[Profile Check] wasIncomplete:", wasIncomplete, "isNowComplete:", isNowComplete);
+
+    // プロフィールが未完了→完了になった場合、Slack通知を送信
+    if (wasIncomplete && isNowComplete) {
+      console.log("[Profile Check] プロフィール完成！Slack通知を送信します");
+      const fullName = `${talent.lastName || ""} ${talent.firstName || ""}`.trim();
+      sendProfileCompleteNotification({
+        fullName: fullName || session.user.email!.split("@")[0],
+        email: session.user.email!,
+        talentRecordId: talent.id,
+      }).catch((err) => console.error("⚠️ Slack通知送信失敗:", err));
+    }
 
     return NextResponse.json(updatedTalent);
   } catch (error) {

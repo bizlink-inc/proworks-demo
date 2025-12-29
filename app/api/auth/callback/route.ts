@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth-server";
 import { getTalentByAuthUserId, createTalent } from "@/lib/kintone/services/talent";
+import { sendNewUserNotification } from "@/lib/slack";
 
 export const GET = async (request: NextRequest) => {
   try {
@@ -71,7 +72,7 @@ export const GET = async (request: NextRequest) => {
     if (!existingTalent) {
       // kintoneに人材情報を作成（サインアップ時のデータを含む）
       try {
-        await createTalent({
+        const recordId = await createTalent({
           authUserId: session.user.id,
           lastName: signupData.lastName,
           firstName: signupData.firstName,
@@ -81,8 +82,17 @@ export const GET = async (request: NextRequest) => {
           emailDeliveryStatus: signupData.emailDeliveryStatus,
           termsAgreed: signupData.termsAgreed,
         });
-        console.log("✅ kintoneに人材レコード作成:", session.user.email);
+        console.log("✅ kintoneに人材レコード作成:", session.user.email, "(ID:", recordId, ")");
         console.log("   姓名:", signupData.lastName, signupData.firstName);
+
+        // Slack通知をバックグラウンドで送信（Fire-and-forget）
+        const fullName = `${signupData.lastName} ${signupData.firstName}`.trim() || session.user.email.split("@")[0];
+        sendNewUserNotification({
+          fullName,
+          email: session.user.email,
+          phone: signupData.phone || "",
+          talentRecordId: recordId,
+        }).catch((err) => console.error("⚠️ Slack通知送信失敗:", err));
       } catch (error) {
         console.warn("⚠️ kintone登録エラー（メール認証は成功）:", error);
       }

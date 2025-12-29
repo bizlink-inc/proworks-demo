@@ -30,6 +30,22 @@ Parameters:
   DatabaseUrl:
     Type: String
     NoEcho: true
+  KintoneApplicationApiToken:
+    Type: String
+    NoEcho: true
+    Default: ""
+  KintoneApplicationAppId:
+    Type: String
+    Default: ""
+  SlackWebhookUrl:
+    Type: String
+    NoEcho: true
+    Default: ""
+    Description: Slack Incoming Webhook URL for notifications
+  LambdaSecretsArn:
+    Type: String
+    Default: ""
+    Description: Secrets Manager ARN for Lambda configuration (interview-reminder用)
 
 Globals:
   Function:
@@ -42,10 +58,13 @@ Globals:
         KINTONE_TALENT_API_TOKEN: !Ref KintoneTalentApiToken
         KINTONE_JOB_API_TOKEN: !Ref KintoneJobApiToken
         KINTONE_RECOMMENDATION_API_TOKEN: !Ref KintoneRecommendationApiToken
+        KINTONE_APPLICATION_API_TOKEN: !Ref KintoneApplicationApiToken
         KINTONE_TALENT_APP_ID: !Ref KintoneTalentAppId
         KINTONE_JOB_APP_ID: !Ref KintoneJobAppId
         KINTONE_RECOMMENDATION_APP_ID: !Ref KintoneRecommendationAppId
+        KINTONE_APPLICATION_APP_ID: !Ref KintoneApplicationAppId
         DATABASE_URL: !Ref DatabaseUrl
+        SLACK_WEBHOOK_URL: !Ref SlackWebhookUrl
 
 Resources:
   # ========================================
@@ -81,6 +100,34 @@ Resources:
       Handler: functions/update-state/index.handler
       Timeout: 60
       MemorySize: 256
+
+  InterviewReminderFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub proworks-interview-reminder-${Environment}
+      Description: 翌日の面談予定をSlack通知（Secrets Manager経由）
+      CodeUri: ./build
+      Handler: functions/interview-reminder/index.handler
+      Timeout: 60
+      MemorySize: 256
+      Environment:
+        Variables:
+          LAMBDA_SECRETS_ARN: !Ref LambdaSecretsArn
+      Policies:
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - secretsmanager:GetSecretValue
+              Resource: !Ref LambdaSecretsArn
+      Events:
+        DailySchedule:
+          Type: Schedule
+          Properties:
+            Description: 毎日JST 10:00に実行（面談前日リマインド）
+            Schedule: cron(0 1 * * ? *)
+            Enabled: true
+            Input: "{}"
 
   # ========================================
   # Step Functions
@@ -127,3 +174,7 @@ Outputs:
   StateMachineArn:
     Description: Step Functions State MachineのARN
     Value: !Ref RecommendBatchStateMachine
+
+  InterviewReminderFunctionArn:
+    Description: InterviewReminder Lambda関数のARN
+    Value: !GetAtt InterviewReminderFunction.Arn

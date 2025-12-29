@@ -13,6 +13,7 @@
     "local:process-job": "npm run build && sam local invoke ProcessJobFunction --env-vars env.json -e events/process-job.json"
   },
   "dependencies": {
+    "@aws-sdk/client-secrets-manager": "^3.700.0",
     "@kintone/rest-api-client": "^6.0.0",
     "drizzle-orm": "^0.44.7",
     "pg": "^8.16.3"

@@ -7,6 +7,7 @@ import { NextResponse } from "next/server"
 import { headers } from "next/headers"
 import { auth } from "@/lib/auth"
 import { sendRegistrationCompleteEmail } from "@/lib/email"
+import { sendProfileCompleteNotification } from "@/lib/slack"
 import { getTalentByAuthUserId } from "@/lib/kintone/services/talent"
 
 export async function POST() {
@@ -65,6 +66,12 @@ export async function POST() {
         { status: 500 }
       )
     }
+
+    // Slack通知をバックグラウンドで送信（Fire-and-forget）
+    sendProfileCompleteNotification({
+      fullName: userName,
+      email: session.user.email!,
+    }).catch((err) => console.error("⚠️ Slack通知送信失敗:", err))
 
     return NextResponse.json({ success: true })
   } catch (error) {

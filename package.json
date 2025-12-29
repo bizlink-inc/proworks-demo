@@ -49,6 +49,7 @@
     "lambda:trigger:off:dev": "npx tsx scripts/lambda-trigger-control.ts off dev",
     "lambda:trigger:on:prod": "npx tsx scripts/lambda-trigger-control.ts on prod",
     "lambda:trigger:off:prod": "npx tsx scripts/lambda-trigger-control.ts off prod",
+    "slack:test": "npx tsx scripts/test-slack-webhook.ts",
     "lambda:trigger:status": "npx tsx scripts/lambda-trigger-control.ts status",
     "apprunner:secrets:push:dev": "npx tsx scripts/push-apprunner-secrets.ts dev",
     "apprunner:secrets:push:prod": "npx tsx scripts/push-apprunner-secrets.ts prod"

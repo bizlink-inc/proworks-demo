@@ -15,6 +15,7 @@
 - [App Runner 制御](#app-runner-制御)
 - [環境変数管理](#環境変数管理)
 - [Lambda バッチ制御](#lambda-バッチ制御)
+- [Slack 通知](#slack-通知)
 
 ---
 
@@ -221,6 +222,50 @@ Lambda 用の環境変数を AWS Secrets Manager にプッシュします。
 | `npm run lambda:secrets:push:prod` | prod環境の環境変数をSecrets Managerに反映 | `scripts/push-lambda-secrets.ts prod` |
 
 ローカルの `.env.aws.dev` / `.env.aws.prod` から Kintone 関連の環境変数を抽出して Secrets Manager に登録/更新します。
+
+---
+
+## Slack 通知
+
+Slack Webhook の動作確認を行います。
+
+| コマンド | 説明 | スクリプト |
+|---------|------|-----------|
+| `npm run slack:test` | Slack Webhook の動作確認 | `scripts/test-slack-webhook.ts` |
+
+### 使用方法
+
+Webhook URL を引数として指定して実行します：
+
+```bash
+npm run slack:test -- https://hooks.slack.com/services/xxx/yyy/zzz
+```
+
+### 出力例
+
+成功時：
+```
+🔍 Slack Webhook テスト開始...
+   URL: https://hooks.slack.com/services/xxx/yyy/...
+
+✅ テスト成功！
+   Slackチャンネルにテスト通知が送信されました。
+   チャンネルを確認してください。
+```
+
+失敗時：
+```
+❌ テスト失敗: HTTP 403
+   レスポンス: invalid_token
+```
+
+### Webhook URL の取得方法
+
+1. https://api.slack.com/apps にアクセス
+2. 「Create New App」→「From scratch」を選択
+3. 「Incoming Webhooks」を有効化
+4. 「Add New Webhook to Workspace」で通知先チャンネルを選択
+5. 生成された Webhook URL をコピー
 
 ---
 

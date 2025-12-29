@@ -3,6 +3,7 @@ import { getSession } from "@/lib/auth-server";
 import { getJobById } from "@/lib/kintone/services/job";
 import { createApplication, checkDuplicateApplication } from "@/lib/kintone/services/application";
 import { sendApplicationCompleteEmail } from "@/lib/email";
+import { sendApplicationNotification } from "@/lib/slack";
 import { getTalentByAuthUserId } from "@/lib/kintone/services/talent";
 import { checkRequiredFields } from "@/lib/utils/profile-validation";
 
@@ -71,6 +72,15 @@ export const POST = async (request: NextRequest) => {
     sendApplicationCompleteEmail(userEmail, userName, baseUrl)
       .then(() => console.log("✅ 応募完了メール送信成功"))
       .catch((emailError) => console.error("⚠️ 応募完了メール送信失敗:", emailError));
+
+    // Slack通知をバックグラウンドで送信（Fire-and-forget）
+    sendApplicationNotification({
+      fullName: userName,
+      jobTitle: job.title,
+      jobId: jobId,
+      talentRecordId: talent?.id,
+      jobRecordId: job.id,
+    }).catch((err) => console.error("⚠️ Slack通知送信失敗:", err));
 
     return NextResponse.json(responseData, { status: 201 });
   } catch (error) {

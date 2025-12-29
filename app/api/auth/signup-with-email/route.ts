@@ -48,6 +48,7 @@ export const POST = async (request: NextRequest) => {
 
     console.log("✅ ユーザー登録成功（メール認証待ち）:", email);
     console.log("   メール認証リンクがコンソールに出力されます");
+    // Slack通知はメール認証後のcallbackルートで送信（kintoneレコードIDを含めるため）
 
     // ログイン保持の設定をレスポンスに含める
     const response = NextResponse.json(
