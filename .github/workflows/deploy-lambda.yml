@@ -7,6 +7,8 @@ on:
       - main
     paths:
       - 'lambda/**'
+      - '.github/workflows/deploy-lambda.yml'
+  workflow_dispatch:
 
 env:
   AWS_REGION: ap-northeast-1
