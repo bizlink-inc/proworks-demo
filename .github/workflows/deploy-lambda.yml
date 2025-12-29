@@ -1,0 +1,122 @@
+name: Deploy Lambda
+
+on:
+  push:
+    branches:
+      - develop
+      - main
+    paths:
+      - 'lambda/**'
+
+env:
+  AWS_REGION: ap-northeast-1
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # コードチェックアウト
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Node.jsセットアップ
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: lambda/package-lock.json
+
+      # AWS認証
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      # SAM CLIインストール
+      - name: Install SAM CLI
+        uses: aws-actions/setup-sam@v2
+        with:
+          use-installer: true
+
+      # 環境変数を決定
+      - name: Set environment variables
+        id: set-env
+        run: |
+          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+            echo "ENV_NAME=prod" >> $GITHUB_ENV
+            echo "LAMBDA_SECRET_NAME=proworks/lambda-prod" >> $GITHUB_ENV
+          else
+            echo "ENV_NAME=dev" >> $GITHUB_ENV
+            echo "LAMBDA_SECRET_NAME=proworks/lambda-dev" >> $GITHUB_ENV
+          fi
+
+      # Secrets Managerから環境変数を取得
+      - name: Get secrets from Secrets Manager
+        id: get-secrets
+        run: |
+          # Lambda設定を取得
+          LAMBDA_SECRETS=$(aws secretsmanager get-secret-value \
+            --secret-id "${{ env.LAMBDA_SECRET_NAME }}" \
+            --query SecretString --output text)
+
+          echo "KINTONE_BASE_URL=$(echo $LAMBDA_SECRETS | jq -r '.KINTONE_BASE_URL')" >> $GITHUB_ENV
+          echo "KINTONE_TALENT_API_TOKEN=$(echo $LAMBDA_SECRETS | jq -r '.KINTONE_TALENT_API_TOKEN')" >> $GITHUB_ENV
+          echo "KINTONE_JOB_API_TOKEN=$(echo $LAMBDA_SECRETS | jq -r '.KINTONE_JOB_API_TOKEN')" >> $GITHUB_ENV
+          echo "KINTONE_RECOMMENDATION_API_TOKEN=$(echo $LAMBDA_SECRETS | jq -r '.KINTONE_RECOMMENDATION_API_TOKEN')" >> $GITHUB_ENV
+          echo "KINTONE_TALENT_APP_ID=$(echo $LAMBDA_SECRETS | jq -r '.KINTONE_TALENT_APP_ID')" >> $GITHUB_ENV
+          echo "KINTONE_JOB_APP_ID=$(echo $LAMBDA_SECRETS | jq -r '.KINTONE_JOB_APP_ID')" >> $GITHUB_ENV
+          echo "KINTONE_RECOMMENDATION_APP_ID=$(echo $LAMBDA_SECRETS | jq -r '.KINTONE_RECOMMENDATION_APP_ID')" >> $GITHUB_ENV
+
+          # DATABASE_URLを取得
+          DATABASE_SECRETS=$(aws secretsmanager get-secret-value \
+            --secret-id "proworks/database" \
+            --query SecretString --output text)
+          echo "DATABASE_URL=$(echo $DATABASE_SECRETS | jq -r '.url')" >> $GITHUB_ENV
+
+      # Lambda依存関係インストール
+      - name: Install Lambda dependencies
+        working-directory: lambda
+        run: npm ci
+
+      # TypeScriptコンパイル & ビルド準備
+      - name: Build Lambda
+        working-directory: lambda
+        run: |
+          npm run compile
+          npm run prepare-build
+
+      # SAMビルド
+      - name: SAM Build
+        working-directory: lambda
+        run: sam build
+
+      # SAMデプロイ
+      - name: SAM Deploy
+        working-directory: lambda
+        run: |
+          sam deploy \
+            --config-env "${{ env.ENV_NAME }}" \
+            --resolve-s3 \
+            --capabilities CAPABILITY_IAM \
+            --no-confirm-changeset \
+            --no-fail-on-empty-changeset \
+            --parameter-overrides \
+              "KintoneBaseUrl=${{ env.KINTONE_BASE_URL }}" \
+              "KintoneTalentApiToken=${{ env.KINTONE_TALENT_API_TOKEN }}" \
+              "KintoneJobApiToken=${{ env.KINTONE_JOB_API_TOKEN }}" \
+              "KintoneRecommendationApiToken=${{ env.KINTONE_RECOMMENDATION_API_TOKEN }}" \
+              "KintoneTalentAppId=${{ env.KINTONE_TALENT_APP_ID }}" \
+              "KintoneJobAppId=${{ env.KINTONE_JOB_APP_ID }}" \
+              "KintoneRecommendationAppId=${{ env.KINTONE_RECOMMENDATION_APP_ID }}" \
+              "DatabaseUrl=${{ env.DATABASE_URL }}"
+
+      # デプロイ結果を出力
+      - name: Show deployment result
+        run: |
+          echo "🚀 Deployed Lambda to AWS"
+          echo "Environment: ${{ env.ENV_NAME }}"
+          echo "Stack: proworks-recommend-batch-${{ env.ENV_NAME }}"
