@@ -7,7 +7,7 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { Menu, X, HelpCircle, LogOut } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
@@ -22,7 +22,11 @@ interface MobileMenuProps {
 
 export const MobileMenu = ({ user, onSignOut }: MobileMenuProps) => {
   const [isOpen, setIsOpen] = useState(false)
-  const pathname = usePathname()
+  const router = useRouter()
+  const searchParams = useSearchParams()
+
+  // 現在のタブを取得
+  const currentTab = searchParams.get("tab") || "jobs"
 
   const toggleMenu = () => {
     setIsOpen(!isOpen)
@@ -30,6 +34,16 @@ export const MobileMenu = ({ user, onSignOut }: MobileMenuProps) => {
 
   const closeMenu = () => {
     setIsOpen(false)
+  }
+
+  // タブナビゲーション（ページ遷移なし）
+  const navigateToTab = (tab: string) => {
+    if (tab === "jobs") {
+      router.push("/", { scroll: false })
+    } else {
+      router.push(`/?tab=${tab}`, { scroll: false })
+    }
+    closeMenu()
   }
 
   return (
@@ -105,48 +119,45 @@ export const MobileMenu = ({ user, onSignOut }: MobileMenuProps) => {
                 </p>
               </div>
 
-              {/* ナビゲーションリンク */}
-              <Link
-                href="/me"
-                onClick={closeMenu}
+              {/* ナビゲーションリンク（タブベース） */}
+              <button
+                onClick={() => navigateToTab("profile")}
                 className={cn(
-                  "px-4 py-3 rounded-md transition-colors",
-                  pathname === "/me"
+                  "px-4 py-3 rounded-md transition-colors text-left",
+                  currentTab === "profile"
                     ? "bg-[var(--pw-bg-light-blue)] text-[var(--pw-border-dark)] font-medium"
                     : "text-[var(--pw-text-gray)] hover:bg-[var(--pw-bg-light-blue)]"
                 )}
                 style={{ fontSize: "var(--pw-text-md)" }}
               >
                 マイページ
-              </Link>
+              </button>
 
-              <Link
-                href="/"
-                onClick={closeMenu}
+              <button
+                onClick={() => navigateToTab("jobs")}
                 className={cn(
-                  "px-4 py-3 rounded-md transition-colors",
-                  pathname === "/"
+                  "px-4 py-3 rounded-md transition-colors text-left",
+                  currentTab === "jobs"
                     ? "bg-[var(--pw-bg-light-blue)] text-[var(--pw-border-dark)] font-medium"
                     : "text-[var(--pw-text-gray)] hover:bg-[var(--pw-bg-light-blue)]"
                 )}
                 style={{ fontSize: "var(--pw-text-md)" }}
               >
                 案件一覧
-              </Link>
+              </button>
 
-              <Link
-                href="/applications"
-                onClick={closeMenu}
+              <button
+                onClick={() => navigateToTab("applications")}
                 className={cn(
-                  "px-4 py-3 rounded-md transition-colors",
-                  pathname === "/applications"
+                  "px-4 py-3 rounded-md transition-colors text-left",
+                  currentTab === "applications"
                     ? "bg-[var(--pw-bg-light-blue)] text-[var(--pw-border-dark)] font-medium"
                     : "text-[var(--pw-text-gray)] hover:bg-[var(--pw-bg-light-blue)]"
                 )}
                 style={{ fontSize: "var(--pw-text-md)" }}
               >
                 応募済み案件
-              </Link>
+              </button>
 
               <button
                 disabled

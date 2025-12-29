@@ -2,13 +2,10 @@
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
 import Image from "next/image"
-import { ChevronDown, HelpCircle } from "lucide-react"
+import { HelpCircle } from "lucide-react"
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
-import { faGear, faList, faLightbulb } from "@fortawesome/free-solid-svg-icons"
-import { faSquareCheck } from "@fortawesome/free-regular-svg-icons"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { faLightbulb } from "@fortawesome/free-solid-svg-icons"
 import { MobileMenu } from "@/components/mobile-menu"
 import { handleSignOut } from "@/app/actions/auth"
 import { NotificationDropdown } from "@/components/notification-dropdown"
@@ -20,7 +17,6 @@ type HeaderProps = {
 }
 
 export function Header({ user }: HeaderProps) {
-  const pathname = usePathname()
   const [isMounted, setIsMounted] = useState(false)
 
   useEffect(() => {
@@ -44,7 +40,7 @@ export function Header({ user }: HeaderProps) {
       <header
         className="bg-white"
       >
-        <div 
+        <div
           className="mx-auto px-6 py-4 flex items-center justify-between"
           style={{ maxWidth: "1400px" }}
         >
@@ -73,7 +69,7 @@ export function Header({ user }: HeaderProps) {
         fontSize: "var(--pw-text-md)"
       }}
     >
-      <div 
+      <div
         className="mx-auto px-6 pt-3 flex items-center justify-between"
         style={{ maxWidth: "1400px" }}
       >
@@ -93,177 +89,8 @@ export function Header({ user }: HeaderProps) {
 
         {user ? (
           <>
-            {/* デスクトップナビゲーション - 大画面: テキスト付き（左寄せ） */}
-            <nav className="hidden lg:flex gap-0 ml-6">
-              <Link
-                href="/me"
-                className="px-4 py-3 transition-colors flex items-center gap-2"
-                style={{
-                  fontSize: "var(--pw-text-md)",
-                  color: pathname === "/me" ? "var(--pw-header-active-text)" : "var(--pw-text-navy)",
-                  borderBottom: pathname === "/me" ? `var(--pw-header-active-border-width) solid var(--pw-header-active-border-color)` : "none",
-                  fontWeight: pathname === "/me" ? 600 : 400,
-                }}
-              >
-                <FontAwesomeIcon icon={faGear} className="w-5 h-5" />
-                <span>マイページ</span>
-              </Link>
-              <Link
-                href="/"
-                className="px-4 py-3 transition-colors flex items-center gap-2"
-                style={{
-                  fontSize: "var(--pw-text-md)",
-                  color: pathname === "/" ? "var(--pw-header-active-text)" : "var(--pw-text-navy)",
-                  borderBottom: pathname === "/" ? `var(--pw-header-active-border-width) solid var(--pw-header-active-border-color)` : "none",
-                  fontWeight: pathname === "/" ? 600 : 400,
-                }}
-              >
-                <FontAwesomeIcon icon={faList} className="w-5 h-5" />
-                <span>案件一覧</span>
-              </Link>
-              <Link
-                href="/applications"
-                className="px-4 py-3 transition-colors flex items-center gap-2"
-                style={{
-                  fontSize: "var(--pw-text-md)",
-                  color: pathname === "/applications" ? "var(--pw-header-active-text)" : "var(--pw-text-navy)",
-                  borderBottom: pathname === "/applications" ? `var(--pw-header-active-border-width) solid var(--pw-header-active-border-color)` : "none",
-                  fontWeight: pathname === "/applications" ? 600 : 400,
-                }}
-              >
-                <FontAwesomeIcon icon={faSquareCheck} className="w-5 h-5" />
-                <span>応募済み案件</span>
-              </Link>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <button
-                    className="px-4 py-3 transition-colors flex items-center gap-2"
-                    style={{
-                      fontSize: "var(--pw-text-md)",
-                      color: pathname.startsWith("/media") ? "var(--pw-header-active-text)" : "var(--pw-text-navy)",
-                      borderBottom: pathname.startsWith("/media") ? `var(--pw-header-active-border-width) solid var(--pw-header-active-border-color)` : "none",
-                      fontWeight: pathname.startsWith("/media") ? 600 : 400,
-                    }}
-                  >
-                    <FontAwesomeIcon icon={faLightbulb} className="w-5 h-5" />
-                    <span>お役立ち情報</span>
-                    <ChevronDown className="w-4 h-4" />
-                  </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
-                  <DropdownMenuItem disabled className="cursor-not-allowed opacity-50">
-                    キャリアとスキル
-                  </DropdownMenuItem>
-                  <DropdownMenuItem disabled className="cursor-not-allowed opacity-50">
-                    ビジネス知識
-                  </DropdownMenuItem>
-                  <DropdownMenuItem disabled className="cursor-not-allowed opacity-50">
-                    みんなの声
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </nav>
-
-            {/* タブレットナビゲーション - 中画面: アイコンのみ（ロゴの右隣に配置） */}
-            <nav className="hidden md:flex lg:hidden gap-0 ml-6">
-              <Link
-                href="/me"
-                className="px-3 py-3 transition-colors flex items-center justify-center"
-                style={{
-                  color: pathname === "/me" ? "var(--pw-header-active-text)" : "var(--pw-text-navy)",
-                  borderBottom: pathname === "/me" ? `var(--pw-header-active-border-width) solid var(--pw-header-active-border-color)` : "none",
-                }}
-                title="マイページ"
-              >
-                <FontAwesomeIcon icon={faGear} className="w-5 h-5" />
-              </Link>
-              <Link
-                href="/"
-                className="px-3 py-3 transition-colors flex items-center justify-center"
-                style={{
-                  color: pathname === "/" ? "var(--pw-header-active-text)" : "var(--pw-text-navy)",
-                  borderBottom: pathname === "/" ? `var(--pw-header-active-border-width) solid var(--pw-header-active-border-color)` : "none",
-                }}
-                title="案件一覧"
-              >
-                <FontAwesomeIcon icon={faList} className="w-5 h-5" />
-              </Link>
-              <Link
-                href="/applications"
-                className="px-3 py-3 transition-colors flex items-center justify-center"
-                style={{
-                  color: pathname === "/applications" ? "var(--pw-header-active-text)" : "var(--pw-text-navy)",
-                  borderBottom: pathname === "/applications" ? `var(--pw-header-active-border-width) solid var(--pw-header-active-border-color)` : "none",
-                }}
-                title="応募済み案件"
-              >
-                <FontAwesomeIcon icon={faSquareCheck} className="w-5 h-5" />
-              </Link>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <button
-                    className="px-3 py-3 transition-colors flex items-center justify-center"
-                    style={{
-                      color: pathname.startsWith("/media") ? "var(--pw-header-active-text)" : "var(--pw-text-navy)",
-                      borderBottom: pathname.startsWith("/media") ? `var(--pw-header-active-border-width) solid var(--pw-header-active-border-color)` : "none",
-                    }}
-                    title="お役立ち情報"
-                  >
-                    <FontAwesomeIcon icon={faLightbulb} className="w-5 h-5" />
-                  </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
-                  <DropdownMenuItem disabled className="cursor-not-allowed opacity-50">
-                    キャリアとスキル
-                  </DropdownMenuItem>
-                  <DropdownMenuItem disabled className="cursor-not-allowed opacity-50">
-                    ビジネス知識
-                  </DropdownMenuItem>
-                  <DropdownMenuItem disabled className="cursor-not-allowed opacity-50">
-                    みんなの声
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </nav>
-
             {/* デスクトップ右側アイコン - 大画面 */}
-            <div className="hidden lg:flex items-center gap-4 ml-auto">
-              <button
-                className="p-2 transition-colors hover:opacity-70"
-                style={{ color: "var(--pw-text-navy)" }}
-                title="ヘルプ"
-              >
-                <HelpCircle className="w-5 h-5" />
-              </button>
-
-              <NotificationDropdown />
-
-              <span
-                className="font-medium"
-                style={{
-                  fontSize: "var(--pw-text-md)",
-                  color: "var(--pw-text-primary)"
-                }}
-              >
-                {user.name}
-              </span>
-
-              <button
-                onClick={onSignOut}
-                className="p-2 transition-colors hover:opacity-70"
-                title="ログアウト"
-              >
-                <Image
-                  src="/logout.svg"
-                  alt="ログアウト"
-                  width={20}
-                  height={20}
-                />
-              </button>
-            </div>
-
-            {/* タブレット右側アイコン - 中画面 */}
-            <div className="hidden md:flex lg:hidden items-center gap-3 ml-auto">
+            <div className="hidden md:flex items-center gap-4 ml-auto">
               <button
                 className="p-2 transition-colors hover:opacity-70"
                 style={{ color: "var(--pw-text-navy)" }}
@@ -304,7 +131,7 @@ export function Header({ user }: HeaderProps) {
           <>
             {/* 未ログイン時のスペーサー */}
             <div className="flex-1" />
-            
+
             <div className="hidden md:flex items-center gap-4">
               <nav className="flex items-center gap-4">
                 <Link

@@ -1,7 +1,97 @@
+import { Suspense } from "react"
 import { redirect } from "next/navigation"
 import { getSession } from "@/lib/auth-server"
-import { DashboardClient } from "@/components/dashboard-client"
+import { UnifiedDashboard } from "@/components/unified-dashboard"
 import { getJobsWithRecommendations } from "@/lib/server/jobs"
+import { Header } from "@/components/header"
+import { FullWidthLayout } from "@/components/layouts"
+import { Skeleton } from "@/components/ui/skeleton"
+
+// ローディング表示コンポーネント（スケルトン表示）
+function DashboardLoading({ user }: { user: { id?: string; name?: string | null; email?: string | null } }) {
+  return (
+    <div className="min-h-screen" style={{ backgroundColor: "#ffffff" }}>
+      <Header user={user} />
+      {/* タブナビゲーションのスケルトン */}
+      <div
+        className="mx-auto flex items-center gap-0 border-b px-6"
+        style={{ maxWidth: "1400px", borderColor: "#d5e5f0" }}
+      >
+        <Skeleton className="h-12 w-28 mx-2" />
+        <Skeleton className="h-12 w-24 mx-2" />
+        <Skeleton className="h-12 w-32 mx-2" />
+      </div>
+      <FullWidthLayout>
+        {/* フィルターのスケルトン */}
+        <div className="mb-6 mt-8">
+          <Skeleton className="h-10 w-full max-w-md" />
+        </div>
+        {/* カードグリッドのスケルトン */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <div
+              key={i}
+              className="rounded-lg p-5"
+              style={{ backgroundColor: "#ffffff", border: "1px solid #d5e5f0" }}
+            >
+              <div className="flex justify-between items-start mb-3">
+                <Skeleton className="h-6 w-20 rounded-full" />
+                <Skeleton className="h-5 w-16" />
+              </div>
+              <Skeleton className="h-6 w-full mb-2" />
+              <Skeleton className="h-6 w-3/4 mb-4" />
+              <div className="flex items-baseline gap-1 mb-4">
+                <Skeleton className="h-8 w-24" />
+                <Skeleton className="h-4 w-16" />
+              </div>
+              <div className="border-t border-[#d5e5f0] my-4" />
+              <div className="space-y-3">
+                <div className="flex gap-2">
+                  <Skeleton className="h-5 w-12" />
+                  <Skeleton className="h-5 w-32" />
+                </div>
+                <div className="flex gap-2">
+                  <Skeleton className="h-5 w-12" />
+                  <div className="flex gap-1">
+                    <Skeleton className="h-5 w-16" />
+                    <Skeleton className="h-5 w-20" />
+                  </div>
+                </div>
+              </div>
+              <div className="mt-5">
+                <Skeleton className="h-10 w-full rounded-md" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </FullWidthLayout>
+    </div>
+  )
+}
+
+// データ取得コンポーネント（Suspense内で実行）
+async function DashboardContent({ userId, user }: {
+  userId: string
+  user: { id?: string; name?: string | null; email?: string | null }
+}) {
+  const PAGE_SIZE = 21 // 3列×7行
+  let initialJobs: Awaited<ReturnType<typeof getJobsWithRecommendations>> = { items: [], total: 0, totalAll: 0 }
+  try {
+    initialJobs = await getJobsWithRecommendations(userId, { skip: 0, limit: PAGE_SIZE })
+  } catch (error) {
+    console.error("サーバーサイドでの案件データ取得に失敗:", error)
+    // エラー時はクライアント側でフォールバック取得
+  }
+
+  return (
+    <UnifiedDashboard
+      user={user}
+      initialJobs={initialJobs.items}
+      initialTotal={initialJobs.total}
+      initialTotalAll={initialJobs.totalAll}
+    />
+  )
+}
 
 export default async function DashboardPage() {
   const session = await getSession()
@@ -10,23 +100,10 @@ export default async function DashboardPage() {
     redirect("/auth/signin")
   }
 
-  // サーバーサイドで案件データを事前取得（SSR）
-  // 初期表示に必要なページ1の21件のみ取得（パフォーマンス最適化）
-  const PAGE_SIZE = 21 // 3列×7行
-  let initialJobs: Awaited<ReturnType<typeof getJobsWithRecommendations>> = { items: [], total: 0, totalAll: 0 }
-  try {
-    initialJobs = await getJobsWithRecommendations(session.user.id, { skip: 0, limit: PAGE_SIZE })
-  } catch (error) {
-    console.error("サーバーサイドでの案件データ取得に失敗:", error)
-    // エラー時はクライアント側でフォールバック取得
-  }
-
+  // Suspenseでストリーミング: スケルトンを即表示し、データ取得後にコンテンツを差し替え
   return (
-    <DashboardClient
-      user={session.user}
-      initialJobs={initialJobs.items}
-      initialTotal={initialJobs.total}
-      initialTotalAll={initialJobs.totalAll}
-    />
+    <Suspense fallback={<DashboardLoading user={session.user} />}>
+      <DashboardContent userId={session.user.id} user={session.user} />
+    </Suspense>
   )
 }
