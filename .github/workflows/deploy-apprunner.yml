@@ -180,12 +180,19 @@ jobs:
           ECR_REPOSITORY: ${{ env.ECR_REPOSITORY }}
           SERVICE_ARN: ${{ steps.get-service-arn.outputs.SERVICE_ARN }}
         run: |
+          set -e
           echo "🚀 App Runnerサービスを更新中..."
 
-          # Secrets Managerから取得した環境変数をJSON形式に変換
-          ENV_VARS_JSON=$(cat /tmp/env_vars.txt | while IFS='=' read -r key value; do
-            echo "{\"Name\":\"$key\",\"Value\":\"$value\"}"
-          done | jq -s '.')
+          # Secrets Managerから取得した環境変数をJSON形式に変換（jqで安全に処理）
+          ENV_VARS_JSON='[]'
+          while IFS='=' read -r key value; do
+            # 空行をスキップ
+            [ -z "$key" ] && continue
+            # jqで安全にJSON配列に追加
+            ENV_VARS_JSON=$(echo "$ENV_VARS_JSON" | jq --arg k "$key" --arg v "$value" '. + [{"Name": $k, "Value": $v}]')
+          done < /tmp/env_vars.txt
+
+          echo "   環境変数: $(echo "$ENV_VARS_JSON" | jq 'length')件"
 
           # Secrets Manager ARN参照の環境変数（DATABASE_URL, GEMINI_API_KEY）
           # これらは既存の設定から取得して維持
@@ -193,6 +200,11 @@ jobs:
             --service-arn "$SERVICE_ARN" \
             --query 'Service.SourceConfiguration.ImageRepository.ImageConfiguration.RuntimeEnvironmentSecrets' \
             --output json 2>/dev/null || echo '{}')
+
+          # nullの場合は空オブジェクトに
+          if [ "$CURRENT_CONFIG" = "null" ]; then
+            CURRENT_CONFIG='{}'
+          fi
 
           # ソース設定を構築（jqを使用してJSON生成）
           SOURCE_CONFIG=$(jq -n \
@@ -214,6 +226,10 @@ jobs:
           # 一時ファイルに保存
           echo "$SOURCE_CONFIG" > /tmp/source-config.json
 
+          # デバッグ出力
+          echo "   SOURCE_CONFIG:"
+          cat /tmp/source-config.json | jq .
+
           # App Runnerを更新
           aws apprunner update-service \
             --service-arn "$SERVICE_ARN" \
@@ -222,7 +238,6 @@ jobs:
           echo "✅ デプロイリクエストを送信しました"
           echo "   サービス: ${{ env.SERVICE_NAME }}"
           echo "   イメージ: $ECR_REGISTRY/$ECR_REPOSITORY:${{ github.sha }}"
-          echo "   環境変数: $(echo "$ENV_VARS_JSON" | jq 'length')件"
 
       # デプロイ結果を出力
       - name: Show deployment result
