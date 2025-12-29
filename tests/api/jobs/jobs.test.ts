@@ -119,7 +119,7 @@ vi.mock("@/lib/kintone/services/job", () => ({
 }))
 
 vi.mock("@/lib/kintone/services/application", () => ({
-  getApplicationsByAuthUserId: vi.fn(() => []),
+  getAppliedJobIdsByAuthUserId: vi.fn(() => []),
 }))
 
 vi.mock("@/lib/kintone/services/recommendation", () => ({
@@ -143,14 +143,14 @@ import { GET } from "@/app/api/jobs/route"
 import { GET as GET_JOB_DETAIL } from "@/app/api/jobs/[id]/route"
 import { getSession } from "@/lib/auth-server"
 import { getAllJobs, getJobById } from "@/lib/kintone/services/job"
-import { getApplicationsByAuthUserId } from "@/lib/kintone/services/application"
+import { getAppliedJobIdsByAuthUserId } from "@/lib/kintone/services/application"
 
 describe("GET /api/jobs", () => {
   beforeEach(() => {
     vi.clearAllMocks()
     vi.mocked(getSession).mockResolvedValue(mockSession)
     vi.mocked(getAllJobs).mockResolvedValue(mockJobs)
-    vi.mocked(getApplicationsByAuthUserId).mockResolvedValue([])
+    vi.mocked(getAppliedJobIdsByAuthUserId).mockResolvedValue([])
   })
 
   describe("3.1.1 全案件取得", () => {
@@ -370,18 +370,8 @@ describe("GET /api/jobs", () => {
   describe("3.3.1 応募済み案件の除外", () => {
     it("応募済みの案件は一覧から除外される", async () => {
       // 案件ID: 1に応募済みとする
-      vi.mocked(getApplicationsByAuthUserId).mockResolvedValueOnce([
-        {
-          id: "app-1",
-          jobId: "1",
-          status: "応募中",
-          talentId: "talent-1",
-          authUserId: "test-user-id",
-          appliedAt: new Date().toISOString(),
-          resumeText: "",
-          appealText: "",
-        },
-      ])
+      // getAppliedJobIdsByAuthUserIdは案件IDの配列を返す
+      vi.mocked(getAppliedJobIdsByAuthUserId).mockResolvedValueOnce(["1"])
 
       const request = new NextRequest("http://localhost:3000/api/jobs")
 
@@ -391,6 +381,34 @@ describe("GET /api/jobs", () => {
       expect(response.status).toBe(200)
       // 案件ID: 1は除外される
       expect(data.items.find((job: { id: string }) => job.id === "1")).toBeUndefined()
+    })
+
+    it("複数の応募済み案件が全て除外される", async () => {
+      // 案件ID: 1と2に応募済みとする
+      vi.mocked(getAppliedJobIdsByAuthUserId).mockResolvedValueOnce(["1", "2"])
+
+      const request = new NextRequest("http://localhost:3000/api/jobs")
+
+      const response = await GET(request)
+      const data = await response.json()
+
+      expect(response.status).toBe(200)
+      // 案件ID: 1と2は除外、残りは4のみ（3はクローズで除外）
+      expect(data.items.length).toBe(1)
+      expect(data.items[0].id).toBe("4")
+    })
+
+    it("未認証ユーザーの場合は応募済み除外がスキップされる", async () => {
+      vi.mocked(getSession).mockResolvedValueOnce(null)
+
+      const request = new NextRequest("http://localhost:3000/api/jobs")
+
+      const response = await GET(request)
+      const data = await response.json()
+
+      expect(response.status).toBe(200)
+      // 未認証なので応募済み除外は行われず、全ての公開案件が表示
+      expect(data.items.length).toBe(3)
     })
   })
 })

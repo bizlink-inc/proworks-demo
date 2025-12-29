@@ -68,6 +68,7 @@ vi.mock("@/lib/kintone/services/application", () => ({
   checkDuplicateApplication: vi.fn(() => false),
   getApplicationsByAuthUserId: vi.fn(() => mockApplications),
   updateApplicationStatus: vi.fn(),
+  clearApplicationsCache: vi.fn(),
 }))
 
 vi.mock("@/lib/kintone/services/talent", () => ({
