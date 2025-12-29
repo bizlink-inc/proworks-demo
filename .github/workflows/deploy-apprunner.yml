@@ -90,15 +90,12 @@ jobs:
       - name: Get secrets from Secrets Manager
         id: get-secrets
         run: |
-          # App Runner用の環境変数を取得
-          SECRETS=$(aws secretsmanager get-secret-value \
+          # App Runner用の環境変数を取得（辞書型のままで使用）
+          aws secretsmanager get-secret-value \
             --secret-id "${{ env.APPRUNNER_SECRET_NAME }}" \
-            --query SecretString --output text)
+            --query SecretString --output text > /tmp/env_vars.json
 
-          # 直接App Runner用JSON配列形式に変換（awkを使わず安全に変換）
-          echo "$SECRETS" | jq 'to_entries | map({Name: .key, Value: .value})' > /tmp/env_vars.json
-
-          echo "✅ 環境変数: $(jq 'length' /tmp/env_vars.json)件"
+          echo "✅ 環境変数: $(jq 'keys | length' /tmp/env_vars.json)件"
 
       # Dockerイメージビルド
       - name: Build Docker image
@@ -185,7 +182,7 @@ jobs:
           # JSONファイルから直接読み込み（awkは不要）
           ENV_VARS_JSON=$(cat /tmp/env_vars.json)
 
-          echo "   環境変数: $(echo "$ENV_VARS_JSON" | jq 'length')件"
+          echo "   環境変数: $(echo "$ENV_VARS_JSON" | jq 'keys | length')件"
 
           # 既存のSecrets設定を取得
           CURRENT_CONFIG=$(aws apprunner describe-service \
