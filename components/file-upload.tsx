@@ -164,6 +164,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
       }
       uploadFile(file);
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentFileCount, uploadingFiles.length, maxFiles]);
 
   // ファイル選択ボタンクリック

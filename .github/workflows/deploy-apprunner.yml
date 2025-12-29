@@ -194,21 +194,22 @@ jobs:
             --query 'Service.SourceConfiguration.ImageRepository.ImageConfiguration.RuntimeEnvironmentSecrets' \
             --output json 2>/dev/null || echo '{}')
 
-          # ソース設定を構築
-          SOURCE_CONFIG=$(cat <<EOF
-          {
-            "ImageRepository": {
-              "ImageIdentifier": "$ECR_REGISTRY/$ECR_REPOSITORY:${{ github.sha }}",
-              "ImageRepositoryType": "ECR",
-              "ImageConfiguration": {
-                "Port": "8080",
-                "RuntimeEnvironmentVariables": $ENV_VARS_JSON,
-                "RuntimeEnvironmentSecrets": $CURRENT_CONFIG
+          # ソース設定を構築（jqを使用してJSON生成）
+          SOURCE_CONFIG=$(jq -n \
+            --arg imageId "$ECR_REGISTRY/$ECR_REPOSITORY:${{ github.sha }}" \
+            --argjson envVars "$ENV_VARS_JSON" \
+            --argjson secrets "$CURRENT_CONFIG" \
+            '{
+              ImageRepository: {
+                ImageIdentifier: $imageId,
+                ImageRepositoryType: "ECR",
+                ImageConfiguration: {
+                  Port: "8080",
+                  RuntimeEnvironmentVariables: $envVars,
+                  RuntimeEnvironmentSecrets: $secrets
+                }
               }
-            }
-          }
-          EOF
-          )
+            }')
 
           # 一時ファイルに保存
           echo "$SOURCE_CONFIG" > /tmp/source-config.json
