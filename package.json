@@ -48,7 +48,14 @@
     "recommend:batch": "npx tsx scripts/refresh-recommendations.ts",
     "recommend:batch:dry": "npx tsx scripts/refresh-recommendations.ts --dry-run",
     "recommend:reset": "npx tsx scripts/reset-recommendations.ts",
-    "test:webhook": "npx tsx scripts/test-job-webhook.ts"
+    "test:webhook": "npx tsx scripts/test-job-webhook.ts",
+    "lambda:secrets:push:dev": "npx tsx scripts/push-lambda-secrets.ts dev",
+    "lambda:secrets:push:prod": "npx tsx scripts/push-lambda-secrets.ts prod",
+    "lambda:trigger:on:dev": "npx tsx scripts/lambda-trigger-control.ts on dev",
+    "lambda:trigger:off:dev": "npx tsx scripts/lambda-trigger-control.ts off dev",
+    "lambda:trigger:on:prod": "npx tsx scripts/lambda-trigger-control.ts on prod",
+    "lambda:trigger:off:prod": "npx tsx scripts/lambda-trigger-control.ts off prod",
+    "lambda:trigger:status": "npx tsx scripts/lambda-trigger-control.ts status"
   },
   "dependencies": {
     "@aws-sdk/client-ses": "^3.700.0",
