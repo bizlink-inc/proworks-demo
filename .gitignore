@@ -81,3 +81,6 @@ aws-resources.txt
 apprunner-*-env.json
 apprunner-env-vars.json
 apprunner-update-env.json
+
+# AWS E2E test reports
+playwright-report-aws/
