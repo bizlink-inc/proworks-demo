@@ -60,7 +60,14 @@
     "test:integration": "MOCK_EXTERNAL_SERVICES=false vitest run tests/integration",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "test:auth": "vitest run tests/api/auth && playwright test tests/e2e/auth.spec.ts",
+    "test:profile": "vitest run tests/api/me && playwright test tests/e2e/profile.spec.ts",
+    "test:jobs": "vitest run tests/api/jobs",
+    "test:applications": "vitest run tests/api/applications",
+    "test:admin": "vitest run tests/api/admin && playwright test tests/e2e/admin.spec.ts",
+    "test:lambda": "vitest run tests/unit/lambda",
+    "test:notifications": "playwright test tests/e2e/notifications.spec.ts"
   },
   "dependencies": {
     "@aws-sdk/client-ses": "^3.700.0",
