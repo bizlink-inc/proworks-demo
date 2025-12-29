@@ -238,6 +238,8 @@ export const createSeedData = async () => {
     );
 
     // 各アクティブ案件について動的にスコア計算
+    // 山田太郎の推薦を後で担当者おすすめ設定するため一時保存
+    const yamadaMatches: { jobId: string; score: number }[] = [];
     const allRecommendationRecords: any[] = [];
 
     for (let jobIndex = 0; jobIndex < jobsWithFilteredOptions.length; jobIndex++) {
@@ -246,6 +248,7 @@ export const createSeedData = async () => {
 
       const { raw: job, filtered } = jobsWithFilteredOptions[jobIndex];
       const jobId = jobIds[jobIndex];
+      const jobTitle = job.案件名 || "";
 
       // フィルタ済みデータを使用（Kintoneに保存されるのと同じデータ）
       // これによりbatch処理との一貫性を保つ
@@ -255,7 +258,7 @@ export const createSeedData = async () => {
       const jobForMatching: JobForMatching = {
         id: `job_${jobIndex}`,
         jobId: jobId,
-        title: job.案件名 || "",
+        title: jobTitle,
         positions: positions,
         skills: skills,
       };
@@ -268,17 +271,46 @@ export const createSeedData = async () => {
         talentsForMatching.length
       );
 
-      // 閾値以上のマッチをレコード化
+      // 閾値以上のマッチを収集
       for (const match of topMatches) {
         if (!match.talentAuthUserId || match.score < threshold) continue;
-        allRecommendationRecords.push(
-          buildRecommendationRecord(match.talentAuthUserId, jobId, match.score)
-        );
+
+        // 山田太郎の推薦は後で担当者おすすめを設定するため記録
+        if (match.talentAuthUserId === YAMADA_AUTH_USER_ID) {
+          yamadaMatches.push({ jobId, score: match.score });
+        }
+
+        allRecommendationRecords.push({
+          talentAuthUserId: match.talentAuthUserId,
+          jobId,
+          score: match.score,
+        });
       }
     }
 
-    await addRecommendationRecordsInBatches(allRecommendationRecords);
-    console.log(`   → ${allRecommendationRecords.length}件を作成完了`);
+    // 山田太郎のスコア上位2件を担当者おすすめに設定
+    const yamadaStaffRecommendJobIds = new Set(
+      yamadaMatches
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 2)
+        .map((m) => m.jobId)
+    );
+    console.log(`   山田太郎の担当者おすすめ: ${yamadaStaffRecommendJobIds.size}件`);
+
+    // 最終的なレコードを構築
+    const finalRecords = allRecommendationRecords.map((rec) => {
+      const isYamadaStaffRecommend =
+        rec.talentAuthUserId === YAMADA_AUTH_USER_ID &&
+        yamadaStaffRecommendJobIds.has(rec.jobId);
+
+      return buildRecommendationRecord(rec.talentAuthUserId, rec.jobId, rec.score, {
+        aiMatched: true,
+        staffRecommend: isYamadaStaffRecommend,
+      });
+    });
+
+    await addRecommendationRecordsInBatches(finalRecords);
+    console.log(`   → ${finalRecords.length}件を作成完了`);
 
     // 6. お知らせ作成（先行開始済み）
     console.log(`\n[6/6] システム通知を作成中...`);

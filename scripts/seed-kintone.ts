@@ -207,9 +207,11 @@ const fetchAndDeleteAll = async (
       return ids.length;
     }
     return 0;
-  } catch {
+  } catch (error) {
     if (optional) return 0;
-    throw new Error(`Failed to delete records from app ${appId}`);
+    const message = error instanceof Error ? error.message : String(error);
+    console.error(`❌ App ${appId} の削除でエラー:`, message);
+    throw new Error(`Failed to delete records from app ${appId}: ${message}`);
   }
 };
 
