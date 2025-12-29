@@ -173,12 +173,25 @@ AWS App Runner サービスの起動・停止を制御します。
 
 ## 環境変数管理
 
-App Runner サービスへ環境変数をプッシュします。
+AWS Secrets Manager を使用して環境変数を管理します。CI/CD 時に自動で取得されます。
+
+### App Runner シークレット管理
 
 | コマンド | 説明 | スクリプト |
 |---------|------|-----------|
-| `npm run env:push:dev` | 開発環境へ環境変数をプッシュ | `scripts/push-env-to-apprunner.ts dev` |
-| `npm run env:push:prod` | 本番環境へ環境変数をプッシュ | `scripts/push-env-to-apprunner.ts prod` |
+| `npm run apprunner:secrets:push:dev` | dev環境の環境変数をSecrets Managerに反映 | `scripts/push-apprunner-secrets.ts dev` |
+| `npm run apprunner:secrets:push:prod` | prod環境の環境変数をSecrets Managerに反映 | `scripts/push-apprunner-secrets.ts prod` |
+
+ローカルの `.env.aws.dev` / `.env.aws.prod` から環境変数を抽出して Secrets Manager (`proworks/apprunner-dev`, `proworks/apprunner-prod`) に登録/更新します。
+
+### App Runner 直接プッシュ（レガシー）
+
+App Runner サービスへ環境変数を直接プッシュします。
+
+| コマンド | 説明 | スクリプト |
+|---------|------|-----------|
+| `npm run env:push:dev` | 開発環境へ環境変数を直接プッシュ | `scripts/push-env-to-apprunner.ts dev` |
+| `npm run env:push:prod` | 本番環境へ環境変数を直接プッシュ | `scripts/push-env-to-apprunner.ts prod` |
 
 ---
 
