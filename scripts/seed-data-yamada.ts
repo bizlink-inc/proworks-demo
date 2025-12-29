@@ -1,5 +1,5 @@
 /**
- * 山田・田中テスト用シードデータ（2人+8案件+応募履歴）
+ * 山田・田中テスト用シードデータ（2人+9案件+応募履歴）
  * セット1: yamadaデータ（前からの既存データ）
  *
  * generateDevCreatedAtを引数として受け取るファクトリ関数パターン
@@ -476,15 +476,55 @@ SOC（セキュリティオペレーションセンター）での監視・分�
       募集人数: 2,
       作成日時_開発環境: generateDevCreatedAt(120), // 約4ヶ月前
     },
+    // 応募取り消しテスト用の案件（jobIndex: 8）
+    {
+      案件名: "社内システムリニューアル案件",
+      ルックアップ: "中堅メーカーF社",
+      職種_ポジション: ["フロントエンドエンジニア", "フルスタックエンジニア"],
+      スキル: ["React", "TypeScript", "Next.js"],
+      概要: `中堅メーカーの社内システムリニューアル案件です。
+既存の業務システムをReact/Next.jsでモダン化するプロジェクトです。
+フロントエンド開発経験がある方を歓迎します。`,
+      環境: `【開発環境】
+・フロントエンド: React 18, Next.js 14, TypeScript
+・バックエンド: Node.js, Express
+・データベース: PostgreSQL
+・その他: Docker, GitHub`,
+      必須スキル: `・React/Next.jsの実務経験 2年以上
+・TypeScriptの使用経験
+・Git/GitHubを使ったチーム開発経験`,
+      尚可スキル: `・業務システム開発の経験
+・UI/UXデザインの知見
+・テスト自動化の経験`,
+      勤務地エリア: "東京都中央区",
+      最寄駅: "日本橋駅",
+      下限h: 140,
+      上限h: 180,
+      掲載単価: 70,
+      MAX単価: 75,
+      案件期間: "6ヶ月〜",
+      参画時期: "2026-01-15",
+      面談回数: "1回",
+      案件特徴: ["リモート併用可", "長期案件", "上流工程参画"],
+      ラジオボタン: "募集中",
+      ラジオボタン_0: "有",
+      商流: "元請け",
+      契約形態: "準委任",
+      リモート可否: "可",
+      外国籍: "可",
+      募集人数: 2,
+      作成日時_開発環境: generateDevCreatedAt(3), // 3日前
+    },
   ],
 
   applications: [
-    // 応募した順（新しい順）: 案件決定、面談予定、面談調整中、募集終了、応募済み
+    // 応募した順（新しい順）: 案件決定、面談予定、面談調整中、応募済み（取消可）、募集終了、応募済み（取消不可）
     { auth_user_id: "seed_user_001", jobIndex: 3, 対応状況: "案件参画", 作成日時_開発環境: generateDevCreatedAt(1) }, // 1日前（最新）
     { auth_user_id: "seed_user_001", jobIndex: 2, 対応状況: "面談予定", 作成日時_開発環境: generateDevCreatedAt(2) }, // 2日前
     { auth_user_id: "seed_user_001", jobIndex: 1, 対応状況: "面談調整中", 作成日時_開発環境: generateDevCreatedAt(3) }, // 3日前
-    { auth_user_id: "seed_user_001", jobIndex: 4, 対応状況: "見送り", 作成日時_開発環境: generateDevCreatedAt(4) }, // 4日前
-    { auth_user_id: "seed_user_001", jobIndex: 0, 対応状況: "応募済み", 作成日時_開発環境: generateDevCreatedAt(5) }, // 5日前（最古）
+    { auth_user_id: "seed_user_001", jobIndex: 8, 対応状況: "応募済み", 作成日時_開発環境: generateDevCreatedAt(4) }, // 4日前 - 応募取り消し可能（募集中の案件）
+    { auth_user_id: "seed_user_001", jobIndex: 4, 対応状況: "見送り", 作成日時_開発環境: generateDevCreatedAt(5) }, // 5日前
+    { auth_user_id: "seed_user_001", jobIndex: 0, 対応状況: "応募済み", 作成日時_開発環境: generateDevCreatedAt(6) }, // 6日前 - 応募取り消し不可（クローズ案件）
 
     // 3ヶ月以上前の応募履歴（別案件で作成）
     { auth_user_id: "seed_user_001", jobIndex: 5, 対応状況: "応募済み", 作成日時_開発環境: generateDevCreatedAt(95) }, // 約3ヶ月前
