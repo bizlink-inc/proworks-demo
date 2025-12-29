@@ -172,21 +172,9 @@ describe("ApplicationsClient", () => {
       // 取り消しボタンをクリック
       fireEvent.click(screen.getByTestId("cancel-btn-app-1"))
 
-      // 成功トーストが表示されることを確認
+      // ページがリロードされることを確認
       await waitFor(() => {
-        expect(mockToast).toHaveBeenCalledWith(
-          expect.objectContaining({
-            title: "応募を取り消しました",
-          })
-        )
-      })
-
-      // 一覧が再取得されたことを確認（/api/applications/meが呼ばれた）
-      await waitFor(() => {
-        const applicationsMeCalls = mockFetch.mock.calls.filter(
-          (call: any[]) => call[0] === "/api/applications/me"
-        )
-        expect(applicationsMeCalls.length).toBeGreaterThan(0)
+        expect(window.location.reload).toHaveBeenCalled()
       })
     })
 

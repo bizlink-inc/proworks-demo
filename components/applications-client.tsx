@@ -246,14 +246,8 @@ export const ApplicationsClient = ({ user, initialApplications = [] }: Applicati
         throw new Error(errorData.error || "応募の取り消しに失敗しました")
       }
 
-      // 成功時：応募一覧を再取得
-      await refreshApplications()
-
-      // 成功トースト表示
-      toast({
-        title: "応募を取り消しました",
-        description: "この案件への応募を取り消しました。",
-      })
+      // 成功時：ページをリロードして最新状態に更新
+      window.location.reload()
     } catch (error) {
       console.error("応募取り消しエラー:", error)
       toast({

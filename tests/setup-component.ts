@@ -8,6 +8,7 @@ vi.mock("next/navigation", () => ({
     replace: vi.fn(),
     prefetch: vi.fn(),
     back: vi.fn(),
+    refresh: vi.fn(),
   }),
   useSearchParams: () => new URLSearchParams(),
   usePathname: () => "/applications",
@@ -33,3 +34,13 @@ vi.mock("@/hooks/use-withdrawal-check", () => ({
 
 // Global fetch mock
 global.fetch = vi.fn()
+
+// Mock window.location.reload (jsdomでは未実装)
+Object.defineProperty(window, "location", {
+  value: {
+    ...window.location,
+    reload: vi.fn(),
+    href: "http://localhost:3000/applications",
+  },
+  writable: true,
+})
