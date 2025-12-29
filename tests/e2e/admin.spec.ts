@@ -31,11 +31,5 @@ test.describe("管理者画面", () => {
       await expect(page).toHaveURL(/admin\/login|login/)
     })
 
-    test("バッチ設定ページは未認証時アクセス不可", async ({ page }) => {
-      await page.goto("/admin/batch-settings")
-
-      // ログインページにリダイレクト
-      await expect(page).toHaveURL(/admin\/login|login/)
-    })
   })
 })

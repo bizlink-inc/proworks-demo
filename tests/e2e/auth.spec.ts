@@ -3,7 +3,7 @@ import { test, expect } from "@playwright/test"
 test.describe("認証フロー", () => {
   test.describe("1.1 ログインページ", () => {
     test("ログインページが表示される", async ({ page }) => {
-      await page.goto("/login")
+      await page.goto("/auth/signin")
 
       await expect(page.locator("h1, h2").first()).toBeVisible()
       await expect(page.locator('input[type="email"], input[name="email"]')).toBeVisible()
@@ -12,7 +12,7 @@ test.describe("認証フロー", () => {
     })
 
     test("メールアドレスとパスワードが入力できる", async ({ page }) => {
-      await page.goto("/login")
+      await page.goto("/auth/signin")
 
       await page.fill('input[type="email"], input[name="email"]', "test@example.com")
       await page.fill('input[type="password"]', "password123")
@@ -22,7 +22,7 @@ test.describe("認証フロー", () => {
     })
 
     test("空のフォームで送信するとエラーが表示される", async ({ page }) => {
-      await page.goto("/login")
+      await page.goto("/auth/signin")
 
       await page.click('button[type="submit"]')
 
@@ -35,23 +35,24 @@ test.describe("認証フロー", () => {
 
   test.describe("1.2 新規登録ページ", () => {
     test("新規登録ページが表示される", async ({ page }) => {
-      await page.goto("/signup")
+      await page.goto("/auth/signup")
 
       await expect(page.locator('input[type="email"], input[name="email"]')).toBeVisible()
       await expect(page.locator('input[type="password"]')).toBeVisible()
     })
 
     test("ログインページへのリンクがある", async ({ page }) => {
-      await page.goto("/signup")
+      await page.goto("/auth/signup")
 
-      const loginLink = page.locator('a[href*="login"]')
+      // signin へのリンクを検索
+      const loginLink = page.locator('a[href*="signin"]')
       await expect(loginLink).toBeVisible()
     })
   })
 
   test.describe("1.3 パスワードリセットページ", () => {
     test("パスワードリセットページが表示される", async ({ page }) => {
-      await page.goto("/forgot-password")
+      await page.goto("/auth/forgot-password")
 
       await expect(page.locator('input[type="email"], input[name="email"]')).toBeVisible()
       await expect(page.locator('button[type="submit"]')).toBeVisible()
@@ -60,16 +61,17 @@ test.describe("認証フロー", () => {
 
   test.describe("1.4 未認証時のリダイレクト", () => {
     test("ダッシュボードにアクセスするとログインページにリダイレクトされる", async ({ page }) => {
-      await page.goto("/dashboard")
+      // ルートページ（/）がダッシュボード
+      await page.goto("/")
 
-      // ログインページにリダイレクトされるか、ログインを促すUIが表示される
-      await expect(page).toHaveURL(/login|signin|auth/)
+      // ログインページにリダイレクトされる
+      await expect(page).toHaveURL(/auth\/signin/)
     })
 
     test("マイページにアクセスするとログインページにリダイレクトされる", async ({ page }) => {
-      await page.goto("/profile")
+      await page.goto("/me")
 
-      await expect(page).toHaveURL(/login|signin|auth/)
+      await expect(page).toHaveURL(/auth\/signin/)
     })
   })
 })
