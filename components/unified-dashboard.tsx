@@ -219,24 +219,26 @@ export function UnifiedDashboard({
     }
   }, [user.id, user.email])
 
+  // タブごとの初回フェッチを追跡するref
+  const hasFetchedApplications = useRef(false)
+  const hasFetchedProfile = useRef(false)
+
   // タブ切り替え時のデータ取得
   useEffect(() => {
     if (activeTab === "applications") {
-      // 応募データがない場合は取得、ある場合はバックグラウンドで更新
-      if (applications === null) {
+      if (!hasFetchedApplications.current) {
+        // 初回は読み込み表示付きで取得
+        hasFetchedApplications.current = true
         fetchApplications(true)
-      } else {
-        fetchApplications(false)
       }
     } else if (activeTab === "profile") {
-      // プロフィールデータがない場合は取得、ある場合はバックグラウンドで更新
-      if (talent === null) {
+      if (!hasFetchedProfile.current) {
+        // 初回は読み込み表示付きで取得
+        hasFetchedProfile.current = true
         fetchProfile(true)
-      } else {
-        fetchProfile(false)
       }
     }
-  }, [activeTab, applications, talent, fetchApplications, fetchProfile])
+  }, [activeTab, fetchApplications, fetchProfile])
 
   // === 案件一覧のロジック ===
   const totalPages = Math.ceil(total / size)
@@ -347,8 +349,9 @@ export function UnifiedDashboard({
         missingFields: application.missingFields,
       })
 
-      // 応募後はapplicationsを再取得
+      // 応募後はapplicationsを再取得するためフラグをリセット
       setApplications(null)
+      hasFetchedApplications.current = false
     } catch (error) {
       console.error("応募処理エラー:", error)
       toast({
