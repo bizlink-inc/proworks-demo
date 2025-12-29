@@ -14,6 +14,7 @@
 - [キャッシュ管理](#キャッシュ管理)
 - [App Runner 制御](#app-runner-制御)
 - [環境変数管理](#環境変数管理)
+- [Lambda バッチ制御](#lambda-バッチ制御)
 
 ---
 
@@ -178,6 +179,35 @@ App Runner サービスへ環境変数をプッシュします。
 |---------|------|-----------|
 | `npm run env:push:dev` | 開発環境へ環境変数をプッシュ | `scripts/push-env-to-apprunner.ts dev` |
 | `npm run env:push:prod` | 本番環境へ環境変数をプッシュ | `scripts/push-env-to-apprunner.ts prod` |
+
+---
+
+## Lambda バッチ制御
+
+AWS Lambda（推薦バッチ処理）のスケジュールトリガーと環境変数を管理します。
+
+### トリガー制御
+
+定期実行（毎日 JST 02:00）のオン/オフを制御します。
+
+| コマンド | 説明 | スクリプト |
+|---------|------|-----------|
+| `npm run lambda:trigger:status` | 両環境のトリガー状態を表示 | `scripts/lambda-trigger-control.ts status` |
+| `npm run lambda:trigger:on:dev` | dev環境のトリガーを有効化 | `scripts/lambda-trigger-control.ts on dev` |
+| `npm run lambda:trigger:off:dev` | dev環境のトリガーを無効化 | `scripts/lambda-trigger-control.ts off dev` |
+| `npm run lambda:trigger:on:prod` | prod環境のトリガーを有効化 | `scripts/lambda-trigger-control.ts on prod` |
+| `npm run lambda:trigger:off:prod` | prod環境のトリガーを無効化 | `scripts/lambda-trigger-control.ts off prod` |
+
+### シークレット管理
+
+Lambda 用の環境変数を AWS Secrets Manager にプッシュします。
+
+| コマンド | 説明 | スクリプト |
+|---------|------|-----------|
+| `npm run lambda:secrets:push:dev` | dev環境の環境変数をSecrets Managerに反映 | `scripts/push-lambda-secrets.ts dev` |
+| `npm run lambda:secrets:push:prod` | prod環境の環境変数をSecrets Managerに反映 | `scripts/push-lambda-secrets.ts prod` |
+
+ローカルの `.env.aws.dev` / `.env.aws.prod` から Kintone 関連の環境変数を抽出して Secrets Manager に登録/更新します。
 
 ---
 
