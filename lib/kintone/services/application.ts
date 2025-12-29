@@ -2,18 +2,6 @@ import { createApplicationClient, getAppIds } from "../client";
 import type { ApplicationRecord, Application } from "../types";
 import { APPLICATION_FIELDS } from "../fieldMapping";
 
-// 応募履歴のメモリキャッシュ（5分間有効）
-const applicationsCache = new Map<string, { applications: Application[]; cachedAt: number }>();
-const APPLICATIONS_CACHE_TTL = 5 * 60 * 1000; // 5分
-
-/**
- * 応募キャッシュをクリアする
- */
-export const clearApplicationsCache = (): void => {
-  applicationsCache.clear();
-  console.log("[Applications Cache] キャッシュをクリアしました");
-};
-
 // 環境に応じて作成日時フィールドを取得する関数
 // kintone APP_IDで判定：開発DB（84）では作成日時_開発環境、本番DB（8）では作成日時を使用
 const getCreatedAt = (record: ApplicationRecord): string => {
@@ -54,16 +42,7 @@ const APPLICATION_LIST_FIELDS = [
 ];
 
 // auth_user_idで応募履歴を取得（3ヶ月以内、応募取消し除外）
-// キャッシュ利用で高速化
 export const getApplicationsByAuthUserId = async (authUserId: string): Promise<Application[]> => {
-  // キャッシュチェック
-  const now = Date.now();
-  const cached = applicationsCache.get(authUserId);
-  if (cached && now - cached.cachedAt < APPLICATIONS_CACHE_TTL) {
-    console.log(`[Applications Cache] キャッシュヒット: ${authUserId}`);
-    return cached.applications;
-  }
-
   const client = createApplicationClient();
   const appId = getAppIds().application;
 
@@ -90,10 +69,6 @@ export const getApplicationsByAuthUserId = async (authUserId: string): Promise<A
     });
 
     const applications = response.records.map((record) => convertApplicationRecord(record as unknown as ApplicationRecord));
-
-    // キャッシュに保存
-    applicationsCache.set(authUserId, { applications, cachedAt: now });
-    console.log(`[Applications Cache] キャッシュ保存: ${authUserId}, ${applications.length}件`);
 
     return applications;
   } catch (error) {

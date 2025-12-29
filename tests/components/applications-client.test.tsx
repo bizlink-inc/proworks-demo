@@ -133,7 +133,7 @@ describe("ApplicationsClient", () => {
   })
 
   describe("応募取消し", () => {
-    it("取消し成功時、一覧が更新される", async () => {
+    it("取消し成功時、一覧が更新されトーストが表示される", async () => {
       // 初期状態で応募一覧をSSRで渡す
       render(
         <ApplicationsClient user={mockUser} initialApplications={mockApplications} />
@@ -172,9 +172,21 @@ describe("ApplicationsClient", () => {
       // 取り消しボタンをクリック
       fireEvent.click(screen.getByTestId("cancel-btn-app-1"))
 
-      // ページがリロードされることを確認
+      // 成功トーストが表示されることを確認
       await waitFor(() => {
-        expect(window.location.reload).toHaveBeenCalled()
+        expect(mockToast).toHaveBeenCalledWith(
+          expect.objectContaining({
+            title: "応募を取り消しました",
+          })
+        )
+      })
+
+      // 一覧が再取得されたことを確認
+      await waitFor(() => {
+        const applicationsMeCalls = mockFetch.mock.calls.filter(
+          (call: any[]) => call[0] === "/api/applications/me"
+        )
+        expect(applicationsMeCalls.length).toBeGreaterThan(0)
       })
     })
 

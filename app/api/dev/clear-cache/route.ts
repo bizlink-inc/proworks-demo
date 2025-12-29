@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { clearJobCache } from "@/lib/kintone/services/job";
-import { clearApplicationsCache } from "@/lib/kintone/services/application";
 
 /**
  * 開発用：メモリキャッシュをクリアするAPI
@@ -16,13 +15,12 @@ export const GET = async () => {
   }
 
   try {
-    // すべてのキャッシュをクリア
+    // 案件キャッシュをクリア（応募データはキャッシュなし）
     clearJobCache();
-    clearApplicationsCache();
 
     return NextResponse.json({
       success: true,
-      message: "All caches cleared",
+      message: "Job cache cleared",
       clearedAt: new Date().toISOString(),
     });
   } catch (error) {

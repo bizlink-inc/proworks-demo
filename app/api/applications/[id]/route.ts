@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth-server";
-import { updateApplicationStatus, clearApplicationsCache } from "@/lib/kintone/services/application";
+import { updateApplicationStatus } from "@/lib/kintone/services/application";
 import { createApplicationClient, getAppIds } from "@/lib/kintone/client";
 import { APPLICATION_FIELDS } from "@/lib/kintone/fieldMapping";
 import { sendApplicationCancelEmail } from "@/lib/email";
@@ -59,9 +59,6 @@ export const PATCH = async (
 
     // ステータスを更新（応募履歴DBのレコードIDを直接指定）
     await updateApplicationStatus(applicationId, status);
-
-    // 応募キャッシュをクリア（応募一覧に即時反映するため）
-    clearApplicationsCache();
 
     // 応募取消しの場合、メールを送信
     if (status === "応募取消し") {
