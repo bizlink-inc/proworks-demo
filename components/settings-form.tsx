@@ -13,6 +13,7 @@ import { faEyeSlash, faEye } from "@fortawesome/free-solid-svg-icons"
 import type { Talent } from "@/lib/kintone/types"
 import { ContactDialog } from "@/components/contact-dialog"
 import { WithdrawDialog } from "@/components/withdraw-dialog"
+import { EmailChangeDialog } from "@/components/email-change-dialog"
 import { signOut } from "@/lib/auth-client"
 
 interface SettingsFormProps {
@@ -49,12 +50,11 @@ export const SettingsForm = ({ user }: SettingsFormProps) => {
   const { toast } = useToast()
   const router = useRouter()
 
-  // メールアドレス関連
-  const [emailData, setEmailData] = useState({
-    email: user?.email || "",
-    emailDeliveryStatus: user?.emailDeliveryStatus === "配信停止" ? "stop" : "receive",
-  })
-  const [emailLoading, setEmailLoading] = useState(false)
+  // メール配信設定関連
+  const [emailDeliveryStatus, setEmailDeliveryStatus] = useState(
+    user?.emailDeliveryStatus === "配信停止" ? "stop" : "receive"
+  )
+  const [emailDeliveryLoading, setEmailDeliveryLoading] = useState(false)
 
   // パスワード関連
   const [passwordData, setPasswordData] = useState({
@@ -68,6 +68,7 @@ export const SettingsForm = ({ user }: SettingsFormProps) => {
   // ダイアログ関連
   const [contactDialogOpen, setContactDialogOpen] = useState(false)
   const [withdrawDialogOpen, setWithdrawDialogOpen] = useState(false)
+  const [emailChangeDialogOpen, setEmailChangeDialogOpen] = useState(false)
 
   // 新しいパスワードのリアルタイムバリデーション
   const passwordValidation = useMemo(() => {
@@ -80,29 +81,17 @@ export const SettingsForm = ({ user }: SettingsFormProps) => {
   // パスワードが入力されていて、かつ無効な場合にエラー表示
   const showPasswordError = passwordData.newPassword.length > 0 && !passwordValidation.isValid
 
-  // メールアドレス変更
-  const handleEmailSubmit = async (e: React.FormEvent) => {
+  // メール配信設定の更新
+  const handleEmailDeliverySubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    // メールアドレスの形式チェック
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    if (!emailRegex.test(emailData.email)) {
-      toast({
-        title: "エラー",
-        description: "有効なメールアドレスを入力してください。",
-        variant: "destructive",
-      })
-      return
-    }
-
-    setEmailLoading(true)
+    setEmailDeliveryLoading(true)
 
     try {
-      // メール配信設定を更新
-      const deliveryStatus = emailData.emailDeliveryStatus === "receive" ? "配信中" : "配信停止"
-      
+      const deliveryStatus = emailDeliveryStatus === "receive" ? "配信中" : "配信停止"
+
       const res = await fetch("/api/me", {
-        method: "PUT",
+        method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           emailDeliveryStatus: deliveryStatus,
@@ -125,7 +114,7 @@ export const SettingsForm = ({ user }: SettingsFormProps) => {
         variant: "destructive",
       })
     } finally {
-      setEmailLoading(false)
+      setEmailDeliveryLoading(false)
     }
   }
 
@@ -198,29 +187,40 @@ export const SettingsForm = ({ user }: SettingsFormProps) => {
     <div className="space-y-6">
       {/* メールアドレスセクション */}
       <FormSection title="メールアドレス">
-        <form onSubmit={handleEmailSubmit}>
-          <Divider />
-          
-          <div className="py-4">
-            <div className="flex items-center gap-8">
-              <Label
-                htmlFor="email"
-                className="w-32 flex-shrink-0"
-                style={{ color: "var(--pw-text-primary)" }}
-              >
-                メールアドレス
-              </Label>
-              <PWInput
-                id="email"
-                type="email"
-                placeholder="メールアドレスを入力"
-                value={emailData.email}
-                onChange={(e) => setEmailData({ ...emailData, email: e.target.value })}
-                className="flex-1"
-                style={{ maxWidth: "400px" }}
-              />
-            </div>
+        <Divider />
+
+        <div className="py-4">
+          <div className="flex items-center gap-8">
+            <Label
+              className="w-32 flex-shrink-0"
+              style={{ color: "var(--pw-text-primary)" }}
+            >
+              メールアドレス
+            </Label>
+            <span style={{ fontSize: "var(--pw-text-md)", color: "var(--pw-text-primary)" }}>
+              {user?.email || ""}
+            </span>
           </div>
+        </div>
+
+        <Divider />
+
+        <div className="flex justify-center pt-4">
+          <Button
+            type="button"
+            variant="pw-primary"
+            onClick={() => setEmailChangeDialogOpen(true)}
+            style={{ fontSize: "var(--pw-text-md)", minWidth: "280px" }}
+          >
+            メールアドレスを変更する
+          </Button>
+        </div>
+      </FormSection>
+
+      {/* メール配信設定セクション */}
+      <FormSection title="メール配信設定">
+        <form onSubmit={handleEmailDeliverySubmit}>
+          <Divider />
 
           <div className="py-4">
             <div className="flex items-center gap-8">
@@ -228,7 +228,7 @@ export const SettingsForm = ({ user }: SettingsFormProps) => {
                 className="w-32 flex-shrink-0"
                 style={{ color: "var(--pw-text-primary)" }}
               >
-                メール配信設定
+                配信設定
               </Label>
               <div className="flex items-center gap-6">
                 <label className="flex items-center gap-2 cursor-pointer">
@@ -239,8 +239,8 @@ export const SettingsForm = ({ user }: SettingsFormProps) => {
                       backgroundColor: "transparent",
                     }}
                   >
-                    {emailData.emailDeliveryStatus === "receive" && (
-                      <span 
+                    {emailDeliveryStatus === "receive" && (
+                      <span
                         className="w-3 h-3 rounded-full"
                         style={{ backgroundColor: "var(--pw-button-primary)" }}
                       />
@@ -250,8 +250,8 @@ export const SettingsForm = ({ user }: SettingsFormProps) => {
                     type="radio"
                     name="emailDeliveryStatus"
                     value="receive"
-                    checked={emailData.emailDeliveryStatus === "receive"}
-                    onChange={(e) => setEmailData({ ...emailData, emailDeliveryStatus: e.target.value })}
+                    checked={emailDeliveryStatus === "receive"}
+                    onChange={(e) => setEmailDeliveryStatus(e.target.value)}
                     className="sr-only"
                   />
                   <span style={{ fontSize: "var(--pw-text-sm)", color: "var(--pw-text-primary)" }}>
@@ -266,8 +266,8 @@ export const SettingsForm = ({ user }: SettingsFormProps) => {
                       backgroundColor: "transparent",
                     }}
                   >
-                    {emailData.emailDeliveryStatus === "stop" && (
-                      <span 
+                    {emailDeliveryStatus === "stop" && (
+                      <span
                         className="w-3 h-3 rounded-full"
                         style={{ backgroundColor: "var(--pw-button-primary)" }}
                       />
@@ -277,8 +277,8 @@ export const SettingsForm = ({ user }: SettingsFormProps) => {
                     type="radio"
                     name="emailDeliveryStatus"
                     value="stop"
-                    checked={emailData.emailDeliveryStatus === "stop"}
-                    onChange={(e) => setEmailData({ ...emailData, emailDeliveryStatus: e.target.value })}
+                    checked={emailDeliveryStatus === "stop"}
+                    onChange={(e) => setEmailDeliveryStatus(e.target.value)}
                     className="sr-only"
                   />
                   <span style={{ fontSize: "var(--pw-text-sm)", color: "var(--pw-text-primary)" }}>
@@ -295,10 +295,10 @@ export const SettingsForm = ({ user }: SettingsFormProps) => {
             <Button
               type="submit"
               variant="pw-primary"
-              disabled={emailLoading}
+              disabled={emailDeliveryLoading}
               style={{ fontSize: "var(--pw-text-md)", minWidth: "280px" }}
             >
-              {emailLoading ? "更新中..." : "メールアドレスを変更する"}
+              {emailDeliveryLoading ? "更新中..." : "設定を保存する"}
             </Button>
           </div>
         </form>
@@ -467,6 +467,12 @@ export const SettingsForm = ({ user }: SettingsFormProps) => {
       <WithdrawDialog
         open={withdrawDialogOpen}
         onOpenChange={setWithdrawDialogOpen}
+      />
+
+      <EmailChangeDialog
+        open={emailChangeDialogOpen}
+        onOpenChange={setEmailChangeDialogOpen}
+        currentEmail={user?.email || ""}
       />
     </div>
   )

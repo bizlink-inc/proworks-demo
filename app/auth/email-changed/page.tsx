@@ -1,12 +1,40 @@
 "use client";
 
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { CenteredLayout } from "@/components/layouts";
 import { PWAlert } from "@/components/ui/pw-alert";
 import { CheckCircle } from "lucide-react";
+import { signOut } from "@/lib/auth-client";
 
 export default function EmailChangedPage() {
+  const router = useRouter();
+  const [countdown, setCountdown] = useState(3);
+
+  useEffect(() => {
+    // カウントダウン
+    const timer = setInterval(() => {
+      setCountdown((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    // 3秒後にログアウトしてログイン画面へリダイレクト
+    const redirectTimer = setTimeout(async () => {
+      await signOut();
+      router.push("/auth/signin");
+    }, 3000);
+
+    return () => {
+      clearInterval(timer);
+      clearTimeout(redirectTimer);
+    };
+  }, [router]);
+
   return (
     <CenteredLayout showFooter={false}>
       <div className="text-center mb-6">
@@ -41,21 +69,19 @@ export default function EmailChangedPage() {
           メールアドレスの変更が完了しました。
         </p>
         <p>
-          次回ログイン時は、新しいメールアドレスをご使用ください。
+          セキュリティのため、新しいメールアドレスで再度ログインしてください。
         </p>
       </PWAlert>
 
-      <div className="pt-4 space-y-2">
-        <Link href="/" className="block">
-          <Button variant="pw-primary" className="w-full">
-            マイページへ
-          </Button>
-        </Link>
-        <Link href="/" className="block">
-          <Button variant="pw-outline" className="w-full">
-            トップページへ
-          </Button>
-        </Link>
+      <div className="pt-4 text-center">
+        <p
+          style={{
+            fontSize: "var(--pw-text-sm)",
+            color: "var(--pw-text-gray)"
+          }}
+        >
+          {countdown}秒後にログイン画面へ移動します...
+        </p>
       </div>
     </CenteredLayout>
   );
