@@ -52,30 +52,14 @@ type NotificationContextType = {
   clearAllNotifications: () => void
   fetchRecommendedNotifications: () => Promise<void>
   fetchProfileIncompleteNotification: () => Promise<void>
+  fetchInterviewStatusNotifications: () => Promise<void>
   isLoading: boolean
 }
 
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined)
 
-// シードデータ用の初期通知
-// ※status_change通知はAPIでは取得されないため、シードデータとして設定
-const SEED_NOTIFICATIONS: Notification[] = [
-  {
-    id: "seed-interview-confirmed-1",
-    type: "status_change",
-    jobId: "seed-job-1",
-    jobTitle: "スタートアップ向け新規サービス開発",
-    oldStatus: "面談調整中",
-    newStatus: "面談予定",
-    timestamp: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(), // 2日前
-  },
-]
-
 // 既読のおすすめ通知IDを保存するキー
 const READ_RECOMMENDED_NOTIFICATIONS_KEY = "read_recommended_notifications"
-
-// 初期通知が設定済みかどうかを確認するキー
-const SEED_NOTIFICATION_INITIALIZED_KEY = "seed_notification_initialized"
 
 // プロフィール未入力通知を閉じた時刻を保存するキー
 const PROFILE_NOTIFICATION_DISMISSED_AT_KEY = "profile_notification_dismissed_at"
@@ -90,7 +74,6 @@ const CURRENT_USER_ID_KEY = "pw_current_user_id"
 const clearNotificationStorage = () => {
   localStorage.removeItem("notifications")
   localStorage.removeItem(READ_RECOMMENDED_NOTIFICATIONS_KEY)
-  localStorage.removeItem(SEED_NOTIFICATION_INITIALIZED_KEY)
   localStorage.removeItem(PROFILE_NOTIFICATION_DISMISSED_AT_KEY)
   localStorage.removeItem("previous_application_status")
 }
@@ -200,13 +183,12 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     checkCurrentUser()
   }, [])
 
-  // ページロード時にlocalStorageから通知を復元、または初期通知を設定
+  // ページロード時にlocalStorageから通知を復元
   // ユーザーチェック完了後に実行
   useEffect(() => {
     if (!isUserChecked) return
 
     const stored = localStorage.getItem("notifications")
-    const seedInitialized = localStorage.getItem(SEED_NOTIFICATION_INITIALIZED_KEY)
 
     if (stored) {
       try {
@@ -216,10 +198,6 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       } catch (error) {
         console.error("Failed to parse notifications:", error)
       }
-    } else if (!seedInitialized) {
-      // 初回アクセス時：シード通知を追加
-      setNotifications(SEED_NOTIFICATIONS)
-      localStorage.setItem(SEED_NOTIFICATION_INITIALIZED_KEY, "true")
     }
     // 初期化完了をマーク
     setIsInitialized(true)
@@ -312,6 +290,52 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     }
   }, [])
 
+  // 面談予定ステータス通知をAPIから取得
+  const fetchInterviewStatusNotifications = useCallback(async () => {
+    try {
+      const response = await fetch("/api/notifications/interview-status")
+      if (!response.ok) {
+        console.error("Failed to fetch interview status notifications:", response.status)
+        return
+      }
+
+      const data = await response.json()
+      if (!data.notifications || !Array.isArray(data.notifications)) {
+        return
+      }
+
+      const newNotifications = data.notifications as StatusChangeNotification[]
+
+      if (newNotifications.length === 0) {
+        return
+      }
+
+      // 面談予定通知を追加（既存の同じIDは上書きしない）
+      setNotifications((prev) => {
+        const existingIds = new Set(prev.map((n) => n.id))
+        const uniqueNewNotifications = newNotifications.filter((n) => !existingIds.has(n.id))
+        return [...prev, ...uniqueNewNotifications]
+      })
+
+      // 通知を取得した時点でKintoneを更新（通知済みとしてマーク）
+      for (const notification of newNotifications) {
+        // interview-status-{id} から応募IDを抽出
+        const applicationId = notification.id.replace("interview-status-", "")
+        try {
+          await fetch("/api/notifications/interview-status", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ applicationId }),
+          })
+        } catch (error) {
+          console.error("Failed to mark interview notification as read:", error)
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching interview status notifications:", error)
+    }
+  }, [])
+
   const addNotification = (notification: Notification) => {
     setNotifications((prev) => [...prev, notification])
   }
@@ -351,6 +375,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         clearAllNotifications,
         fetchRecommendedNotifications,
         fetchProfileIncompleteNotification,
+        fetchInterviewStatusNotifications,
         isLoading,
       }}
     >
@@ -366,4 +391,3 @@ export function useNotifications() {
   }
   return context
 }
-

@@ -19,7 +19,7 @@ const getCreatedAt = (record: ApplicationRecord): string => {
 // kintoneレコードをフロントエンド用の型に変換
 const convertApplicationRecord = (record: ApplicationRecord): Application => {
   const appliedAt = getCreatedAt(record);
-  
+
   return {
     id: record[APPLICATION_FIELDS.ID].value,
     authUserId: record[APPLICATION_FIELDS.AUTH_USER_ID].value,
@@ -27,6 +27,7 @@ const convertApplicationRecord = (record: ApplicationRecord): Application => {
     jobTitle: record[APPLICATION_FIELDS.JOB_TITLE].value,
     status: record[APPLICATION_FIELDS.STATUS].value,
     appliedAt,
+    interviewNotifiedAt: record.面談予定通知日時?.value || undefined,
   };
 };
 
@@ -39,6 +40,7 @@ const APPLICATION_LIST_FIELDS = [
   APPLICATION_FIELDS.STATUS,
   APPLICATION_FIELDS.CREATED_AT,
   APPLICATION_FIELDS.CREATED_AT_DEV,
+  APPLICATION_FIELDS.INTERVIEW_NOTIFIED_AT,
 ];
 
 // auth_user_idで応募履歴を取得（3ヶ月以内、応募取消し除外）
@@ -187,6 +189,50 @@ export const updateApplicationStatus = async (
     console.log(`✅ 応募ステータス更新成功: レコードID=${applicationId}, 対応状況=${status}`);
   } catch (error) {
     console.error("応募ステータスの更新に失敗:", error);
+    throw error;
+  }
+};
+
+// 未通知の面談予定を取得（ステータスが「面談予定」かつ通知日時が空）
+export const getUnnotifiedInterviewApplications = async (authUserId: string): Promise<Application[]> => {
+  const client = createApplicationClient();
+  const appId = getAppIds().application;
+
+  try {
+    // ステータスが「面談予定」かつ通知日時が空の応募を取得
+    const condition = `${APPLICATION_FIELDS.AUTH_USER_ID} = "${authUserId}" and ${APPLICATION_FIELDS.STATUS} = "面談予定" and ${APPLICATION_FIELDS.INTERVIEW_NOTIFIED_AT} = ""`;
+
+    const response = await client.record.getRecords({
+      app: appId,
+      query: `${condition} limit 100`,
+      fields: APPLICATION_LIST_FIELDS,
+    });
+
+    return response.records.map((record) => convertApplicationRecord(record as unknown as ApplicationRecord));
+  } catch (error) {
+    console.error("未通知の面談予定取得に失敗:", error);
+    throw error;
+  }
+};
+
+// 面談予定通知済みとしてマーク
+export const markInterviewNotified = async (applicationId: string): Promise<void> => {
+  const client = createApplicationClient();
+  const appId = getAppIds().application;
+
+  try {
+    const now = new Date().toISOString();
+    await client.record.updateRecord({
+      app: appId,
+      id: applicationId,
+      record: {
+        [APPLICATION_FIELDS.INTERVIEW_NOTIFIED_AT]: { value: now },
+      },
+    });
+
+    console.log(`✅ 面談予定通知済みマーク成功: レコードID=${applicationId}`);
+  } catch (error) {
+    console.error("面談予定通知済みマークに失敗:", error);
     throw error;
   }
 };

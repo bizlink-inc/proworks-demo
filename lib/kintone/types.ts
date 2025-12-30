@@ -68,6 +68,7 @@ export type ApplicationRecord = {
   作成日時: { value: string };
   作成日時_開発環境?: { value: string }; // 開発環境用の作成日時
   面談日?: { value: string }; // 面談日（リマインド通知用）
+  面談予定通知日時?: { value: string }; // 面談予定通知を送信した日時
 };
 
 // フロントエンド用の型定義（valueを展開した形）
@@ -137,6 +138,7 @@ export type Application = {
   jobTitle: string; // ルックアップで取得される案件名
   status: string;
   appliedAt: string;
+  interviewNotifiedAt?: string; // 面談予定通知を送信した日時
 };
 
 // 推薦DBの型定義

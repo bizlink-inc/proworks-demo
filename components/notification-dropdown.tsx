@@ -63,7 +63,7 @@ const getNotificationDescription = (notification: Notification): string | null =
 }
 
 export const NotificationDropdown = () => {
-  const { notifications, removeNotification, fetchRecommendedNotifications, fetchProfileIncompleteNotification } = useNotifications()
+  const { notifications, removeNotification, fetchRecommendedNotifications, fetchProfileIncompleteNotification, fetchInterviewStatusNotifications } = useNotifications()
   const [isOpen, setIsOpen] = useState(false)
   const router = useRouter()
   const pathname = usePathname()
@@ -75,7 +75,8 @@ export const NotificationDropdown = () => {
   useEffect(() => {
     fetchRecommendedNotifications()
     fetchProfileIncompleteNotification()
-  }, [fetchRecommendedNotifications, fetchProfileIncompleteNotification])
+    fetchInterviewStatusNotifications()
+  }, [fetchRecommendedNotifications, fetchProfileIncompleteNotification, fetchInterviewStatusNotifications])
 
   // 通知を新しい順にソート
   const sortedNotifications = [...notifications].sort(

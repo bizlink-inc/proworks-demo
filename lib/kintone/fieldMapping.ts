@@ -76,6 +76,7 @@ export const APPLICATION_FIELDS = {
   CREATED_AT: '作成日時',
   CREATED_AT_DEV: '作成日時_開発環境', // 開発環境用の作成日時
   INTERVIEW_DATE: '面談日', // 面談日（リマインド通知用）
+  INTERVIEW_NOTIFIED_AT: '面談予定通知日時', // 面談予定通知を送信した日時
 } as const;
 
 // 推薦DB（Recommendation）のフィールドコード
