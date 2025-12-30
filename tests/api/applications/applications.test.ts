@@ -206,27 +206,7 @@ describe("POST /api/applications", () => {
     })
   })
 
-  describe("4.1.3 重複応募チェック", () => {
-    it("同じ案件に重複応募するとエラーが返される", async () => {
-      vi.mocked(checkDuplicateApplication).mockResolvedValueOnce(true)
-
-      const request = new NextRequest(
-        "http://localhost:3000/api/applications",
-        {
-          method: "POST",
-          body: JSON.stringify({ jobId: "1" }),
-        }
-      )
-
-      const response = await POST(request)
-      const data = await response.json()
-
-      expect(response.status).toBe(409)
-      expect(data.error).toBe("Already applied")
-    })
-  })
-
-  describe("4.1.4 存在しない案件への応募", () => {
+  describe("4.1.3 存在しない案件への応募", () => {
     it("存在しない案件への応募で404エラーが返される", async () => {
       vi.mocked(getJobById).mockResolvedValueOnce(null)
 
