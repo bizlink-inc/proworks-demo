@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { auth } from "@/lib/auth";
 
 export const POST = async (request: NextRequest) => {
   try {
@@ -14,24 +15,20 @@ export const POST = async (request: NextRequest) => {
 
     console.log("📧 パスワードリセットリクエスト:", email);
 
-    // Better Auth の forget-password エンドポイントを直接呼び出し
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
-    const response = await fetch(`${appUrl}/api/auth/forget-password`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        email,
-        redirectTo: `${appUrl}/auth/reset-password`,
-      }),
-    });
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      console.error("❌ パスワードリセットAPIエラー:", errorData);
-    } else {
+    // Better Auth の requestPasswordReset API を呼び出し
+    try {
+      await auth.api.requestPasswordReset({
+        body: {
+          email,
+          redirectTo: `${appUrl}/auth/reset-password`,
+        },
+      });
       console.log("✅ パスワードリセットメール送信完了:", email);
+    } catch (error) {
+      // ユーザーが存在しない場合などのエラーは無視（セキュリティ対策）
+      console.log("⚠️ パスワードリセット処理:", error instanceof Error ? error.message : "エラー");
     }
 
     // セキュリティ上、成功・失敗に関わらず同じメッセージを返す
