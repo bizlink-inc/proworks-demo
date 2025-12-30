@@ -2,6 +2,7 @@
 
 import type React from "react"
 import { useState, useMemo } from "react"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { useToast } from "@/hooks/use-toast"
@@ -12,6 +13,7 @@ import { faEyeSlash, faEye } from "@fortawesome/free-solid-svg-icons"
 import type { Talent } from "@/lib/kintone/types"
 import { ContactDialog } from "@/components/contact-dialog"
 import { WithdrawDialog } from "@/components/withdraw-dialog"
+import { signOut } from "@/lib/auth-client"
 
 interface SettingsFormProps {
   user: Talent | null
@@ -45,6 +47,7 @@ const Divider = () => (
 
 export const SettingsForm = ({ user }: SettingsFormProps) => {
   const { toast } = useToast()
+  const router = useRouter()
 
   // メールアドレス関連
   const [emailData, setEmailData] = useState({
@@ -174,14 +177,12 @@ export const SettingsForm = ({ user }: SettingsFormProps) => {
 
       toast({
         title: "パスワードの変更が完了しました。",
-        description: "ご登録いただいているメールアドレス宛に確認メールを送信しました。",
+        description: "セキュリティのため、再度ログインしてください。",
       })
 
-      // フォームをリセット
-      setPasswordData({
-        currentPassword: "",
-        newPassword: "",
-      })
+      // セキュリティのため、パスワード変更後はログアウトしてログイン画面へリダイレクト
+      await signOut()
+      router.push("/auth/signin")
     } catch (error) {
       toast({
         title: "エラー",

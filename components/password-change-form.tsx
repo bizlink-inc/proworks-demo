@@ -2,12 +2,14 @@
 
 import type React from "react";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { FormSection } from "@/components/ui/form-section";
 import { SupportTag } from "@/components/ui/support-tag";
+import { signOut } from "@/lib/auth-client";
 
 export const PasswordChangeForm = () => {
   const [formData, setFormData] = useState({
@@ -17,6 +19,7 @@ export const PasswordChangeForm = () => {
   });
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
+  const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -59,15 +62,12 @@ export const PasswordChangeForm = () => {
 
       toast({
         title: "パスワード変更完了",
-        description: "パスワードが正常に変更されました。",
+        description: "セキュリティのため、再度ログインしてください。",
       });
 
-      // フォームをリセット
-      setFormData({
-        currentPassword: "",
-        newPassword: "",
-        confirmPassword: "",
-      });
+      // セキュリティのため、パスワード変更後はログアウトしてログイン画面へリダイレクト
+      await signOut();
+      router.push("/auth/signin");
     } catch (error) {
       toast({
         title: "エラー",

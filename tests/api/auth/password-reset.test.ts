@@ -8,7 +8,7 @@ global.fetch = mockFetch
 // テスト対象をインポート
 import { POST } from "@/app/api/auth/forgot-password/route"
 
-describe("POST /api/auth/forgot-password", () => {
+describe("POST /api/auth/forgot-password（パスワードリセット申請）", () => {
   beforeEach(() => {
     vi.clearAllMocks()
     // デフォルトで成功レスポンスを返す
