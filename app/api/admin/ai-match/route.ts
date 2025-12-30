@@ -7,13 +7,11 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { headers } from "next/headers";
 import { verifyAdminSession } from "@/lib/admin-auth";
 import { createTalentClient, createJobClient, createRecommendationClient, getAppIds } from "@/lib/kintone/client";
 import { executeAIMatch, AIMatchResult } from "@/lib/gemini/client";
 import { downloadFileFromKintone } from "@/lib/kintone/services/file";
 import { extractTextFromFile } from "@/lib/kintone/services/text-extraction";
-import { sendAIMatchNotificationEmail } from "@/lib/email";
 
 // リクエスト型
 type AIMatchRequestBody = {
@@ -301,43 +299,6 @@ export const POST = async (request: NextRequest) => {
     }
 
     console.log(`🎉 AI評価完了: ${results.length}人`);
-
-    // 5. AIマッチ完了した人材にメール通知を送信
-    const successResults = results.filter((r) => !r.result.error);
-    if (successResults.length > 0) {
-      try {
-        // ベースURLを取得
-        const headersList = await headers();
-        const host = headersList.get("host") || "localhost:3000";
-        const protocol = process.env.NODE_ENV === "production" ? "https" : "http";
-        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || `${protocol}://${host}`;
-        const jobUrl = `${baseUrl}/?jobId=${jobId}`;
-        const jobTitle = jobRecord.案件名?.value || "";
-
-        console.log(`📧 AIマッチ通知メール送信開始: ${successResults.length}人`);
-        for (const result of successResults) {
-          const talent = talentMap.get(result.talentAuthUserId);
-          if (talent && talent.メールアドレス?.value) {
-            try {
-              await sendAIMatchNotificationEmail(
-                talent.メールアドレス.value,
-                talent.氏名?.value || "会員",
-                jobTitle,
-                jobUrl,
-                baseUrl
-              );
-              console.log(`  ✅ メール送信成功: ${talent.メールアドレス.value}`);
-            } catch (emailError) {
-              console.error(`  ❌ メール送信失敗: ${talent.メールアドレス.value}`, emailError);
-            }
-          }
-        }
-        console.log(`📧 AIマッチ通知メール送信完了`);
-      } catch (emailError) {
-        // メール送信エラーがあってもAPIは成功として返す
-        console.error("AIマッチ通知メール送信エラー:", emailError);
-      }
-    }
 
     return NextResponse.json({
       success: true,

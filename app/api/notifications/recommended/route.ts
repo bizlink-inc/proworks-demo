@@ -3,8 +3,8 @@
  * GET /api/notifications/recommended
  *
  * ログインユーザーに対するおすすめ案件通知を取得する
+ * - AIマッチ（プログラムマッチ）: 推薦DBに存在するもの
  * - 担当者おすすめ: 推薦DBの「担当者おすすめ」フラグが設定されているもの
- * - プログラムマッチ: 推薦DBに存在し、作成日時が7日以内のもの
  */
 
 import { NextResponse } from "next/server";
@@ -19,15 +19,6 @@ type RecommendationRecord = {
   $id: { value: string };
   作成日時?: { value: string };
   [key: string]: { value: string } | { value: string[] } | undefined;
-};
-
-// 7日以内かどうかを判定
-const isWithinDays = (dateStr: string, days: number): boolean => {
-  if (!dateStr) return false;
-  const date = new Date(dateStr);
-  const now = new Date();
-  const threshold = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
-  return date >= threshold;
 };
 
 export const GET = async () => {
@@ -66,24 +57,12 @@ export const GET = async () => {
       return NextResponse.json({ notifications: [] });
     }
 
-    // 2. 通知対象の推薦レコードをフィルタリング
-    // - 担当者おすすめ: STAFF_RECOMMEND = "おすすめ"
-    // - プログラムマッチ: 作成日時が7日以内
-    const notificationTargets = recommendations.filter((rec) => {
-      const isStaffRecommend = rec[RECOMMENDATION_FIELDS.STAFF_RECOMMEND]?.value === "おすすめ";
-      const createdAt = rec.作成日時?.value;
-      const isRecentlyCreated = createdAt && isWithinDays(createdAt, 7);
-
-      return isStaffRecommend || isRecentlyCreated;
-    });
-
-    if (notificationTargets.length === 0) {
-      return NextResponse.json({ notifications: [] });
-    }
+    // 2. 推薦レコードはすべて通知対象（AIマッチ通知として表示）
+    // 担当者おすすめフラグがある場合は追加で担当者おすすめ通知も生成
 
     // 3. 関連する案件情報を一括取得（N+1問題解消）
     const jobIds = [...new Set(
-      notificationTargets
+      recommendations
         .map((rec) => rec[RECOMMENDATION_FIELDS.JOB_ID]?.value as string)
         .filter(Boolean)
     )];
@@ -98,10 +77,11 @@ export const GET = async () => {
     }
 
     // 4. 通知データを生成
-    // 担当者おすすめの場合は、AIマッチ通知と担当者おすすめ通知の2つを生成
+    // すべての推薦レコードに対してAIマッチ通知を生成
+    // 担当者おすすめフラグがある場合は追加で担当者おすすめ通知も生成
     const notifications: RecommendedNotification[] = [];
 
-    for (const rec of notificationTargets) {
+    for (const rec of recommendations) {
       const jobId = rec[RECOMMENDATION_FIELDS.JOB_ID]?.value as string;
       const recId = rec.$id.value;
       const job = jobsMap.get(jobId);
@@ -109,19 +89,16 @@ export const GET = async () => {
       const recUpdatedAt = rec.更新日時?.value;
 
       const isStaffRecommend = rec[RECOMMENDATION_FIELDS.STAFF_RECOMMEND]?.value === "おすすめ";
-      const isRecentlyCreated = recCreatedAt && isWithinDays(recCreatedAt, 7);
 
-      // AIマッチ通知（作成日時が7日以内の場合）
-      if (isRecentlyCreated) {
-        notifications.push({
-          id: `rec_${recId}_${jobId}_ai`,
-          type: "recommended" as const,
-          jobId: jobId || "",
-          jobTitle: job?.title || "(案件名不明)",
-          recommendationType: "program_match" as const,
-          timestamp: recCreatedAt || new Date().toISOString(),
-        });
-      }
+      // AIマッチ通知（すべての推薦レコードに対して生成）
+      notifications.push({
+        id: `rec_${recId}_${jobId}_ai`,
+        type: "recommended" as const,
+        jobId: jobId || "",
+        jobTitle: job?.title || "(案件名不明)",
+        recommendationType: "program_match" as const,
+        timestamp: recCreatedAt || new Date().toISOString(),
+      });
 
       // 担当者おすすめ通知
       if (isStaffRecommend) {

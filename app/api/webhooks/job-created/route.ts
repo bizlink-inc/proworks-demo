@@ -17,6 +17,7 @@ import { RECOMMENDATION_FIELDS } from "@/lib/kintone/fieldMapping";
 import { calculateMatchScore, TalentForMatching, JobForMatching } from "@/lib/matching/calculateScore";
 import { getDb, schema } from "@/lib/db/client";
 import { eq } from "drizzle-orm";
+import { sendAIMatchNotificationEmail } from "@/lib/email";
 
 // Webhookの認証用シークレット（環境変数で設定）
 const WEBHOOK_SECRET = process.env.KINTONE_WEBHOOK_SECRET;
@@ -64,6 +65,7 @@ type TalentRecord = {
   $id: { value: string };
   auth_user_id: { value: string };
   氏名: { value: string };
+  メールアドレス: { value: string };
   複数選択: { value: string[] };
   言語_ツール: { value: string };
   主な実績_PR_職務経歴: { value: string };
@@ -127,10 +129,12 @@ export const POST = async (request: NextRequest) => {
     const talentsResponse = await talentClient.record.getAllRecords({
       app: appIds.talent,
       condition: 'ST not in ("退会")',
-      fields: ["$id", "auth_user_id", "氏名", "複数選択", "言語_ツール", "主な実績_PR_職務経歴", "希望単価_月額"],
+      fields: ["$id", "auth_user_id", "氏名", "メールアドレス", "複数選択", "言語_ツール", "主な実績_PR_職務経歴", "希望単価_月額"],
     });
 
-    const talents: TalentForMatching[] = (talentsResponse as unknown as TalentRecord[]).map((record) => ({
+    const talentRecords = talentsResponse as unknown as TalentRecord[];
+
+    const talents: TalentForMatching[] = talentRecords.map((record) => ({
       id: record.$id.value,
       authUserId: record.auth_user_id?.value || "",
       name: record.氏名?.value || "(名前なし)",
@@ -139,6 +143,18 @@ export const POST = async (request: NextRequest) => {
       experience: record.主な実績_PR_職務経歴?.value || "",
       desiredRate: record.希望単価_月額?.value || "",
     }));
+
+    // メール送信用にauthUserIdから情報を参照するマップ
+    const talentInfoMap = new Map<string, { name: string; email: string }>();
+    for (const record of talentRecords) {
+      const authUserId = record.auth_user_id?.value;
+      if (authUserId) {
+        talentInfoMap.set(authUserId, {
+          name: record.氏名?.value || "会員",
+          email: record.メールアドレス?.value || "",
+        });
+      }
+    }
 
     console.log(`👥 人材数: ${talents.length}人`);
 
@@ -178,6 +194,8 @@ export const POST = async (request: NextRequest) => {
     // 5. 推薦DBに登録/更新
     const recordsToCreate: Record<string, { value: string | number }>[] = [];
     const recordsToUpdate: { id: string; record: Record<string, { value: string | number }> }[] = [];
+    // メール送信対象（新規作成された人材のauthUserId）
+    const newMatchAuthUserIds: string[] = [];
 
     for (const match of matches) {
       if (!match.talentAuthUserId) continue;
@@ -197,6 +215,7 @@ export const POST = async (request: NextRequest) => {
           [RECOMMENDATION_FIELDS.JOB_ID]: { value: match.jobId },
           [RECOMMENDATION_FIELDS.SCORE]: { value: match.score },
         });
+        newMatchAuthUserIds.push(match.talentAuthUserId);
       }
     }
 
@@ -218,6 +237,34 @@ export const POST = async (request: NextRequest) => {
       console.log(`✅ 推薦レコード更新: ${recordsToUpdate.length}件`);
     }
 
+    // 6. 新規マッチした人材にメール通知を送信
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://proworks.jp";
+    let emailsSent = 0;
+
+    if (newMatchAuthUserIds.length > 0) {
+      console.log(`📧 マッチ通知メール送信開始: ${newMatchAuthUserIds.length}人`);
+
+      for (const authUserId of newMatchAuthUserIds) {
+        const talentInfo = talentInfoMap.get(authUserId);
+        if (talentInfo && talentInfo.email) {
+          try {
+            await sendAIMatchNotificationEmail(
+              talentInfo.email,
+              talentInfo.name,
+              job.title,
+              `${baseUrl}/?jobId=${jobId}`,
+              baseUrl
+            );
+            emailsSent++;
+          } catch (emailError) {
+            console.error(`  ❌ メール送信失敗: ${talentInfo.email}`, emailError);
+          }
+        }
+      }
+
+      console.log(`📧 マッチ通知メール送信完了: ${emailsSent}/${newMatchAuthUserIds.length}件`);
+    }
+
     console.log(`🎉 案件作成Webhook処理完了: ${job.title}`);
 
     return NextResponse.json({
@@ -230,6 +277,7 @@ export const POST = async (request: NextRequest) => {
         matchedTalents: matches.length,
         created: recordsToCreate.length,
         updated: recordsToUpdate.length,
+        emailsSent,
       },
     });
 
