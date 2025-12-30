@@ -302,6 +302,15 @@ export const createSeedData = async () => {
     );
     console.log(`   山田太郎の担当者おすすめ: ${yamadaStaffRecommendJobIds.size}件`);
 
+    // 山田太郎のスコア上位1件だけをAIマッチ済みに設定（管理画面でのAI評価テスト用に未評価を残す）
+    const yamadaAiMatchedJobIds = new Set(
+      yamadaMatches
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 1)
+        .map((m) => m.jobId)
+    );
+    console.log(`   山田太郎のAIマッチ済み: ${yamadaAiMatchedJobIds.size}件`);
+
     // 山田太郎2のスコア上位2件を担当者おすすめに設定
     const yamada2StaffRecommendJobIds = new Set(
       yamada2Matches
@@ -319,9 +328,13 @@ export const createSeedData = async () => {
       const isYamada2StaffRecommend =
         rec.talentAuthUserId === YAMADA2_AUTH_USER_ID &&
         yamada2StaffRecommendJobIds.has(rec.jobId);
+      // AIマッチは山田太郎の1件だけ（他はAI評価未実施の状態を維持）
+      const isAiMatched =
+        rec.talentAuthUserId === YAMADA_AUTH_USER_ID &&
+        yamadaAiMatchedJobIds.has(rec.jobId);
 
       return buildRecommendationRecord(rec.talentAuthUserId, rec.jobId, rec.score, {
-        aiMatched: true,
+        aiMatched: isAiMatched,
         staffRecommend: isYamadaStaffRecommend || isYamada2StaffRecommend,
       });
     });
