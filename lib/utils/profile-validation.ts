@@ -133,3 +133,20 @@ export const getProfileIncompleteTab = (talent: Talent | null): MyPageTab | null
   return null
 }
 
+// 未入力項目のラベル配列から遷移先タブを取得（優先度の高い順に最初のタブを返す）
+export const getTabFromMissingFields = (missingFields: string[]): MyPageTab => {
+  if (missingFields.length === 0) {
+    return "profile"
+  }
+
+  // REQUIRED_FIELDSの優先度順にラベルをチェック
+  for (const field of REQUIRED_FIELDS) {
+    if (missingFields.includes(field.label)) {
+      return field.tab
+    }
+  }
+
+  // 見つからない場合はデフォルトでprofileを返す
+  return "profile"
+}
+

@@ -79,6 +79,9 @@ export function UnifiedDashboard({
   // タブ状態（URLから直接取得 - シングルソースオブトゥルース）
   const activeTab: TabType = (searchParams.get("tab") as TabType) || "jobs"
 
+  // マイページのサブメニュー状態（URLから取得）
+  const menuParam = searchParams.get("menu") as ProfileMenuItem | null
+
   // === 案件一覧の状態 ===
   const [jobs, setJobs] = useState<Job[]>(initialJobs)
   const [total, setTotal] = useState(initialTotal)
@@ -115,10 +118,19 @@ export function UnifiedDashboard({
   // === マイページの状態 ===
   const [talent, setTalent] = useState<Talent | null>(null)
   const [isLoadingProfile, setIsLoadingProfile] = useState(false)
-  const [activeProfileMenu, setActiveProfileMenu] = useState<ProfileMenuItem>("profile")
+  const [activeProfileMenu, setActiveProfileMenu] = useState<ProfileMenuItem>(
+    menuParam && PROFILE_MENU_ITEMS.some(item => item.id === menuParam) ? menuParam : "profile"
+  )
 
   // ステータス監視
   useApplicationStatusMonitor(applications || [])
+
+  // URLパラメータのmenuが変更された時にサブメニューを更新
+  useEffect(() => {
+    if (menuParam && PROFILE_MENU_ITEMS.some(item => item.id === menuParam)) {
+      setActiveProfileMenu(menuParam)
+    }
+  }, [menuParam])
 
   // タブ変更時のURL更新（router.pushのみ - stateは更新しない）
   const handleTabChange = useCallback((tab: TabType) => {

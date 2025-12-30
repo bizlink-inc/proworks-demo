@@ -2,8 +2,8 @@
 
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
-import { CheckCircle2, AlertCircle, ArrowLeft } from "lucide-react"
-import Link from "next/link"
+import { CheckCircle2, AlertCircle } from "lucide-react"
+import { getTabFromMissingFields } from "@/lib/utils/profile-validation"
 
 type ApplySuccessModalProps = {
   isOpen: boolean
@@ -18,6 +18,23 @@ export function ApplySuccessModal({ isOpen, missingFields, onClose }: ApplySucce
     onClose()
     // ハードリロードで案件一覧を最新状態に（応募済み案件を除外）
     window.location.href = "/"
+  }
+
+  const handleGoToApplications = () => {
+    onClose()
+    // ハードリロードで応募済み案件ページに遷移
+    window.location.href = "/?tab=applications"
+  }
+
+  const handleGoToMyPage = () => {
+    if (!missingFields || missingFields.length === 0) {
+      return
+    }
+    // 未入力項目に応じて適切なサブメニューに遷移
+    const targetMenu = getTabFromMissingFields(missingFields)
+    onClose()
+    // ハードリロードで案件一覧を最新状態に（応募済み案件を除外）
+    window.location.href = `/?tab=profile&menu=${targetMenu}`
   }
 
   return (
@@ -108,15 +125,14 @@ export function ApplySuccessModal({ isOpen, missingFields, onClose }: ApplySucce
                       <li key={index}>{field}</li>
                     ))}
                   </ul>
-                  <Link href="/">
-                    <Button
-                      variant="pw-primary"
-                      className="w-full"
-                      style={{ fontSize: "14px" }}
-                    >
-                      マイページで入力する
-                    </Button>
-                  </Link>
+                  <Button
+                    variant="pw-primary"
+                    className="w-full"
+                    style={{ fontSize: "14px" }}
+                    onClick={handleGoToMyPage}
+                  >
+                    マイページで入力する
+                  </Button>
                 </div>
               </div>
             </div>
@@ -127,16 +143,15 @@ export function ApplySuccessModal({ isOpen, missingFields, onClose }: ApplySucce
             className="py-6 flex flex-col sm:flex-row gap-3 justify-center"
             style={{ borderTop: "1px solid #d5e5f0" }}
           >
-            <Link href="/?tab=applications">
-              <Button
-                variant="pw-primary"
-                className="w-full sm:w-auto"
-                style={{ fontSize: "14px" }}
-              >
-                <CheckCircle2 className="w-4 h-4 mr-1" />
-                応募済み案件を確認する
-              </Button>
-            </Link>
+            <Button
+              variant="pw-primary"
+              className="w-full sm:w-auto"
+              style={{ fontSize: "14px" }}
+              onClick={handleGoToApplications}
+            >
+              <CheckCircle2 className="w-4 h-4 mr-1" />
+              応募済み案件を確認する
+            </Button>
             <Button
               onClick={handleBackToList}
               variant="pw-outline"
