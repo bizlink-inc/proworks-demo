@@ -5,6 +5,8 @@
  */
 
 import type React from "react"
+import Link from "next/link"
+import Image from "next/image"
 
 interface CenteredLayoutProps {
   children: React.ReactNode
@@ -22,15 +24,15 @@ export const CenteredLayout = ({ children, showFooter = true, showHeader = true,
           style={{ borderBottom: "1px solid var(--pw-border-lighter)" }}
         >
           <div className="container mx-auto">
-            <span
-              className="font-bold"
-              style={{
-                fontSize: "var(--pw-text-md)",
-                color: "var(--pw-text-navy)"
-              }}
-            >
-              PRO WORKS
-            </span>
+            <Link href="/landing">
+              <Image
+                src="/logo_proworks.svg"
+                alt="PRO WORKS"
+                width={150}
+                height={24}
+                priority
+              />
+            </Link>
           </div>
         </header>
       )}

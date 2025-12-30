@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
+import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
@@ -130,9 +131,13 @@ export default function WelcomePage() {
         style={{ backgroundColor: "var(--pw-bg-white)", borderBottom: "1px solid var(--pw-border-lighter)" }}
       >
         <div className="max-w-lg mx-auto flex items-center justify-between">
-          <h1 className="font-bold text-lg" style={{ color: "var(--pw-text-navy)" }}>
-            PRO WORKS
-          </h1>
+          <Image
+            src="/logo_proworks.svg"
+            alt="PRO WORKS"
+            width={150}
+            height={24}
+            priority
+          />
           {/* ステップ表示 */}
           <div className="flex items-center gap-2">
             <span
