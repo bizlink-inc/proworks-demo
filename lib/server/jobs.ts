@@ -23,6 +23,63 @@ export interface PaginationOptions {
 }
 
 /**
+ * ユーザーの推薦情報を取得するヘルパー関数
+ */
+async function getRecommendationsForUser(
+  authUserId: string
+): Promise<RecommendationRecord[]> {
+  const recommendationClient = createRecommendationClient();
+  const appIds = getAppIds();
+
+  if (!appIds.recommendation) {
+    return [];
+  }
+
+  try {
+    const response = await recommendationClient.record.getRecords({
+      app: appIds.recommendation,
+      query: `${RECOMMENDATION_FIELDS.TALENT_ID} = "${authUserId}" limit 500`,
+      fields: [
+        RECOMMENDATION_FIELDS.JOB_ID,
+        RECOMMENDATION_FIELDS.SCORE,
+        RECOMMENDATION_FIELDS.STAFF_RECOMMEND,
+      ],
+    });
+    return response.records as unknown as RecommendationRecord[];
+  } catch (error) {
+    console.error("推薦情報の取得に失敗:", error);
+    return [];
+  }
+}
+
+/**
+ * 推薦レコードからマップを構築するヘルパー関数
+ */
+function buildRecommendationMap(
+  recommendations: RecommendationRecord[]
+): Record<string, { score: number; staffRecommend: boolean; aiMatched: boolean }> {
+  const map: Record<
+    string,
+    { score: number; staffRecommend: boolean; aiMatched: boolean }
+  > = {};
+
+  for (const rec of recommendations) {
+    const jobId = rec[RECOMMENDATION_FIELDS.JOB_ID].value;
+    const score = parseInt(rec[RECOMMENDATION_FIELDS.SCORE].value, 10) || 0;
+    const staffRecommendValue = rec[RECOMMENDATION_FIELDS.STAFF_RECOMMEND]?.value;
+    const staffRecommend = staffRecommendValue === "おすすめ";
+
+    map[jobId] = {
+      score,
+      staffRecommend,
+      aiMatched: true, // 推薦DBにあればAIマッチ
+    };
+  }
+
+  return map;
+}
+
+/**
  * 案件一覧を推薦情報付きで取得（サーバーサイド用）
  * デフォルトはおすすめ順でソート
  * @param authUserId - 認証ユーザーID
@@ -32,53 +89,29 @@ export async function getJobsWithRecommendations(
   authUserId?: string,
   options?: PaginationOptions
 ): Promise<{ items: JobWithMetadata[]; total: number; totalAll: number }> {
-  // 全案件を取得（キャッシュ活用）
-  let jobs = await getAllJobs();
-
-  // 募集ステータスが「クローズ」の案件を除外
-  jobs = jobs.filter((job) => job.recruitmentStatus !== "クローズ");
-
+  let jobs: Job[];
   let appliedJobIdsSet: Set<string> = new Set();
   let recommendationMap: Record<
     string,
     { score: number; staffRecommend: boolean; aiMatched: boolean }
   > = {};
 
-  // ログインしている場合、応募ステータスと推薦情報を取得
   if (authUserId) {
-    // 応募済み案件IDを取得（3ヶ月制限なし、checkDuplicateApplicationと同じ条件）
-    const appliedJobIds = await getAppliedJobIdsByAuthUserId(authUserId);
+    // ログインしている場合: 案件、応募履歴、推薦情報を並列で取得
+    const [allJobs, appliedJobIds, recommendations] = await Promise.all([
+      getAllJobs(),
+      getAppliedJobIdsByAuthUserId(authUserId),
+      getRecommendationsForUser(authUserId),
+    ]);
+
+    // 募集ステータスが「クローズ」の案件を除外
+    jobs = allJobs.filter((job) => job.recruitmentStatus !== "クローズ");
     appliedJobIdsSet = new Set(appliedJobIds);
-
-    // 推薦情報を取得
-    const recommendationClient = createRecommendationClient();
-    const appIds = getAppIds();
-
-    if (appIds.recommendation) {
-      const recommendationsResponse = await recommendationClient.record.getRecords({
-        app: appIds.recommendation,
-        query: `${RECOMMENDATION_FIELDS.TALENT_ID} = "${authUserId}" limit 500`,
-        fields: [
-          RECOMMENDATION_FIELDS.JOB_ID,
-          RECOMMENDATION_FIELDS.SCORE,
-          RECOMMENDATION_FIELDS.STAFF_RECOMMEND,
-        ],
-      });
-      const recommendations = recommendationsResponse.records as unknown as RecommendationRecord[];
-
-      for (const rec of recommendations) {
-        const jobId = rec[RECOMMENDATION_FIELDS.JOB_ID].value;
-        const score = parseInt(rec[RECOMMENDATION_FIELDS.SCORE].value, 10) || 0;
-        const staffRecommendValue = rec[RECOMMENDATION_FIELDS.STAFF_RECOMMEND]?.value;
-        const staffRecommend = staffRecommendValue === "おすすめ";
-
-        recommendationMap[jobId] = {
-          score,
-          staffRecommend,
-          aiMatched: true, // 推薦DBにあればAIマッチ
-        };
-      }
-    }
+    recommendationMap = buildRecommendationMap(recommendations);
+  } else {
+    // 未ログイン: 案件のみ取得
+    const allJobs = await getAllJobs();
+    jobs = allJobs.filter((job) => job.recruitmentStatus !== "クローズ");
   }
 
   // 応募済み案件を除外（3ヶ月制限なし）
