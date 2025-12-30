@@ -200,7 +200,8 @@ export const getUnnotifiedInterviewApplications = async (authUserId: string): Pr
 
   try {
     // ステータスが「面談予定」かつ通知日時が空の応募を取得
-    const condition = `${APPLICATION_FIELDS.AUTH_USER_ID} = "${authUserId}" and ${APPLICATION_FIELDS.STATUS} = "面談予定" and ${APPLICATION_FIELDS.INTERVIEW_NOTIFIED_AT} = ""`;
+    // 対応状況はドロップダウン/ラジオボタンなので in 演算子を使用
+    const condition = `${APPLICATION_FIELDS.AUTH_USER_ID} = "${authUserId}" and ${APPLICATION_FIELDS.STATUS} in ("面談予定") and ${APPLICATION_FIELDS.INTERVIEW_NOTIFIED_AT} = ""`;
 
     const response = await client.record.getRecords({
       app: appId,
