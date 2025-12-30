@@ -20,7 +20,6 @@ import { useApplicationStatusMonitor } from "@/hooks/use-application-status-moni
 import { useWithdrawalCheck } from "@/hooks/use-withdrawal-check"
 import { ChevronDown } from "lucide-react"
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
-import { faGear, faList } from "@fortawesome/free-solid-svg-icons"
 import { faSquareCheck } from "@fortawesome/free-regular-svg-icons"
 import type { Job, Talent } from "@/lib/kintone/types"
 
@@ -432,54 +431,6 @@ export function UnifiedDashboard({
     }
   }, [activeTab, applications])
 
-  // タブナビゲーションのレンダリング
-  const renderTabNavigation = () => (
-    <div
-      className="mx-auto flex items-center gap-0 border-b"
-      style={{ maxWidth: "1400px", borderColor: "#d5e5f0" }}
-    >
-      <button
-        onClick={() => handleTabChange("profile")}
-        className="px-6 py-3 flex items-center gap-2 transition-colors"
-        style={{
-          color: activeTab === "profile" ? "var(--pw-header-active-text)" : "var(--pw-text-navy)",
-          borderBottom: activeTab === "profile" ? "3px solid var(--pw-header-active-border-color)" : "3px solid transparent",
-          fontWeight: activeTab === "profile" ? 600 : 400,
-          marginBottom: "-1px",
-        }}
-      >
-        <FontAwesomeIcon icon={faGear} className="w-4 h-4" />
-        <span>マイページ</span>
-      </button>
-      <button
-        onClick={() => handleTabChange("jobs")}
-        className="px-6 py-3 flex items-center gap-2 transition-colors"
-        style={{
-          color: activeTab === "jobs" ? "var(--pw-header-active-text)" : "var(--pw-text-navy)",
-          borderBottom: activeTab === "jobs" ? "3px solid var(--pw-header-active-border-color)" : "3px solid transparent",
-          fontWeight: activeTab === "jobs" ? 600 : 400,
-          marginBottom: "-1px",
-        }}
-      >
-        <FontAwesomeIcon icon={faList} className="w-4 h-4" />
-        <span>案件一覧</span>
-      </button>
-      <button
-        onClick={() => handleTabChange("applications")}
-        className="px-6 py-3 flex items-center gap-2 transition-colors"
-        style={{
-          color: activeTab === "applications" ? "var(--pw-header-active-text)" : "var(--pw-text-navy)",
-          borderBottom: activeTab === "applications" ? "3px solid var(--pw-header-active-border-color)" : "3px solid transparent",
-          fontWeight: activeTab === "applications" ? 600 : 400,
-          marginBottom: "-1px",
-        }}
-      >
-        <FontAwesomeIcon icon={faSquareCheck} className="w-4 h-4" />
-        <span>応募済み案件</span>
-      </button>
-    </div>
-  )
-
   // スケルトンカード
   const JobCardSkeleton = () => (
     <div className="rounded-lg p-5" style={{ backgroundColor: "#ffffff", border: "1px solid #d5e5f0" }}>
@@ -516,9 +467,6 @@ export function UnifiedDashboard({
   return (
     <div className="min-h-screen" style={{ backgroundColor: "#ffffff" }}>
       <Header user={user} />
-
-      {/* タブナビゲーション */}
-      {renderTabNavigation()}
 
       {/* 案件一覧タブ */}
       {activeTab === "jobs" && (
