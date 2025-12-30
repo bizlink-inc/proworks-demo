@@ -43,6 +43,7 @@
     "recommend:batch:dry": "npx tsx scripts/refresh-recommendations.ts --dry-run",
     "recommend:reset": "npx tsx scripts/reset-recommendations.ts",
     "test:webhook": "npx tsx scripts/test-job-webhook.ts",
+    "test:recommend-notification": "npx tsx scripts/test-recommendation-notification.ts",
     "lambda:secrets:push:dev": "npx tsx scripts/push-lambda-secrets.ts dev",
     "lambda:secrets:push:prod": "npx tsx scripts/push-lambda-secrets.ts prod",
     "lambda:trigger:on:dev": "npx tsx scripts/lambda-trigger-control.ts on dev",
