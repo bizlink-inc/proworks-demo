@@ -2,7 +2,7 @@ import { Suspense } from "react"
 import { redirect } from "next/navigation"
 import { getSession } from "@/lib/auth-server"
 import { UnifiedDashboard } from "@/components/unified-dashboard"
-import { getJobsWithRecommendations } from "@/lib/server/jobs"
+import { getDashboardData } from "@/lib/server/dashboard"
 import { Header } from "@/components/header"
 import { FullWidthLayout } from "@/components/layouts"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -70,25 +70,33 @@ function DashboardLoading({ user }: { user: { id?: string; name?: string | null;
 }
 
 // データ取得コンポーネント（Suspense内で実行）
+// ログイン時に全データを先読みし、画面表示前に取得完了
 async function DashboardContent({ userId, user }: {
   userId: string
   user: { id?: string; name?: string | null; email?: string | null }
 }) {
-  const PAGE_SIZE = 21 // 3列×7行
-  let initialJobs: Awaited<ReturnType<typeof getJobsWithRecommendations>> = { items: [], total: 0, totalAll: 0 }
+  let dashboardData: Awaited<ReturnType<typeof getDashboardData>> = {
+    jobs: { items: [], total: 0, totalAll: 0 },
+    applications: [],
+    profile: null,
+  }
+
   try {
-    initialJobs = await getJobsWithRecommendations(userId, { skip: 0, limit: PAGE_SIZE })
+    // 全データを並列取得（案件一覧、応募済み案件、マイページ）
+    dashboardData = await getDashboardData(userId)
   } catch (error) {
-    console.error("サーバーサイドでの案件データ取得に失敗:", error)
+    console.error("サーバーサイドでの全データ取得に失敗:", error)
     // エラー時はクライアント側でフォールバック取得
   }
 
   return (
     <UnifiedDashboard
       user={user}
-      initialJobs={initialJobs.items}
-      initialTotal={initialJobs.total}
-      initialTotalAll={initialJobs.totalAll}
+      initialJobs={dashboardData.jobs.items}
+      initialTotal={dashboardData.jobs.total}
+      initialTotalAll={dashboardData.jobs.totalAll}
+      initialApplications={dashboardData.applications}
+      initialProfile={dashboardData.profile}
     />
   )
 }

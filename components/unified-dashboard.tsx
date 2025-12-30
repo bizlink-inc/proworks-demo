@@ -53,6 +53,18 @@ const PROFILE_MENU_ITEMS: { id: ProfileMenuItem; label: string }[] = [
   { id: "settings", label: "登録情報" },
 ]
 
+// 応募情報と案件情報を結合した型
+type ApplicationWithJob = {
+  id: string
+  authUserId: string
+  jobId: string
+  jobTitle: string
+  status: string
+  appliedAt: string
+  interviewNotifiedAt?: string
+  job: Job | null
+}
+
 interface UnifiedDashboardProps {
   user: {
     id?: string
@@ -63,6 +75,10 @@ interface UnifiedDashboardProps {
   initialJobs?: Job[]
   initialTotal?: number
   initialTotalAll?: number
+  // SSRで事前取得した応募済み案件データ
+  initialApplications?: ApplicationWithJob[]
+  // SSRで事前取得したプロフィールデータ
+  initialProfile?: Talent | null
 }
 
 export function UnifiedDashboard({
@@ -70,6 +86,8 @@ export function UnifiedDashboard({
   initialJobs = [],
   initialTotal = 0,
   initialTotalAll = 0,
+  initialApplications,
+  initialProfile,
 }: UnifiedDashboardProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -110,13 +128,15 @@ export function UnifiedDashboard({
   const isInitialRender = useRef(true)
 
   // === 応募済み案件の状態 ===
-  const [applications, setApplications] = useState<any[] | null>(null)
+  // SSRで事前取得したデータがあれば使用
+  const [applications, setApplications] = useState<any[] | null>(initialApplications ?? null)
   const [isLoadingApplications, setIsLoadingApplications] = useState(false)
   const [activeStatusFilter, setActiveStatusFilter] = useState<StatusFilter>("all")
   const [aiMatchedJobs, setAiMatchedJobs] = useState<Job[]>([])
 
   // === マイページの状態 ===
-  const [talent, setTalent] = useState<Talent | null>(null)
+  // SSRで事前取得したデータがあれば使用
+  const [talent, setTalent] = useState<Talent | null>(initialProfile ?? null)
   const [isLoadingProfile, setIsLoadingProfile] = useState(false)
   const [activeProfileMenu, setActiveProfileMenu] = useState<ProfileMenuItem>(
     menuParam && PROFILE_MENU_ITEMS.some(item => item.id === menuParam) ? menuParam : "profile"
@@ -240,10 +260,12 @@ export function UnifiedDashboard({
   }, [user.id, user.email])
 
   // タブごとの初回フェッチを追跡するref
-  const hasFetchedApplications = useRef(false)
-  const hasFetchedProfile = useRef(false)
+  // SSRデータがある場合は既にフェッチ済みとしてマーク
+  const hasFetchedApplications = useRef(initialApplications !== undefined)
+  const hasFetchedProfile = useRef(initialProfile !== undefined)
 
   // タブ切り替え時のデータ取得
+  // SSRで事前取得したデータがある場合はフェッチしない
   useEffect(() => {
     if (activeTab === "applications") {
       if (!hasFetchedApplications.current) {

@@ -106,6 +106,7 @@ export async function getJobsWithRecommendations(
 
     // 募集ステータスが「クローズ」の案件を除外
     jobs = allJobs.filter((job) => job.recruitmentStatus !== "クローズ");
+
     appliedJobIdsSet = new Set(appliedJobIds);
     recommendationMap = buildRecommendationMap(recommendations);
   } else {
