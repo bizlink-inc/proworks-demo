@@ -72,7 +72,7 @@ export default function SignInPage() {
         style={{ borderBottom: "1px solid var(--pw-border-lighter)" }}
       >
         <div className="container mx-auto">
-          <Link href="/landing">
+          <Link href="/auth/signin">
             <Image
               src="/logo_proworks.svg"
               alt="PRO WORKS"

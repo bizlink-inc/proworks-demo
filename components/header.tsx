@@ -45,7 +45,7 @@ export function Header({ user }: HeaderProps) {
           style={{ maxWidth: "1400px" }}
         >
           <Link
-            href={user ? "/" : "/landing"}
+            href={user ? "/" : "/auth/signin"}
             className="font-bold flex-shrink-0"
           >
             <Image
@@ -75,7 +75,7 @@ export function Header({ user }: HeaderProps) {
       >
         {/* 左側: ロゴ */}
         <Link
-          href={user ? "/" : "/landing"}
+          href={user ? "/" : "/auth/signin"}
           className="font-bold flex-shrink-0"
         >
           <Image

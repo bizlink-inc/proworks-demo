@@ -22,14 +22,14 @@ export default function BusinessPage() {
     <div className="min-h-screen bg-gray-50">
       <header className="border-b bg-white">
         <div className="container mx-auto px-4 py-4">
-          <Link href="/landing" className="text-2xl font-bold text-blue-600">
+          <Link href="/auth/signin" className="text-2xl font-bold text-blue-600">
             PRO WORKS
           </Link>
         </div>
       </header>
 
       <main className="container mx-auto px-4 py-8">
-        <Link href="/landing">
+        <Link href="/auth/signin">
           <Button variant="ghost" className="mb-6">
             <ArrowLeft className="w-4 h-4 mr-2" />
             トップに戻る

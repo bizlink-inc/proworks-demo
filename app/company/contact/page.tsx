@@ -33,7 +33,7 @@ export default function ContactPage() {
     <div className="min-h-screen bg-gray-50">
       <header className="border-b bg-white">
         <div className="container mx-auto px-4 py-4">
-          <Link href="/landing" className="text-2xl font-bold text-blue-600">
+          <Link href="/auth/signin" className="text-2xl font-bold text-blue-600">
             PRO WORKS
           </Link>
         </div>
