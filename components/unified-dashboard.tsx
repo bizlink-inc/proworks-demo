@@ -77,9 +77,8 @@ export function UnifiedDashboard({
   const { toast } = useToast()
   const { handleWithdrawalError } = useWithdrawalCheck()
 
-  // タブ状態
-  const tabParam = searchParams.get("tab") as TabType | null
-  const [activeTab, setActiveTab] = useState<TabType>(tabParam || "jobs")
+  // タブ状態（URLから直接取得 - シングルソースオブトゥルース）
+  const activeTab: TabType = (searchParams.get("tab") as TabType) || "jobs"
 
   // === 案件一覧の状態 ===
   const [jobs, setJobs] = useState<Job[]>(initialJobs)
@@ -119,27 +118,14 @@ export function UnifiedDashboard({
   // ステータス監視
   useApplicationStatusMonitor(applications || [])
 
-  // タブ変更時のURL更新
+  // タブ変更時のURL更新（router.pushのみ - stateは更新しない）
   const handleTabChange = useCallback((tab: TabType) => {
-    setActiveTab(tab)
-    const params = new URLSearchParams(searchParams.toString())
     if (tab === "jobs") {
-      params.delete("tab")
+      router.push("/", { scroll: false })
     } else {
-      params.set("tab", tab)
+      router.push(`/?tab=${tab}`, { scroll: false })
     }
-    router.push(`/?${params.toString()}`, { scroll: false })
-  }, [router, searchParams])
-
-  // URLパラメータの変更を監視
-  useEffect(() => {
-    const tab = searchParams.get("tab") as TabType | null
-    if (tab && tab !== activeTab) {
-      setActiveTab(tab)
-    } else if (!tab && activeTab !== "jobs") {
-      setActiveTab("jobs")
-    }
-  }, [searchParams, activeTab])
+  }, [router])
 
   // 初回ロード時の退会チェック
   useEffect(() => {
