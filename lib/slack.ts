@@ -25,6 +25,11 @@ const getKintoneRecordUrl = (appType: "talent" | "job", recordId: string): strin
       ? process.env.KINTONE_TALENT_APP_ID
       : process.env.KINTONE_JOB_APP_ID;
 
+  // デバッグログ
+  if (isDevelopment()) {
+    console.log("[Slack/kintoneURL] appType:", appType, "recordId:", recordId, "baseUrl:", baseUrl ? "✅" : "❌", "appId:", appId ? "✅" : "❌");
+  }
+
   if (!baseUrl || !appId || !recordId) {
     return "";
   }
@@ -188,9 +193,19 @@ export const sendProfileCompleteNotification = async (data: {
   email: string;
   talentRecordId?: string;
 }): Promise<SendSlackResult> => {
+  // デバッグログ
+  if (isDevelopment()) {
+    console.log("[Slack/ProfileComplete] talentRecordId:", data.talentRecordId);
+  }
+
   const talentUrl = data.talentRecordId
     ? getKintoneRecordUrl("talent", data.talentRecordId)
     : "";
+
+  // デバッグログ
+  if (isDevelopment()) {
+    console.log("[Slack/ProfileComplete] talentUrl:", talentUrl || "(empty)");
+  }
 
   const message: SlackMessage = {
     text: `【プロフィール完成】${data.fullName} 様がプロフィールを完成しました`,

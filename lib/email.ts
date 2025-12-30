@@ -526,9 +526,9 @@ export const sendRegistrationCompleteEmail = async (
 ): Promise<SendEmailResult> => {
   const subject = "【PRO WORKS】会員登録ありがとうございます";
 
-  const myPageUrl = `${baseUrl}/me`;
+  const myPageUrl = baseUrl;
   const helpfulInfoUrl = `${baseUrl}/media`;
-  const contactUrl = `${baseUrl}/me?tab=contact`;
+  const contactUrl = `${baseUrl}/?tab=contact`;
   const homeUrl = baseUrl;
 
   const htmlContent = `

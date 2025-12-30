@@ -87,6 +87,7 @@ export const PATCH = async (request: NextRequest) => {
     // プロフィールが未完了→完了になった場合、Slack通知を送信
     if (wasIncomplete && isNowComplete) {
       console.log("[Profile Check] プロフィール完成！Slack通知を送信します");
+      console.log("[Profile Check] talent.id:", talent.id);
       const fullName = `${talent.lastName || ""} ${talent.firstName || ""}`.trim();
       sendProfileCompleteNotification({
         fullName: fullName || session.user.email!.split("@")[0],

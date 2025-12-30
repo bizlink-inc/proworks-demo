@@ -97,15 +97,15 @@ export default function WelcomePage() {
           title: "保存しました",
           description: "プロフィールを登録しました。",
         })
-        router.push("/me")
+        router.push("/")
       }
     } else {
-      router.push("/me")
+      router.push("/")
     }
   }
 
   const handleSkip = () => {
-    router.push("/me")
+    router.push("/")
   }
 
   const handleSkipToNext = () => {
@@ -243,7 +243,7 @@ export default function WelcomePage() {
                   className="text-center text-sm underline py-2"
                   style={{ color: "var(--pw-text-gray)" }}
                 >
-                  後で入力する（マイページへ）
+                  後で入力する（案件一覧へ）
                 </button>
               </div>
             </div>
@@ -304,7 +304,7 @@ export default function WelcomePage() {
                 className="w-full"
                 style={{ fontSize: "15px" }}
               >
-                {saving ? "保存中..." : "完了してマイページへ"}
+                {saving ? "保存中..." : "完了して案件一覧へ"}
                 <ArrowRight className="ml-2 w-4 h-4" />
               </Button>
             </div>
