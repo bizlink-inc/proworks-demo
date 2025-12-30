@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Download, Trash2, FileText, AlertCircle } from "lucide-react";
+import { Trash2, FileText, AlertCircle } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -35,7 +35,6 @@ export const FileList: React.FC<FileListProps> = ({
   disabled = false,
 }) => {
   const [deletingFiles, setDeletingFiles] = useState<Set<string>>(new Set());
-  const [downloadingFiles, setDownloadingFiles] = useState<Set<string>>(new Set());
   const { toast } = useToast();
 
   // ファイルサイズを人間が読みやすい形式に変換
@@ -57,61 +56,6 @@ export const FileList: React.FC<FileListProps> = ({
       return '📝'; // Word
     }
     return '📎'; // その他
-  };
-
-  // ファイルダウンロード
-  const handleDownload = async (file: FileInfo) => {
-    if (disabled || downloadingFiles.has(file.fileKey)) return;
-
-    setDownloadingFiles(prev => new Set(prev).add(file.fileKey));
-
-    try {
-      console.log("📥 ファイルダウンロード開始:", file.name);
-
-      const response = await fetch(`/api/files/download?fileKey=${encodeURIComponent(file.fileKey)}`);
-      
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "ダウンロードに失敗しました");
-      }
-
-      // ファイルをBlobとして取得
-      const blob = await response.blob();
-      
-      // ダウンロード用のリンクを作成
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = file.name;
-      document.body.appendChild(link);
-      link.click();
-      
-      // クリーンアップ
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
-
-      console.log("✅ ファイルダウンロード成功:", file.name);
-
-      toast({
-        title: "ダウンロード完了",
-        description: `${file.name} のダウンロードが完了しました。`,
-      });
-
-    } catch (error: any) {
-      console.error("❌ ファイルダウンロードエラー:", error);
-      
-      toast({
-        title: "ダウンロードエラー",
-        description: error.message || "ファイルのダウンロードに失敗しました。",
-        variant: "destructive",
-      });
-    } finally {
-      setDownloadingFiles(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(file.fileKey);
-        return newSet;
-      });
-    }
   };
 
   // ファイル削除
@@ -189,27 +133,6 @@ export const FileList: React.FC<FileListProps> = ({
             </div>
 
             <div className="flex items-center space-x-2">
-              {/* ダウンロードボタン */}
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                disabled={disabled || downloadingFiles.has(file.fileKey)}
-                onClick={() => handleDownload(file)}
-              >
-                {downloadingFiles.has(file.fileKey) ? (
-                  <div className="flex items-center space-x-1">
-                    <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-600"></div>
-                    <span>取得中</span>
-                  </div>
-                ) : (
-                  <div className="flex items-center space-x-1">
-                    <Download className="h-3 w-3" />
-                    <span>ダウンロード</span>
-                  </div>
-                )}
-              </Button>
-
               {/* 削除ボタン */}
               <AlertDialog>
                 <AlertDialogTrigger asChild>
