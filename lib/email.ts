@@ -39,6 +39,43 @@ type SendEmailResult = {
   error?: string;
 };
 
+// 共通のメール署名URLを生成
+type EmailSignatureUrls = {
+  helpfulInfoUrl: string;
+  contactUrl: string;
+  homeUrl: string;
+};
+
+const generateSignatureUrls = (baseUrl: string): EmailSignatureUrls => ({
+  helpfulInfoUrl: `${baseUrl}/media`,
+  contactUrl: `${baseUrl}/?tab=contact`,
+  homeUrl: baseUrl,
+});
+
+// 共通のHTML署名を生成
+const generateEmailSignatureHTML = ({ helpfulInfoUrl, contactUrl, homeUrl }: EmailSignatureUrls): string => `
+    <div style="font-size: 12px; color: #686868;">
+      <p style="margin: 5px 0;">▽お役立ち情報: <a href="${helpfulInfoUrl}" style="color: #63b2cd;">${helpfulInfoUrl}</a></p>
+      <p style="margin: 5px 0;">▽お問い合わせ先: <a href="${contactUrl}" style="color: #63b2cd;">${contactUrl}</a></p>
+      <p style="margin: 5px 0;">▽PRO WORKS: <a href="${homeUrl}" style="color: #63b2cd;">${homeUrl}</a></p>
+    </div>
+
+    <p style="color: #686868; font-size: 12px; text-align: center; margin-top: 20px;">
+      PRO WORKS運営チーム/株式会社アルマ
+    </p>`;
+
+// 共通のテキスト署名を生成
+const generateEmailSignatureText = ({ helpfulInfoUrl, contactUrl, homeUrl }: EmailSignatureUrls): string => `
+――――――――――――――――――
+▽お役立ち情報
+${helpfulInfoUrl}
+▽お問い合わせ先
+${contactUrl}
+▽PRO WORKS
+${homeUrl}
+PRO WORKS運営チーム/株式会社アルマ
+――――――――――――――――――`;
+
 /**
  * メールアドレス確認メールを送信
  */
@@ -53,10 +90,7 @@ export const sendVerificationEmail = async (
   // verificationUrlからbaseUrlを抽出
   const urlObj = new URL(verificationUrl);
   const baseUrl = `${urlObj.protocol}//${urlObj.host}`;
-  const myPageUrl = `${baseUrl}/me`;
-  const helpfulInfoUrl = `${baseUrl}/media`;
-  const contactUrl = `${baseUrl}/me?tab=contact`;
-  const homeUrl = baseUrl;
+  const signatureUrls = generateSignatureUrls(baseUrl);
 
   const htmlContent = `
 <!DOCTYPE html>
@@ -104,16 +138,7 @@ export const sendVerificationEmail = async (
     </p>
 
     <hr style="border: none; border-top: 1px solid #d5e5f0; margin: 20px 0;">
-
-    <div style="font-size: 12px; color: #686868;">
-      <p style="margin: 5px 0;">▽お役立ち情報: <a href="${helpfulInfoUrl}" style="color: #63b2cd;">${helpfulInfoUrl}</a></p>
-      <p style="margin: 5px 0;">▽お問い合わせ先: <a href="${contactUrl}" style="color: #63b2cd;">${contactUrl}</a></p>
-      <p style="margin: 5px 0;">▽PRO WORKS: <a href="${homeUrl}" style="color: #63b2cd;">${homeUrl}</a></p>
-    </div>
-
-    <p style="color: #686868; font-size: 12px; text-align: center; margin-top: 20px;">
-      PRO WORKS運営チーム/株式会社アルマ
-    </p>
+${generateEmailSignatureHTML(signatureUrls)}
   </div>
 </body>
 </html>
@@ -134,16 +159,7 @@ ${verificationUrl}
 
 【ご注意】
 本メールに身に覚えのない場合は、本メールを破棄していただきますようお願いいたします。
-
-――――――――――――――――――
-▽お役立ち情報
-${helpfulInfoUrl}
-▽お問い合わせ先
-${contactUrl}
-▽PRO WORKS
-${homeUrl}
-PRO WORKS運営チーム/株式会社アルマ
-――――――――――――――――――
+${generateEmailSignatureText(signatureUrls)}
   `;
 
   return sendEmail({ to, subject, html: htmlContent, text: textContent });
@@ -430,9 +446,7 @@ export const sendWithdrawalCompletionEmail = async (
 
   // baseUrlが渡されない場合は環境変数から取得
   const siteUrl = baseUrl || process.env.NEXT_PUBLIC_APP_URL || "https://proworks.jp";
-  const helpfulInfoUrl = `${siteUrl}/media`;
-  const contactUrl = `${siteUrl}/me?tab=contact`;
-  const homeUrl = siteUrl;
+  const signatureUrls = generateSignatureUrls(siteUrl);
 
   const htmlContent = `
 <!DOCTYPE html>
@@ -470,16 +484,7 @@ export const sendWithdrawalCompletionEmail = async (
     </p>
 
     <hr style="border: none; border-top: 1px solid #d5e5f0; margin: 20px 0;">
-
-    <div style="font-size: 12px; color: #686868;">
-      <p style="margin: 5px 0;">▽お役立ち情報: <a href="${helpfulInfoUrl}" style="color: #63b2cd;">${helpfulInfoUrl}</a></p>
-      <p style="margin: 5px 0;">▽お問い合わせ先: <a href="${contactUrl}" style="color: #63b2cd;">${contactUrl}</a></p>
-      <p style="margin: 5px 0;">▽PRO WORKS: <a href="${homeUrl}" style="color: #63b2cd;">${homeUrl}</a></p>
-    </div>
-
-    <p style="color: #686868; font-size: 12px; text-align: center; margin-top: 20px;">
-      PRO WORKS運営チーム/株式会社アルマ
-    </p>
+${generateEmailSignatureHTML(signatureUrls)}
   </div>
 </body>
 </html>
@@ -502,15 +507,7 @@ ${userName}様
 またのご利用を心よりお待ちしております。
 
 ※本メールは退会完了の確認のために送信しています。
-――――――――――――――――――
-▽お役立ち情報
-${helpfulInfoUrl}
-▽お問い合わせ先
-${contactUrl}
-▽PRO WORKS
-${homeUrl}
-PRO WORKS運営チーム/株式会社アルマ
-――――――――――――――――――
+${generateEmailSignatureText(signatureUrls)}
   `;
 
   return sendEmail({ to, subject, html: htmlContent, text: textContent });
@@ -527,9 +524,7 @@ export const sendRegistrationCompleteEmail = async (
   const subject = "【PRO WORKS】会員登録ありがとうございます";
 
   const myPageUrl = baseUrl;
-  const helpfulInfoUrl = `${baseUrl}/media`;
-  const contactUrl = `${baseUrl}/?tab=contact`;
-  const homeUrl = baseUrl;
+  const signatureUrls = generateSignatureUrls(baseUrl);
 
   const htmlContent = `
 <!DOCTYPE html>
@@ -582,16 +577,7 @@ export const sendRegistrationCompleteEmail = async (
     </p>
 
     <hr style="border: none; border-top: 1px solid #d5e5f0; margin: 20px 0;">
-
-    <div style="font-size: 12px; color: #686868;">
-      <p style="margin: 5px 0;">▽お役立ち情報: <a href="${helpfulInfoUrl}" style="color: #63b2cd;">${helpfulInfoUrl}</a></p>
-      <p style="margin: 5px 0;">▽お問い合わせ先: <a href="${contactUrl}" style="color: #63b2cd;">${contactUrl}</a></p>
-      <p style="margin: 5px 0;">▽PRO WORKS: <a href="${homeUrl}" style="color: #63b2cd;">${homeUrl}</a></p>
-    </div>
-
-    <p style="color: #686868; font-size: 12px; text-align: center; margin-top: 20px;">
-      PRO WORKS 運営チーム/株式会社アルマ
-    </p>
+${generateEmailSignatureHTML(signatureUrls)}
   </div>
 </body>
 </html>
@@ -622,17 +608,7 @@ ${myPageUrl}
 【ご注意】
 本メールに身に覚えのない場合は、本メールを破棄していただきますようお願いいたします。
 ————————————————————
-
-▽お役立ち情報
-${helpfulInfoUrl}
-
-▽お問い合わせ先
-${contactUrl}
-
-▽PRO WORKS
-${homeUrl}
-
-PRO WORKS 運営チーム/株式会社アルマ
+${generateEmailSignatureText(signatureUrls)}
   `;
 
   return sendEmail({ to, subject, html: htmlContent, text: textContent });
@@ -650,8 +626,7 @@ export const sendStaffRecommendNotificationEmail = async (
 ): Promise<SendEmailResult> => {
   const subject = "【PROWORKS】担当者からの特別オファーのご案内";
 
-  const helpfulInfoUrl = `${baseUrl}/media`;
-  const contactUrl = `${baseUrl}/me?tab=contact`;
+  const signatureUrls = generateSignatureUrls(baseUrl);
   const homeUrl = baseUrl;
 
   const htmlContent = `
@@ -690,16 +665,7 @@ export const sendStaffRecommendNotificationEmail = async (
     </p>
 
     <hr style="border: none; border-top: 1px solid #d5e5f0; margin: 20px 0;">
-
-    <div style="font-size: 12px; color: #686868;">
-      <p style="margin: 5px 0;">▽お役立ち情報: <a href="${helpfulInfoUrl}" style="color: #63b2cd;">${helpfulInfoUrl}</a></p>
-      <p style="margin: 5px 0;">▽お問い合わせ先: <a href="${contactUrl}" style="color: #63b2cd;">${contactUrl}</a></p>
-      <p style="margin: 5px 0;">▽PRO WORKS: <a href="${homeUrl}" style="color: #63b2cd;">${homeUrl}</a></p>
-    </div>
-
-    <p style="color: #686868; font-size: 12px; text-align: center; margin-top: 20px;">
-      PRO WORKS運営チーム/株式会社アルマ
-    </p>
+${generateEmailSignatureHTML(signatureUrls)}
   </div>
 </body>
 </html>
@@ -720,19 +686,7 @@ ${homeUrl}
 本メールに身に覚えのない場合は、本メールを破棄していただきますようお願いいたします。
 ※募集が終了しますと、案件情報が閲覧できなくなります。何卒ご容赦ください。
 ※複数の方からエントリーいただいた場合は当社にて選考させていただきます。ご了承ください。
-――――――――――――――――――
-
-▽お役立ち情報
-${helpfulInfoUrl}
-
-▽お問い合わせ先
-${contactUrl}
-
-▽PRO WORKS
-${homeUrl}
-
-PRO WORKS運営チーム/株式会社アルマ
-――――――――――――――――――
+${generateEmailSignatureText(signatureUrls)}
   `;
 
   return sendEmail({ to, subject, html: htmlContent, text: textContent });
@@ -748,10 +702,8 @@ export const sendPasswordChangedNotificationEmail = async (
 ): Promise<SendEmailResult> => {
   const subject = "【PRO WORKS】パスワード変更のお知らせ";
 
-  const loginUrl = `${baseUrl}/login`;
-  const helpfulInfoUrl = `${baseUrl}/media`;
-  const contactUrl = `${baseUrl}/me?tab=contact`;
-  const homeUrl = baseUrl;
+  const loginUrl = `${baseUrl}/auth/signin`;
+  const signatureUrls = generateSignatureUrls(baseUrl);
 
   const htmlContent = `
 <!DOCTYPE html>
@@ -788,16 +740,7 @@ export const sendPasswordChangedNotificationEmail = async (
     </p>
 
     <hr style="border: none; border-top: 1px solid #d5e5f0; margin: 20px 0;">
-
-    <div style="font-size: 12px; color: #686868;">
-      <p style="margin: 5px 0;">▽お役立ち情報: <a href="${helpfulInfoUrl}" style="color: #63b2cd;">${helpfulInfoUrl}</a></p>
-      <p style="margin: 5px 0;">▽お問い合わせ先: <a href="${contactUrl}" style="color: #63b2cd;">${contactUrl}</a></p>
-      <p style="margin: 5px 0;">▽PRO WORKS: <a href="${homeUrl}" style="color: #63b2cd;">${homeUrl}</a></p>
-    </div>
-
-    <p style="color: #686868; font-size: 12px; text-align: center; margin-top: 20px;">
-      PRO WORKS 運営チーム/株式会社アルマ
-    </p>
+${generateEmailSignatureHTML(signatureUrls)}
   </div>
 </body>
 </html>
@@ -817,18 +760,7 @@ ${loginUrl}
 ————————————————————
 【ご注意】
 本メールに身に覚えのない場合は、本メールを破棄していただきますようお願いいたします。
-————————————————————
-
-▽お役立ち情報
-${helpfulInfoUrl}
-
-▽お問い合わせ先
-${contactUrl}
-
-▽PRO WORKS
-${homeUrl}
-
-PRO WORKS 運営チーム/株式会社アルマ
+${generateEmailSignatureText(signatureUrls)}
   `;
 
   return sendEmail({ to, subject, html: htmlContent, text: textContent });
@@ -844,10 +776,8 @@ export const sendApplicationCompleteEmail = async (
 ): Promise<SendEmailResult> => {
   const subject = "【PROWORKS】案件応募が完了しました";
 
-  const applicationsUrl = `${baseUrl}/applications`;
-  const helpfulInfoUrl = `${baseUrl}/media`;
-  const contactUrl = `${baseUrl}/me?tab=contact`;
-  const homeUrl = baseUrl;
+  const applicationsUrl = `${baseUrl}/?tab=applications`;
+  const signatureUrls = generateSignatureUrls(baseUrl);
 
   const htmlContent = `
 <!DOCTYPE html>
@@ -888,16 +818,7 @@ export const sendApplicationCompleteEmail = async (
     </p>
 
     <hr style="border: none; border-top: 1px solid #d5e5f0; margin: 20px 0;">
-
-    <div style="font-size: 12px; color: #686868;">
-      <p style="margin: 5px 0;">▽お役立ち情報: <a href="${helpfulInfoUrl}" style="color: #63b2cd;">${helpfulInfoUrl}</a></p>
-      <p style="margin: 5px 0;">▽お問い合わせ先: <a href="${contactUrl}" style="color: #63b2cd;">${contactUrl}</a></p>
-      <p style="margin: 5px 0;">▽PRO WORKS: <a href="${homeUrl}" style="color: #63b2cd;">${homeUrl}</a></p>
-    </div>
-
-    <p style="color: #686868; font-size: 12px; text-align: center; margin-top: 20px;">
-      PRO WORKS運営チーム/株式会社アルマ
-    </p>
+${generateEmailSignatureHTML(signatureUrls)}
   </div>
 </body>
 </html>
@@ -921,19 +842,7 @@ ${applicationsUrl}
 本メールに身に覚えのない場合は、本メールを破棄していただきますようお願いいたします。
 ※募集が終了しますと、案件の詳細情報が閲覧できなくなります。何卒ご容赦ください。
 ※複数の方からエントリーいただいた場合は当社にて選考させていただきます。ご了承ください。
-――――――――――――――――――
-
-▽お役立ち情報
-${helpfulInfoUrl}
-
-▽お問い合わせ先
-${contactUrl}
-
-▽PRO WORKS
-${homeUrl}
-
-PRO WORKS運営チーム/株式会社アルマ
-――――
+${generateEmailSignatureText(signatureUrls)}
   `;
 
   return sendEmail({ to, subject, html: htmlContent, text: textContent });
@@ -951,8 +860,7 @@ export const sendAIMatchNotificationEmail = async (
 ): Promise<SendEmailResult> => {
   const subject = "【PROWORKS】AIがあなたにぴったりの案件を見つけました";
 
-  const helpfulInfoUrl = `${baseUrl}/media`;
-  const contactUrl = `${baseUrl}/me?tab=contact`;
+  const signatureUrls = generateSignatureUrls(baseUrl);
   const homeUrl = baseUrl;
 
   const htmlContent = `
@@ -991,16 +899,7 @@ export const sendAIMatchNotificationEmail = async (
     </p>
 
     <hr style="border: none; border-top: 1px solid #d5e5f0; margin: 20px 0;">
-
-    <div style="font-size: 12px; color: #686868;">
-      <p style="margin: 5px 0;">▽お役立ち情報: <a href="${helpfulInfoUrl}" style="color: #63b2cd;">${helpfulInfoUrl}</a></p>
-      <p style="margin: 5px 0;">▽お問い合わせ先: <a href="${contactUrl}" style="color: #63b2cd;">${contactUrl}</a></p>
-      <p style="margin: 5px 0;">▽PRO WORKS: <a href="${homeUrl}" style="color: #63b2cd;">${homeUrl}</a></p>
-    </div>
-
-    <p style="color: #686868; font-size: 12px; text-align: center; margin-top: 20px;">
-      PRO WORKS運営チーム/株式会社アルマ
-    </p>
+${generateEmailSignatureHTML(signatureUrls)}
   </div>
 </body>
 </html>
@@ -1021,19 +920,7 @@ ${homeUrl}
 本メールに身に覚えのない場合は、本メールを破棄していただきますようお願いいたします。
 ※募集が終了しますと、案件情報が閲覧できなくなります。何卒ご容赦ください。
 ※複数の方からエントリーいただいた場合は当社にて選考させていただきます。ご了承ください。
-――――――――――――――――――
-
-▽お役立ち情報
-${helpfulInfoUrl}
-
-▽お問い合わせ先
-${contactUrl}
-
-▽PRO WORKS
-${homeUrl}
-
-PRO WORKS運営チーム/株式会社アルマ
-――――――――――――――――――
+${generateEmailSignatureText(signatureUrls)}
   `;
 
   return sendEmail({ to, subject, html: htmlContent, text: textContent });
@@ -1050,9 +937,7 @@ export const sendInterviewConfirmedEmail = async (
 ): Promise<SendEmailResult> => {
   const subject = "【PROWORKS】面談予定が確定しました";
 
-  const helpfulInfoUrl = `${baseUrl}/media`;
-  const contactUrl = `${baseUrl}/me?tab=contact`;
-  const homeUrl = baseUrl;
+  const signatureUrls = generateSignatureUrls(baseUrl);
 
   const htmlContent = `
 <!DOCTYPE html>
@@ -1086,16 +971,7 @@ export const sendInterviewConfirmedEmail = async (
     </p>
 
     <hr style="border: none; border-top: 1px solid #d5e5f0; margin: 20px 0;">
-
-    <div style="font-size: 12px; color: #686868;">
-      <p style="margin: 5px 0;">▽お役立ち情報: <a href="${helpfulInfoUrl}" style="color: #63b2cd;">${helpfulInfoUrl}</a></p>
-      <p style="margin: 5px 0;">▽お問い合わせ先: <a href="${contactUrl}" style="color: #63b2cd;">${contactUrl}</a></p>
-      <p style="margin: 5px 0;">▽PRO WORKS: <a href="${homeUrl}" style="color: #63b2cd;">${homeUrl}</a></p>
-    </div>
-
-    <p style="color: #686868; font-size: 12px; text-align: center; margin-top: 20px;">
-      PRO WORKS運営チーム/株式会社アルマ
-    </p>
+${generateEmailSignatureHTML(signatureUrls)}
   </div>
 </body>
 </html>
@@ -1114,19 +990,7 @@ PRO WORKS営業担当より、面談日程について別途ご連絡させて�
 【ご注意】
 本メールに身に覚えのない場合は、本メールを破棄していただきますようお願いいたします。
 ※ご連絡が取れない場合、面談を組むことができないため取消させていただくことがございます。ご了承ください。
-――――――――――――――――――
-
-▽お役立ち情報
-${helpfulInfoUrl}
-
-▽お問い合わせ先
-${contactUrl}
-
-▽PRO WORKS
-${homeUrl}
-
-PRO WORKS運営チーム/株式会社アルマ
-――――――――――――――――――
+${generateEmailSignatureText(signatureUrls)}
   `;
 
   return sendEmail({ to, subject, html: htmlContent, text: textContent });
@@ -1144,9 +1008,7 @@ export const sendApplicationCancelEmail = async (
   const subject = "【PROWORKS】案件応募を取り消しました";
 
   const jobListUrl = `${baseUrl}/`;
-  const helpfulInfoUrl = `${baseUrl}/media`;
-  const contactUrl = `${baseUrl}/me?tab=contact`;
-  const homeUrl = baseUrl;
+  const signatureUrls = generateSignatureUrls(baseUrl);
 
   const htmlContent = `
 <!DOCTYPE html>
@@ -1188,16 +1050,7 @@ export const sendApplicationCancelEmail = async (
     </p>
 
     <hr style="border: none; border-top: 1px solid #d5e5f0; margin: 20px 0;">
-
-    <div style="font-size: 12px; color: #686868;">
-      <p style="margin: 5px 0;">▽お役立ち情報: <a href="${helpfulInfoUrl}" style="color: #63b2cd;">${helpfulInfoUrl}</a></p>
-      <p style="margin: 5px 0;">▽お問い合わせ先: <a href="${contactUrl}" style="color: #63b2cd;">${contactUrl}</a></p>
-      <p style="margin: 5px 0;">▽PRO WORKS: <a href="${homeUrl}" style="color: #63b2cd;">${homeUrl}</a></p>
-    </div>
-
-    <p style="color: #686868; font-size: 12px; text-align: center; margin-top: 20px;">
-      PRO WORKS運営チーム/株式会社アルマ
-    </p>
+${generateEmailSignatureHTML(signatureUrls)}
   </div>
 </body>
 </html>
@@ -1219,15 +1072,7 @@ ${jobListUrl}
 本メールに身に覚えのない場合は、本メールを破棄していただきますようお願いいたします。
 ※募集が終了しますと、案件情報が閲覧できなくなります。何卒ご容赦ください。
 ※複数の方からエントリーいただいた場合は当社にて選考させていただきます。ご了承ください。
-――――――――――――――――――
-▽お役立ち情報
-${helpfulInfoUrl}
-▽お問い合わせ先
-${contactUrl}
-▽PRO WORKS
-${homeUrl}
-PRO WORKS運営チーム/株式会社アルマ
-――――――――――――――――
+${generateEmailSignatureText(signatureUrls)}
   `;
 
   return sendEmail({ to, subject, html: htmlContent, text: textContent });

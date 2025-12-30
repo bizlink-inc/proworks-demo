@@ -92,10 +92,10 @@ export const NotificationDropdown = () => {
       router.push(`/?jobId=${notification.jobId}`)
     } else if (notification.type === "profile_incomplete") {
       // プロフィール未入力通知は該当タブへ遷移
-      router.push(`/me?tab=${notification.tab}`)
+      router.push(`/?tab=${notification.tab}`)
     } else {
-      // ステータス変更は応募履歴ページへ遷移し、対象案件の詳細を開く
-      router.push(`/applications?jobId=${notification.jobId}`)
+      // ステータス変更は応募済み案件タブへ遷移し、対象案件の詳細を開く
+      router.push(`/?tab=applications&jobId=${notification.jobId}`)
     }
   }
 

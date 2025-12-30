@@ -108,7 +108,7 @@ export function ApplySuccessModal({ isOpen, missingFields, onClose }: ApplySucce
                       <li key={index}>{field}</li>
                     ))}
                   </ul>
-                  <Link href="/me">
+                  <Link href="/">
                     <Button
                       variant="pw-primary"
                       className="w-full"
@@ -127,7 +127,7 @@ export function ApplySuccessModal({ isOpen, missingFields, onClose }: ApplySucce
             className="py-6 flex flex-col sm:flex-row gap-3 justify-center"
             style={{ borderTop: "1px solid #d5e5f0" }}
           >
-            <Link href="/applications">
+            <Link href="/?tab=applications">
               <Button
                 variant="pw-primary"
                 className="w-full sm:w-auto"

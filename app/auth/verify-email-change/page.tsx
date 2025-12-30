@@ -117,7 +117,7 @@ const VerifyEmailChangeContent = () => {
             </p>
           </div>
           <div className="space-y-2">
-            <Link href="/me" className="block">
+            <Link href="/" className="block">
               <Button className="w-full">マイページに戻る</Button>
             </Link>
             <Link href="/auth/signin" className="block">

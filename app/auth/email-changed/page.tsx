@@ -46,7 +46,7 @@ export default function EmailChangedPage() {
       </PWAlert>
 
       <div className="pt-4 space-y-2">
-        <Link href="/me" className="block">
+        <Link href="/" className="block">
           <Button variant="pw-primary" className="w-full">
             マイページへ
           </Button>
