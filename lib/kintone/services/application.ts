@@ -54,11 +54,9 @@ export const getApplicationsByAuthUserId = async (authUserId: string): Promise<A
     threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
     const dateStr = threeMonthsAgo.toISOString().split('T')[0]; // YYYY-MM-DD形式
 
-    // 開発環境（APP_ID: 84）では作成日時_開発環境を使用、本番環境では作成日時を使用
-    const applicationAppId = process.env.KINTONE_APPLICATION_APP_ID;
-    const createdAtField = applicationAppId === '84'
-      ? APPLICATION_FIELDS.CREATED_AT_DEV
-      : APPLICATION_FIELDS.CREATED_AT;
+    // 作成日時フィールドは常にシステムフィールド（作成日時）を使用
+    // 注：作成日時_開発環境は新規レコードで自動設定されないため、3ヶ月フィルターには使用しない
+    const createdAtField = APPLICATION_FIELDS.CREATED_AT;
 
     // Kintone側で3ヶ月フィルタリング + 有効なステータスのみ取得（応募取消し除外）
     const validStatuses = ["応募済み", "面談調整中", "面談予定", "案件参画", "見送り"];
