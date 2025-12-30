@@ -36,10 +36,25 @@ export default function SignInPage() {
       })
 
       if (!response.ok) {
-        const error = await response.json()
+        let errorMessage = "メールアドレスまたはパスワードが正しくありません。"
+        let isWithdrawn = response.status === 403
+
+        try {
+          const error = await response.json()
+          if (error.message) {
+            errorMessage = error.message
+            isWithdrawn = isWithdrawn || error.message.includes("退会")
+          }
+        } catch {
+          // JSONパース失敗時はデフォルトメッセージを使用
+          if (response.status === 403) {
+            errorMessage = "すでに退会済みのアカウントです。再度ご利用いただく場合は新規登録をお願いいたします。"
+          }
+        }
+
         toast({
-          title: "ログイン失敗",
-          description: error.message || "メールアドレスまたはパスワードが正しくありません。",
+          title: isWithdrawn ? "ログインできません" : "ログイン失敗",
+          description: errorMessage,
           variant: "destructive",
         })
         setLoading(false)
@@ -55,9 +70,10 @@ export default function SignInPage() {
       router.push("/")
       router.refresh()
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "ログインに失敗しました。"
       toast({
         title: "エラー",
-        description: "ログインに失敗しました。",
+        description: errorMessage,
         variant: "destructive",
       })
       setLoading(false)

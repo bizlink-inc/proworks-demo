@@ -201,24 +201,38 @@ export const WithdrawDialog = ({ open, onOpenChange }: WithdrawDialogProps) => {
               </div>
             </div>
 
-            <DialogFooter className="px-6 pb-6">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleClose}
-                style={{ minWidth: "120px", borderRadius: "var(--pw-radius-sm)" }}
-              >
-                キャンセル
-              </Button>
-              <Button
-                type="button"
-                variant="pw-primary"
-                onClick={handleProceed}
-                disabled={!allConfirmed}
-                style={{ minWidth: "120px" }}
-              >
-                退会手続きを進める
-              </Button>
+            <DialogFooter className="px-6 pb-6 flex-col gap-3">
+              {!allConfirmed && (
+                <p
+                  style={{
+                    fontSize: "var(--pw-text-xs)",
+                    color: "#dc2626",
+                    textAlign: "center",
+                    width: "100%",
+                  }}
+                >
+                  ※ すべての確認事項にチェックを入れてください
+                </p>
+              )}
+              <div className="flex gap-3 justify-end w-full">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleClose}
+                  style={{ minWidth: "120px", borderRadius: "var(--pw-radius-sm)" }}
+                >
+                  キャンセル
+                </Button>
+                <Button
+                  type="button"
+                  variant="pw-primary"
+                  onClick={handleProceed}
+                  disabled={!allConfirmed}
+                  style={{ minWidth: "120px" }}
+                >
+                  退会手続きを進める
+                </Button>
+              </div>
             </DialogFooter>
           </>
         ) : (

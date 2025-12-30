@@ -19,7 +19,8 @@ export const POST = async (request: NextRequest) => {
       try {
         const body = await clonedResponse.json();
         // 退会済みユーザーのエラーメッセージを確認
-        if (body?.message?.includes("退会済み") || body?.error?.message?.includes("退会済み")) {
+        const messageText = body?.message || body?.error?.message || "";
+        if (messageText.includes("退会済み") || messageText.includes("退会")) {
           return NextResponse.json(
             { message: "すでに退会済みのアカウントです。再度ご利用いただく場合は新規登録をお願いいたします。" },
             { status: 403 }
@@ -32,14 +33,20 @@ export const POST = async (request: NextRequest) => {
 
     return response;
   } catch (error) {
+    console.error("Auth POST error:", error);
     // エラーがthrowされた場合（databaseHooksからのエラー）
-    if (error instanceof Error && error.message.includes("退会済み")) {
-      return NextResponse.json(
-        { message: "すでに退会済みのアカウントです。再度ご利用いただく場合は新規登録をお願いいたします。" },
-        { status: 403 }
-      );
+    if (error instanceof Error) {
+      if (error.message.includes("退会済み") || error.message.includes("退会")) {
+        return NextResponse.json(
+          { message: "すでに退会済みのアカウントです。再度ご利用いただく場合は新規登録をお願いいたします。" },
+          { status: 403 }
+        );
+      }
     }
-    // その他のエラーは再スロー
-    throw error;
+    // その他のエラーは500エラーとして返す
+    return NextResponse.json(
+      { message: "ログイン処理中にエラーが発生しました。" },
+      { status: 500 }
+    );
   }
 };
