@@ -132,6 +132,26 @@ export function UnifiedDashboard({
     }
   }, [menuParam])
 
+  // URLパラメータのjobIdが変更された時に案件詳細モーダルを開く（通知からの遷移対応）
+  useEffect(() => {
+    const jobIdFromUrl = searchParams.get("jobId")
+    if (jobIdFromUrl) {
+      setSelectedJobId(jobIdFromUrl)
+    }
+  }, [searchParams])
+
+  // 案件詳細モーダルを閉じる時の処理（URLパラメータもクリア）
+  const handleCloseJobDetail = useCallback(() => {
+    setSelectedJobId(null)
+    // URLからjobIdパラメータを削除
+    const currentTab = searchParams.get("tab")
+    if (currentTab) {
+      router.replace(`/?tab=${currentTab}`, { scroll: false })
+    } else {
+      router.replace("/", { scroll: false })
+    }
+  }, [router, searchParams])
+
   // タブ変更時のURL更新（router.pushのみ - stateは更新しない）
   const handleTabChange = useCallback((tab: TabType) => {
     if (tab === "jobs") {
@@ -797,7 +817,7 @@ export function UnifiedDashboard({
         </SidebarLayout>
       )}
 
-      <JobDetailModal jobId={selectedJobId} onClose={() => setSelectedJobId(null)} onApply={handleApply} />
+      <JobDetailModal jobId={selectedJobId} onClose={handleCloseJobDetail} onApply={handleApply} />
 
       {applySuccess && (
         <ApplySuccessModal
