@@ -103,6 +103,9 @@ export function UnifiedDashboard({
   const sortDropdownRef = useRef<HTMLDivElement>(null)
   const size = 21
 
+  // SSRデータを使用した初回レンダリングかどうかを追跡
+  const isInitialRender = useRef(true)
+
   // === 応募済み案件の状態 ===
   const [applications, setApplications] = useState<any[] | null>(null)
   const [isLoadingApplications, setIsLoadingApplications] = useState(false)
@@ -273,6 +276,12 @@ export function UnifiedDashboard({
   // フィルター変更時
   const filtersRef = useRef(filters)
   useEffect(() => {
+    // 初回レンダリング時はSSRデータを使用（フェッチしない）
+    if (isInitialRender.current) {
+      isInitialRender.current = false
+      filtersRef.current = filters
+      return
+    }
     if (filtersRef.current === filters) return
     filtersRef.current = filters
     fetchJobs()
