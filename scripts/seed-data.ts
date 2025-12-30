@@ -32,7 +32,7 @@ import { seedData2 } from "./seed-data-matching";
 import { createSeedData1 } from "./seed-data-yamada";
 
 // ユーティリティ
-import { filterJobOptions, generateDevCreatedAt, uploadResumeFile } from "./seed-utils";
+import { filterJobOptions, generateDevCreatedAt } from "./seed-utils";
 
 // 認証
 import {
@@ -66,6 +66,7 @@ import {
   deleteAllRecords,
   deleteInquiryRecords,
   resetTalentWithdrawalStatus,
+  uploadResumeToTalents,
   upsertApplicationRecord,
   upsertJobRecord,
   upsertRecommendationRecord,
@@ -141,26 +142,8 @@ export const createSeedData = async () => {
     // お知らせ作成を先行開始（他に依存しない）
     const announcementPromise = createAnnouncementRecords();
 
-    // PDF アップロードを先行開始
+    // 人材レコードを構築（経歴書は後でアップロード）
     console.log(`\n[2/6] 人材DBにレコードを作成中...`);
-    const resumePromise = uploadResumeFile(
-      "test-file/Backend_Engineer_Resume_sample.pdf"
-    );
-
-    // 案件レコードを先に構築（依存なし）
-    console.log(`[3/6] 案件DBにレコードを作成中...`);
-    // 推薦計算でもbuildJobRecordと同じフィルタ済みデータを使用するため
-    // 各案件のフィルタ済み職種・スキルを保存
-    const jobsWithFilteredOptions = seedData.jobs.map((job: any) => ({
-      raw: job,
-      filtered: filterJobOptions(job as JobData),
-    }));
-    const jobRecords = jobsWithFilteredOptions.map(({ raw }) =>
-      buildJobRecord(raw as JobData)
-    );
-
-    // PDF アップロード完了を待って人材レコードを構築
-    const hanakoResumeFiles = await resumePromise;
     const talentRecords = seedData.talents.map((talent) => {
       const userId = resolveUserId(
         talent.auth_user_id,
@@ -172,13 +155,20 @@ export const createSeedData = async () => {
       if (!userId) {
         throw new Error(`ユーザーIDが見つかりません: ${talent.氏名}`);
       }
-
-      const isHanako = talent.auth_user_id === HANAKO_AUTH_USER_ID;
-      return buildTalentRecord(talent as TalentData, userId, {
-        resumeFiles: isHanako ? hanakoResumeFiles : [],
-        // 注: clearExperienceを削除 - シードとバッチで同じデータを使用するため
-      });
+      return buildTalentRecord(talent as TalentData, userId);
     });
+
+    // 案件レコードを構築
+    console.log(`[3/6] 案件DBにレコードを作成中...`);
+    // 推薦計算でもbuildJobRecordと同じフィルタ済みデータを使用するため
+    // 各案件のフィルタ済み職種・スキルを保存
+    const jobsWithFilteredOptions = seedData.jobs.map((job: any) => ({
+      raw: job,
+      filtered: filterJobOptions(job as JobData),
+    }));
+    const jobRecords = jobsWithFilteredOptions.map(({ raw }) =>
+      buildJobRecord(raw as JobData)
+    );
 
     // 人材DBと案件DBを並列で作成
     const [talentRecordIds, jobIds] = await Promise.all([
@@ -186,6 +176,15 @@ export const createSeedData = async () => {
       addJobRecords(jobRecords),
     ]);
     console.log(`   → 人材: ${talentRecordIds.length}人, 案件: ${jobIds.length}件を作成完了`);
+
+    // 経歴書をアップロード（レコード作成後に同一セッションで実行）
+    console.log(`\n[3.5/6] 経歴書をアップロード中...`);
+    const resumeTargetUsers = [YAMADA_AUTH_USER_ID, YAMADA2_AUTH_USER_ID, HANAKO_AUTH_USER_ID];
+    const uploadedCount = await uploadResumeToTalents(
+      resumeTargetUsers,
+      "test-file/Backend_Engineer_Resume_sample.pdf"
+    );
+    console.log(`   → ${uploadedCount}人に経歴書を設定完了`);
 
     // 4. 応募履歴DB作成
     console.log(`\n[4/6] 応募履歴DBにレコードを作成中...`);
@@ -401,6 +400,15 @@ const upsertYamadaSeedData = async () => {
     const talent = seedData.talents[0];
     const talentRecord = buildTalentRecord(talent as TalentData, YAMADA_AUTH_USER_ID);
     await upsertTalentRecord(YAMADA_AUTH_USER_ID, talentRecord);
+
+    // Step 2.5: 経歴書アップロード
+    console.log("\n" + "=".repeat(80));
+    console.log("📄 Step 2.5: 経歴書をアップロード");
+    console.log("=".repeat(80));
+    await uploadResumeToTalents(
+      [YAMADA_AUTH_USER_ID],
+      "test-file/Backend_Engineer_Resume_sample.pdf"
+    );
 
     // Step 3: 案件DB
     console.log("\n" + "=".repeat(80));

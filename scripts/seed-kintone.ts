@@ -2,6 +2,8 @@
  * kintone書き込み処理
  */
 
+import * as fs from "fs";
+import * as path from "path";
 import {
   createTalentClient,
   createJobClient,
@@ -452,4 +454,81 @@ export const upsertRecommendationRecord = async (
       console.log(`✅ 新規推薦レコードを作成: ${logMessage} (ID=${result.id})`);
     }
   }
+};
+
+/** 人材レコードに経歴書をアップロード（同一クライアントセッションで実行） */
+export const uploadResumeToTalents = async (
+  authUserIds: string[],
+  resumePath: string
+): Promise<number> => {
+  const absolutePath = path.isAbsolute(resumePath)
+    ? resumePath
+    : path.join(process.cwd(), resumePath);
+
+  if (!fs.existsSync(absolutePath)) {
+    console.log(`⚠️ 経歴書ファイルが見つかりません: ${absolutePath}`);
+    return 0;
+  }
+
+  const client = createTalentClient();
+  const appId = getAppIds().talent;
+  let uploadedCount = 0;
+
+  // ファイルをアップロード
+  console.log(`📤 経歴書をアップロード中: ${path.basename(absolutePath)}`);
+  const fileBuffer = fs.readFileSync(absolutePath);
+  const fileName = path.basename(absolutePath);
+
+  const uploadResponse = await client.file.uploadFile({
+    file: {
+      name: fileName,
+      data: fileBuffer,
+    },
+  });
+  console.log(`✅ ファイルアップロード成功: ${uploadResponse.fileKey}`);
+
+  // 各ユーザーのレコードを更新
+  for (const authUserId of authUserIds) {
+    try {
+      const response = await client.record.getRecords({
+        app: appId,
+        query: `${TALENT_FIELDS.AUTH_USER_ID} = "${authUserId}" limit 1`,
+        fields: [TALENT_FIELDS.ID, TALENT_FIELDS.FULL_NAME],
+      });
+
+      if (response.records.length === 0) {
+        console.log(`⚠️ 人材レコードが見つかりません: ${authUserId}`);
+        continue;
+      }
+
+      const record = response.records[0] as Record<string, { value: unknown }>;
+      const recordId = record[TALENT_FIELDS.ID].value as string;
+      const fullName = record[TALENT_FIELDS.FULL_NAME].value as string;
+
+      // 新しいfileKeyでファイルを再アップロード（各レコード用）
+      const newUploadResponse = await client.file.uploadFile({
+        file: {
+          name: fileName,
+          data: fileBuffer,
+        },
+      });
+
+      await client.record.updateRecord({
+        app: appId,
+        id: recordId,
+        record: {
+          [TALENT_FIELDS.RESUME_FILES]: {
+            value: [{ fileKey: newUploadResponse.fileKey }],
+          },
+        },
+      });
+
+      console.log(`✅ 経歴書を設定: ${fullName} (ID: ${recordId})`);
+      uploadedCount++;
+    } catch (error) {
+      console.error(`❌ 経歴書設定エラー (${authUserId}):`, error);
+    }
+  }
+
+  return uploadedCount;
 };
