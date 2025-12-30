@@ -31,6 +31,7 @@ const TALENT_LIST_FIELDS = [
   TALENT_FIELDS.NG_COMPANIES,
   TALENT_FIELDS.OTHER_REQUESTS,
   TALENT_FIELDS.ST,
+  TALENT_FIELDS.PROFILE_COMPLETE_NOTIFIED_AT,
   // メール配信設定と利用規約同意フィールド（存在する場合のみ取得）
   'メール配信設定',
   '利用規約同意',
@@ -74,6 +75,8 @@ const convertTalentRecord = (record: TalentRecord): Talent => {
     termsAgreed: record[TALENT_FIELDS.TERMS_AGREED]?.value || '',
     // ステータスフィールド（退会時に「退会」に設定）
     st: record[TALENT_FIELDS.ST]?.value || '',
+    // プロフィール完成通知日時
+    profileCompleteNotifiedAt: record[TALENT_FIELDS.PROFILE_COMPLETE_NOTIFIED_AT]?.value || '',
   };
 };
 
@@ -264,3 +267,33 @@ export const updateResumeFiles = async (recordId: string, fileKeys: string[]): P
   }
 };
 
+// プロフィール完成通知日時を更新（通知重複防止用）
+export const markProfileCompleteNotified = async (recordId: string): Promise<void> => {
+  const client = createTalentClient();
+  const appId = getAppIds().talent;
+
+  const fieldCode = TALENT_FIELDS.PROFILE_COMPLETE_NOTIFIED_AT;
+  const timestamp = new Date().toISOString();
+
+  console.log("[markProfileCompleteNotified] 更新パラメータ:", {
+    appId,
+    recordId,
+    fieldCode,
+    timestamp,
+  });
+
+  try {
+    const response = await client.record.updateRecord({
+      app: appId,
+      id: recordId,
+      record: {
+        [fieldCode]: { value: timestamp },
+      },
+    });
+    console.log("[markProfileCompleteNotified] 更新レスポンス:", response);
+  } catch (error) {
+    console.error("プロフィール完成通知日時の更新に失敗:", error);
+    console.error("エラー詳細:", JSON.stringify(error, null, 2));
+    throw error;
+  }
+};

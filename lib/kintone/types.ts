@@ -28,6 +28,7 @@ export type TalentRecord = {
   ST?: { value: string }; // ステータス（退会時に「退会」に設定）
   メール配信設定?: { value: string };
   利用規約同意?: { value: string };
+  プロフィール完成通知日時?: { value: string };
 };
 
 // 案件DBの型定義
@@ -101,6 +102,7 @@ export type Talent = {
   st?: string; // ステータス（退会時に「退会」に設定）
   emailDeliveryStatus?: string;
   termsAgreed?: string;
+  profileCompleteNotifiedAt?: string;
 };
 
 export type Job = {

@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth-server";
-import { getTalentByAuthUserId, updateTalent } from "@/lib/kintone/services/talent";
+import { getTalentByAuthUserId, updateTalent, markProfileCompleteNotified } from "@/lib/kintone/services/talent";
 import { checkRequiredFields } from "@/lib/utils/profile-validation";
 import { sendProfileCompleteNotification } from "@/lib/slack";
 
@@ -66,11 +66,6 @@ export const PATCH = async (request: NextRequest) => {
 
     const body = await request.json();
 
-    // 更新前のプロフィール完了状態をチェック
-    const missingFieldsBefore = checkRequiredFields(talent);
-    const wasIncomplete = missingFieldsBefore.length > 0;
-    console.log("[Profile Check] 更新前の未入力項目:", missingFieldsBefore);
-
     // kintoneの人材情報を更新
     await updateTalent(talent.id, body);
 
@@ -81,19 +76,27 @@ export const PATCH = async (request: NextRequest) => {
     // 更新後のプロフィール完了状態をチェック
     const missingFieldsAfter = checkRequiredFields(updatedTalent);
     const isNowComplete = missingFieldsAfter.length === 0;
+    const alreadyNotified = !!talent.profileCompleteNotifiedAt;
     console.log("[Profile Check] 更新後の未入力項目:", missingFieldsAfter);
-    console.log("[Profile Check] wasIncomplete:", wasIncomplete, "isNowComplete:", isNowComplete);
+    console.log("[Profile Check] isNowComplete:", isNowComplete, "alreadyNotified:", alreadyNotified);
 
-    // プロフィールが未完了→完了になった場合、Slack通知を送信
-    if (wasIncomplete && isNowComplete) {
+    // プロフィールが完了かつ未通知の場合、Slack通知を送信
+    if (isNowComplete && !alreadyNotified) {
       console.log("[Profile Check] プロフィール完成！Slack通知を送信します");
       console.log("[Profile Check] talent.id:", talent.id);
       const fullName = `${talent.lastName || ""} ${talent.firstName || ""}`.trim();
-      sendProfileCompleteNotification({
-        fullName: fullName || session.user.email!.split("@")[0],
-        email: session.user.email!,
-        talentRecordId: talent.id,
-      }).catch((err) => console.error("⚠️ Slack通知送信失敗:", err));
+      try {
+        await sendProfileCompleteNotification({
+          fullName: fullName || session.user.email!.split("@")[0],
+          email: session.user.email!,
+          talentRecordId: talent.id,
+        });
+        // 通知成功時にKintoneに通知日時を記録
+        await markProfileCompleteNotified(talent.id);
+        console.log("[Profile Check] 通知日時をKintoneに記録しました");
+      } catch (err) {
+        console.error("⚠️ Slack通知送信失敗:", err);
+      }
     }
 
     return NextResponse.json(updatedTalent);

@@ -35,6 +35,7 @@ export const TALENT_FIELDS = {
   ST: 'ST', // ステータス（退会時に「退会」に更新）
   EMAIL_DELIVERY_STATUS: 'メール配信設定',
   TERMS_AGREED: '利用規約同意',
+  PROFILE_COMPLETE_NOTIFIED_AT: 'プロフィール完成通知日時',
 } as const;
 
 // 案件DB（Job）のフィールドコード
