@@ -76,6 +76,7 @@ import {
 // 固定ID
 const YAMADA_AUTH_USER_ID = "seed_user_001";
 const HANAKO_AUTH_USER_ID = "seed_user_002";
+const YAMADA2_AUTH_USER_ID = "seed_user_003";
 
 // デフォルト閾値
 const DEFAULT_THRESHOLD = 3;
@@ -238,8 +239,9 @@ export const createSeedData = async () => {
     );
 
     // 各アクティブ案件について動的にスコア計算
-    // 山田太郎の推薦を後で担当者おすすめ設定するため一時保存
+    // 山田太郎・山田太郎2の推薦を後で担当者おすすめ設定するため一時保存
     const yamadaMatches: { jobId: string; score: number }[] = [];
+    const yamada2Matches: { jobId: string; score: number }[] = [];
     const allRecommendationRecords: any[] = [];
 
     for (let jobIndex = 0; jobIndex < jobsWithFilteredOptions.length; jobIndex++) {
@@ -279,6 +281,10 @@ export const createSeedData = async () => {
         if (match.talentAuthUserId === YAMADA_AUTH_USER_ID) {
           yamadaMatches.push({ jobId, score: match.score });
         }
+        // 山田太郎2も同様に記録
+        if (match.talentAuthUserId === YAMADA2_AUTH_USER_ID) {
+          yamada2Matches.push({ jobId, score: match.score });
+        }
 
         allRecommendationRecords.push({
           talentAuthUserId: match.talentAuthUserId,
@@ -297,15 +303,27 @@ export const createSeedData = async () => {
     );
     console.log(`   山田太郎の担当者おすすめ: ${yamadaStaffRecommendJobIds.size}件`);
 
+    // 山田太郎2のスコア上位2件を担当者おすすめに設定
+    const yamada2StaffRecommendJobIds = new Set(
+      yamada2Matches
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 2)
+        .map((m) => m.jobId)
+    );
+    console.log(`   山田太郎2の担当者おすすめ: ${yamada2StaffRecommendJobIds.size}件`);
+
     // 最終的なレコードを構築
     const finalRecords = allRecommendationRecords.map((rec) => {
       const isYamadaStaffRecommend =
         rec.talentAuthUserId === YAMADA_AUTH_USER_ID &&
         yamadaStaffRecommendJobIds.has(rec.jobId);
+      const isYamada2StaffRecommend =
+        rec.talentAuthUserId === YAMADA2_AUTH_USER_ID &&
+        yamada2StaffRecommendJobIds.has(rec.jobId);
 
       return buildRecommendationRecord(rec.talentAuthUserId, rec.jobId, rec.score, {
         aiMatched: true,
-        staffRecommend: isYamadaStaffRecommend,
+        staffRecommend: isYamadaStaffRecommend || isYamada2StaffRecommend,
       });
     });
 
@@ -631,6 +649,7 @@ const printCompletionMessage = (seedData: any, totalRecommendations: number) => 
     `   応募: ${seedData.applications.length}件, 推薦: ${totalRecommendations}件`
   );
   console.log(`\n📝 ログイン: seed_yamada@example.com / password123`);
+  console.log(`            seed_yamada2@example.com / password123 (開発用)`);
   console.log(`            seed_hanako@example.com / password123\n`);
 };
 

@@ -1,6 +1,10 @@
 /**
- * 山田・田中テスト用シードデータ（2人+9案件+応募履歴）
+ * 山田・田中テスト用シードデータ（3人+9案件+応募履歴）
  * セット1: yamadaデータ（前からの既存データ）
+ *
+ * - 山田太郎 (seed_user_001): 顧客デモ用 - 変更しない
+ * - 田中花子 (seed_user_002): テスト用
+ * - 山田太郎2 (seed_user_003): ローカル開発用 - 山田太郎と同じデータ
  *
  * generateDevCreatedAtを引数として受け取るファクトリ関数パターン
  */
@@ -26,6 +30,16 @@ export const createSeedData1 = (generateDevCreatedAt: (daysAgo: number) => strin
     createdAt: new Date(),
     updatedAt: new Date(),
   },
+    {
+    id: "seed_user_003",
+    name: "山田 太郎2",
+    email: "seed_yamada2@example.com",
+      password: "password123",
+    emailVerified: false,
+    image: null,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
   ],
 
   talents: [
@@ -37,6 +51,47 @@ export const createSeedData1 = (generateDevCreatedAt: (daysAgo: number) => strin
     セイ: "ヤマダ",
     メイ: "タロウ",
     メールアドレス: "seed_yamada@example.com",
+    電話番号: "090-1234-5678",
+    生年月日: "1990-01-15",
+    郵便番号: "150-0001",
+    住所: "東京都渋谷区神宮前1-1-1",
+    言語_ツール: "JavaScript, TypeScript, React, Next.js, Node.js, Python, Django",
+    主な実績_PR_職務経歴: `【経歴概要】
+Web系エンジニアとして5年の実務経験があります。
+JavaScript/TypeScript/Reactを中心としたフロントエンド開発が得意です。
+Python/Djangoを使ったバックエンドAPI開発経験もあります。
+
+【主なプロジェクト】
+・ECサイトリニューアル: JavaScript/Reactでモダン化
+・管理システム開発: TypeScript/Reactでフルリニューアル
+・APIシステム: JavaScript/TypeScriptでバックエンド構築
+・金融系API開発: Python/Djangoで堅牢なAPI設計・実装
+
+【アピールポイント】
+・JavaScript/TypeScript/React開発5年
+・Python/Django開発2年
+・チーム開発の経験豊富`,
+    ポートフォリオリンク: "https://github.com/yamada-taro",
+    稼働可能時期: "2025-12-01",
+    希望単価_月額: 70,
+    希望勤務日数: "週5",
+    希望出社頻度: "週2",
+    希望勤務スタイル: ["ハイブリッド", "リモート"],
+    希望案件_作業内容: `・モダンなフロントエンド開発（React/Next.js）
+・バックエンドAPI開発（Node.js/Python）
+・新規サービスの立ち上げ
+・技術選定やアーキテクチャ設計にも関わりたい`,
+    NG企業: "特になし",
+    その他要望: "リモート中心で、フレックスタイム制の案件を希望します。",
+  },
+    {
+    auth_user_id: "seed_user_003",
+    姓: "山田",
+    名: "太郎2",
+    氏名: "山田 太郎2",
+    セイ: "ヤマダ",
+    メイ: "タロウツー",
+    メールアドレス: "seed_yamada2@example.com",
     電話番号: "090-1234-5678",
     生年月日: "1990-01-15",
     郵便番号: "150-0001",
@@ -530,6 +585,18 @@ SOC（セキュリティオペレーションセンター）での監視・分�
     { auth_user_id: "seed_user_001", jobIndex: 5, 対応状況: "応募済み", 作成日時_開発環境: generateDevCreatedAt(95) }, // 約3ヶ月前
     { auth_user_id: "seed_user_001", jobIndex: 6, 対応状況: "見送り", 作成日時_開発環境: generateDevCreatedAt(100) }, // 約3ヶ月前
     { auth_user_id: "seed_user_001", jobIndex: 7, 対応状況: "案件参画", 作成日時_開発環境: generateDevCreatedAt(120) }, // 約4ヶ月前
+
+    // 山田太郎2の応募履歴（山田太郎と全く同じパターン）
+    { auth_user_id: "seed_user_003", jobIndex: 3, 対応状況: "案件参画", 作成日時_開発環境: generateDevCreatedAt(1) }, // 1日前（最新）
+    { auth_user_id: "seed_user_003", jobIndex: 2, 対応状況: "面談予定", 作成日時_開発環境: generateDevCreatedAt(2) }, // 2日前
+    { auth_user_id: "seed_user_003", jobIndex: 1, 対応状況: "面談調整中", 作成日時_開発環境: generateDevCreatedAt(3) }, // 3日前
+    { auth_user_id: "seed_user_003", jobIndex: 8, 対応状況: "応募済み", 作成日時_開発環境: generateDevCreatedAt(4) }, // 4日前 - 応募取り消し可能（募集中の案件）
+    { auth_user_id: "seed_user_003", jobIndex: 4, 対応状況: "見送り", 作成日時_開発環境: generateDevCreatedAt(5) }, // 5日前
+    { auth_user_id: "seed_user_003", jobIndex: 0, 対応状況: "応募済み", 作成日時_開発環境: generateDevCreatedAt(6) }, // 6日前 - 応募取り消し不可（クローズ案件）
+    // 3ヶ月以上前の応募履歴
+    { auth_user_id: "seed_user_003", jobIndex: 5, 対応状況: "応募済み", 作成日時_開発環境: generateDevCreatedAt(95) }, // 約3ヶ月前
+    { auth_user_id: "seed_user_003", jobIndex: 6, 対応状況: "見送り", 作成日時_開発環境: generateDevCreatedAt(100) }, // 約3ヶ月前
+    { auth_user_id: "seed_user_003", jobIndex: 7, 対応状況: "案件参画", 作成日時_開発環境: generateDevCreatedAt(120) }, // 約4ヶ月前
   ],
 
   // 全ての推薦は動的計算に任せる（ハードコードなし）
